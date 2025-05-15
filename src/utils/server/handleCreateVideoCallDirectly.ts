@@ -1,0 +1,84 @@
+import ConnectDB from "@/config/ConnectDB";
+import NotificationsModel, { INotificationType } from "@/models/NotificationsModel";
+import SlotModel from "@/models/SlotModel";
+import UserModel from "@/models/UserModel";
+import VideoCallModel, { IVideoCallStatus } from "@/models/VideoCallModel";
+import { triggerSocketEvent } from "../socket/triggerSocketEvent";
+import { SocketTriggerTypes } from "../constants";
+import getNotificationExpiryDate from "./getNotificationExpiryDate";
+import { parse } from 'date-fns';
+
+
+// Function to detect time format and parse
+const parseTime = (timeString: string, referenceDate: Date): Date => {
+  // Try parsing time in 24-hour format first (e.g., "14:30")
+  const time24 = parse(timeString, 'HH:mm', referenceDate);
+  if (!isNaN(time24.getTime())) {
+    return time24;
+  }
+
+  // If 24-hour format fails, try parsing in 12-hour format with AM/PM (e.g., "2:30 PM")
+  const time12 = parse(timeString, 'hh:mm a', referenceDate);
+  if (!isNaN(time12.getTime())) {
+    return time12;
+  }
+
+  throw new Error('Invalid time format'); // Handle invalid time format
+};
+
+export async function handleCreateVideoCallDirectly(meetingId: string, userId: string) {
+  await ConnectDB();
+
+  const user = await UserModel.findById(userId).select("image");
+  if (!user) throw new Error("User not found");
+
+  const slot = await SlotModel.findById(meetingId);
+  if (!slot) throw new Error("Slot not found");
+
+  // Parse the time strings into Date objects based on meetingDate
+  const meetingDate = new Date(slot.meetingDate);
+  const startTime = parseTime(slot.durationFrom, meetingDate);
+  const endTime = parseTime(slot.durationTo, meetingDate);
+
+  const newCall = await VideoCallModel.create({
+    meetingId,
+    hostId: userId,
+    participants: [
+    ],
+    status: IVideoCallStatus.WAITING, // ? The video is just created still host not joined
+    startTime,
+    endTime,
+    chatMessages: [],
+    settings: {
+      allowScreenShare: true,
+    }
+  });
+
+  // Notifications boiler plate
+  const sendNewNotification = {
+    type: INotificationType.MEETING_STARTED,
+    sender: userId.toString(),
+    image: user.image,
+    slot: meetingId,
+    message: "The Host just started the meeting!",
+    isRead: false,
+    isClicked: false,
+    createdAt: new Date(),
+    expiresAt: getNotificationExpiryDate(30),
+  };
+
+  for (const bookedUserId of slot.bookedUsers) {
+    const notificationDoc = new NotificationsModel({ ...sendNewNotification, receiver: bookedUserId });
+    const savedNotification = await notificationDoc.save();
+
+    await UserModel.findByIdAndUpdate(bookedUserId, { $inc: { countOfNotifications: 1 } });
+
+    triggerSocketEvent({
+      userId: bookedUserId,
+      type: SocketTriggerTypes.MEETING_STARTED,
+      notificationData: { ...sendNewNotification, receiver: bookedUserId, _id: savedNotification._id },
+    });
+  }
+
+  return newCall;
+}
