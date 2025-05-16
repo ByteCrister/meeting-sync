@@ -7,7 +7,7 @@ let socket: Socket | null = null;
 export const initiateSocket = () => {
     if (!socket) {
         socket = io(process.env.NEXT_PUBLIC_DOMAIN, {
-            path: process.env.SOCKET_PATH || "/api/socket", // /api/socket
+            path: process.env.SOCKET_PATH || '/api/socket', // /api/socket
             withCredentials: true, // Ensure credentials are sent with the connection
             transports: ["websocket"],
             reconnectionAttempts: 5, // Retry connection 5 times

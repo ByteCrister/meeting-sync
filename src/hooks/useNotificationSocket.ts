@@ -69,7 +69,6 @@ const useNotificationSocket = () => {
                         dispatch(addSingleNotification(data.notificationData));
                         dispatch(incrementNotificationCount());
                         ShadcnToast("New notification arrived!");
-                        console.log("*** Received New Notification ***");
                     }
                 });
 
@@ -136,14 +135,9 @@ const useNotificationSocket = () => {
                 });
             }
 
-            // Register events (connect, reconnect)
+            // Register events
             socket.on("connect", () => {
                 console.log("Socket connected");
-                socket.emit(SocketTriggerTypes.REGISTER_USER, { userId: user._id });
-            });
-
-            socket.io.on("reconnect", () => {
-                console.log("Socket reconnected");
                 socket.emit(SocketTriggerTypes.REGISTER_USER, { userId: user._id });
             });
 

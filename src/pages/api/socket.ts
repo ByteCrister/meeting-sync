@@ -1,10 +1,10 @@
-// src/pages/api/socket.ts
+// src/pages/api/socket/socket.ts
 
 import { Server as ServerIO } from "socket.io";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { SocketTriggerTypes, VMSocketTriggerTypes } from "@/utils/constants";
 import {
-    getUserSocketId,
+    // getUserSocketId,
     registerUserSocket,
     removeUserSocket,
 } from "@/utils/socket/socketUserMap";
@@ -30,7 +30,7 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
 
         // Initialize the Socket.IO server
         const io = new ServerIO(httpServer, {
-            path: process.env.SOCKET_PATH!,
+            path: process.env.SOCKET_PATH! || '/api/socket',
             pingInterval: 10000, // every 10 seconds
             pingTimeout: 20000, // wait 20s before killing socket
             cors: {
@@ -60,15 +60,15 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
                 removeUserSocket(socket.id);
             });
 
-            socket.on("send_notification", (data) => {
-                const { userId, notificationData } = data;
-                const userSocketId = getUserSocketId(userId);
-                if (userSocketId) {
-                    io.to(userSocketId).emit(SocketTriggerTypes.RECEIVED_NOTIFICATION, notificationData);
-                    io.to(userSocketId).emit(SocketTriggerTypes.USER_SLOT_BOOKED, notificationData);
-                    io.to(userSocketId).emit(SocketTriggerTypes.USER_SLOT_UNBOOKED, notificationData);
-                }
-            });
+            // socket.on("send_notification", (data) => {
+            //     const { userId, notificationData } = data;
+            //     const userSocketId = getUserSocketId(userId);
+            //     if (userSocketId) {
+            //         io.to(userSocketId).emit(SocketTriggerTypes.RECEIVED_NOTIFICATION, notificationData);
+            //         io.to(userSocketId).emit(SocketTriggerTypes.USER_SLOT_BOOKED, notificationData);
+            //         io.to(userSocketId).emit(SocketTriggerTypes.USER_SLOT_UNBOOKED, notificationData);
+            //     }
+            // });
 
             socket.on(VMSocketTriggerTypes.JOIN_ROOM, ({ roomId, userId }) => {
                 socket.join(roomId);
