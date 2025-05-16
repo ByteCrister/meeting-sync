@@ -63,7 +63,7 @@ export default function ChatIconPopover() {
                     </button>
                 </PopoverTrigger>
 
-                <PopoverContent className="w-[85vw] sm:w-96 max-w-sm p-4 absolute right-2 sm:right-4 top-16 translate-x-4 sm:translate-x-0 shadow rounded-xl">
+                <PopoverContent className="w-[85vw] sm:w-96 max-w-sm p-4 absolute right-2 sm:right-4 top-16 translate-x-4 bg-white sm:translate-x-0 shadow rounded-xl">
                     {
                         !activeParticipant?._id
                             ? (<div className="h-[300px] flex items-center justify-center">

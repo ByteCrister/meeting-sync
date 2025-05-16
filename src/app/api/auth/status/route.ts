@@ -5,7 +5,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { ApiNotificationTypes } from "@/utils/constants";
 import SlotModel, { IRegisterStatus } from "@/models/SlotModel";
 
-
 export async function GET(req: NextRequest) {
 
     try {
@@ -34,9 +33,9 @@ export async function GET(req: NextRequest) {
             id: slot._id.toString(),
             title: slot.title,
             time: `${slot.durationFrom} - ${slot.durationTo}`,
-            type: slot.status === IRegisterStatus.Completed ?
-                'recent' : (slot.status === IRegisterStatus.Ongoing && slot.guestSize !== slot.bookedUsers.length)
-                    ? 'available' : slot.status, //? 'upcoming' | 'ongoing' - 'available | 'completed' - 'recent'
+            type: slot.status === (IRegisterStatus.Completed || IRegisterStatus.Expired) ? 'recent'
+                : (slot.status === IRegisterStatus.Ongoing && slot.guestSize !== slot.bookedUsers.length) ? 'available'
+                    : 'upcoming',
         }));
 
         return NextResponse.json({ user: user, activities: activities, success: true }, { status: 200 });
