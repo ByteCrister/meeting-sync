@@ -20,7 +20,7 @@ const LogoutAlert = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: Dispat
     };
     return (
         <AlertDialog open={isOpen} onOpenChange={() => setIsOpen(false)}>
-            <AlertDialogContent>
+            <AlertDialogContent className='bg-white shadow-2xl rounded-md'>
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
