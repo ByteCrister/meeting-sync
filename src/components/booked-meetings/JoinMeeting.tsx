@@ -26,7 +26,7 @@ export default function JoinMeeting({ isJoinEnabled, meetingId }: { isJoinEnable
                         Join
                     </button>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent className="bg-gray-800 text-white text-sm p-2 rounded-lg">
                     <p>{isJoinEnabled ? 'Join Meeting now' : `Can't join.`}</p>
                 </TooltipContent>
             </Tooltip>

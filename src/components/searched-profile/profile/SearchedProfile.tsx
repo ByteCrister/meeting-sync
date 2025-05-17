@@ -73,6 +73,13 @@ export const SearchedProfile: React.FC = () => {
     fetchData();
   }, [currentUserId, router, userId]);
 
+  const setMeetingCount = (count: number) => {
+    setCount((prevCount) => ({
+      ...prevCount,
+      meetings: count,
+    }));
+  }
+
   if (isLoading) return <SearchedProfileSkeleton />;
 
   if (!profile) return <div className='min-h-screen flex items-center justify-center'>User profile not found!</div>;
@@ -93,17 +100,17 @@ export const SearchedProfile: React.FC = () => {
         transition={{ duration: 0.4, delay: 0.3 }}
         className="mt-12"
       >
-        <div className="flex flex-wrap md:flex-row gap-2 pb-2 border-b border-muted mb-6 transition-all duration-150 ease-in-out">
+        <div className="flex flex-col md:flex-row gap-2 pb-2 border-b border-muted mb-6 transition-all duration-150 ease-in-out">
           {tabs.map(({ value, label, icon: Icon }) => (
             <button
               key={value}
               onClick={() => setActiveTab(value)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap text-sm ${activeTab === value
+              className={`flex justify-between items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap text-sm ${activeTab === value
                 ? 'bg-gray-800 text-gray-100'
                 : 'bg-gray-100 text-gray-600'
                 }`}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex justify-between items-center gap-2">
                 <Icon className="w-4 h-4" />
                 <span>{label}</span>
               </div>
@@ -117,7 +124,7 @@ export const SearchedProfile: React.FC = () => {
         <div className="mt-4">
           {activeTab === 'meetings' && (
             <div className="p-4">
-              <MeetingSlots userId={profile._id} userTimeZone={profile.timezone} />
+              <MeetingSlots userId={profile._id} userTimeZone={profile.timezone} setMeetingCount={setMeetingCount} />
             </div>
           )}
           {activeTab === 'followers' && (

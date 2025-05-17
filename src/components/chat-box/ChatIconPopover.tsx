@@ -99,7 +99,7 @@ export default function ChatIconPopover() {
                                                     <Plus className="w-5 h-5" />
                                                 </button>
                                             </TooltipTrigger>
-                                            <TooltipContent>
+                                            <TooltipContent className="bg-gray-800 text-white text-sm p-2 rounded-lg">
                                                 <p>Chat with Friend</p>
                                             </TooltipContent>
                                         </Tooltip>

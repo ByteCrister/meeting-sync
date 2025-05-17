@@ -90,7 +90,10 @@ export default function ChatBox() {
             </div>
 
             {/* Input area */}
-            <form onSubmit={handleSendMessage} className="flex items-center gap-2 mt-2 pt-2 border-t p-2">
+            <form
+                onSubmit={handleSendMessage}
+                autoComplete="off"
+                className="flex items-center gap-2 mt-2 pt-2 border-t p-2">
                 <input
                     type='text'
                     inputMode="text"

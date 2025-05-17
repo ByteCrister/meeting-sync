@@ -75,6 +75,7 @@ const SearchBar = () => {
       {/* Search input filed */}
       <div className="relative">
         <input
+          id='user-searching'
           type="text"
           value={searchQuery}
           onChange={handleSearch}

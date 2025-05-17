@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     const type = searchParams.get("type") as ApiSPType;
     const filterType = searchParams.get("filterType") || "all";
 
-    console.log(`type: ${type}, filterType: ${filterType}`);
+    // console.log(`type: ${type}, filterType: ${filterType}`);
 
     if (!searched_user_id || !type) {
         return NextResponse.json({ success: false, message: "Invalid query parameters" }, { status: 400 });

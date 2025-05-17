@@ -37,16 +37,16 @@ export const ProfileHeader = ({ profile }: { profile: SearchedUserProfile }) => 
         </Avatar>
 
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">{profile.username}</h1>
-          <p className="text-xl text-muted-foreground">{profile.title}</p>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-800">{profile.username}</h1>
+          <p className="text-xl text-muted-foreground text-gray-800">{profile.title}</p>
         </div>
 
         <div className="flex items-center space-x-6 text-sm text-muted-foreground">
-          <div className="flex items-center">
+          <div className="flex items-center text-gray-800">
             <Briefcase className="mr-2 h-4 w-4" />
             <span>{profile.profession}</span>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center text-gray-800">
             <Clock className="mr-2 h-4 w-4" />
             <span>{profile.timezone}</span>
           </div>
@@ -55,7 +55,7 @@ export const ProfileHeader = ({ profile }: { profile: SearchedUserProfile }) => 
         {
           isLoading
             ? <LoadingSpinner />
-            : <Button onClick={handleFollowToggle} className="mt-4 bg-gray-700">
+            : <Button onClick={handleFollowToggle} className="mt-4 bg-gray-700 text-white hover:bg-gray-800">
               {isFollowing ? 'Unfollow' : 'Follow'}
             </Button>
         }
