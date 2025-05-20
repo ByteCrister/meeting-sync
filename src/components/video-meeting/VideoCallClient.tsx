@@ -1,20 +1,58 @@
 "use client";
 
-import { useAppSelector } from "@/lib/hooks";
-import { getVideoCallStatus, joinVideoCall } from "@/utils/client/api/api-video-meeting-call";
-import { IVideoCallStatus, VideoCallErrorTypes, VMSocketTriggerTypes } from "@/utils/constants";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { getVideoCallStatus, joinVideoCall, updateVideoCall, leaveVideoCall } from "@/utils/client/api/api-video-meeting-call";
+import { VideoCallErrorTypes, VMSocketTriggerTypes, SocketTriggerTypes, VCallUpdateApiType } from "@/utils/constants";
 import { getSocket } from "@/utils/socket/initiateSocket";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import MeetingNotStarted from "../errors/MeetingNotStarted";
 import FullPageError from "../errors/FullPageError";
 import useVideoSocket from "@/hooks/useVideoSocket";
-import { setMeetingDetails, VideoCallStatus } from "@/lib/features/videoMeeting/videoMeetingSlice";
+import {
+    setMeetingDetails,
+    VideoCallStatus,
+    updateParticipant,
+    addChatMessage,
+    removeChatMessage,
+    updateSettings,
+    endMeeting,
+    VideoCallParticipant,
+    ChatMessage,
+    VideoMeetingState
+} from "@/lib/features/videoMeeting/videoMeetingSlice";
+import { toast } from "sonner";
+import { VideoCallErrorBoundary } from "./VideoCallErrorBoundary";
+import { NetworkQualityIndicator } from "./NetworkQualityIndicator";
+import { VideoParticipant } from "./VideoParticipant";
+import { VideoControls } from "./VideoControls";
+import { ChatSidebar } from "./ChatSidebar";
+import { SettingsSidebar } from "./SettingsSidebar";
+import { RootState } from "@/lib/store";
+import { Users, Notification } from "@/types/client-types";
+import { useRouter } from "next/navigation";
+
+interface UserState {
+    user: Users | null;
+    notifications: Notification[] | null;
+    activities: { type: string; message: string; timestamp: string }[] | null;
+}
 
 export default function VideoCallClient() {
+    const dispatch = useAppDispatch();
     const searchParams = useSearchParams();
     const roomId = searchParams?.get("roomId");
-    const userId = useAppSelector((state) => state.userStore.user?._id);
+    const userId = useAppSelector((state: RootState) => (state.userStore as UserState).user?._id);
+    const meetingState = useAppSelector((state: RootState) => state.videoMeeting) as VideoMeetingState;
+    const [isMuted, setIsMuted] = useState(false);
+    const [isVideoOn, setIsVideoOn] = useState(true);
+    const [isScreenSharing, setIsScreenSharing] = useState(false);
+    const [showChat, setShowChat] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [networkQuality, setNetworkQuality] = useState<'good' | 'poor'>('good');
+    const [reconnectAttempts, setReconnectAttempts] = useState(0);
+    const router = useRouter();
 
     const localVideo = useRef<HTMLVideoElement>(null);
     const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
@@ -23,13 +61,52 @@ export default function VideoCallClient() {
     const remoteStreamsRef = useRef<{ [userId: string]: MediaStream }>({});
     const [remoteUsers, setRemoteUsers] = useState<{ [userId: string]: MediaStream }>({});
     const [videoCallStatus, setVideoCallStatus] = useState<VideoCallErrorTypes | null>(null);
-    const JoinStatus = useAppSelector((state) => state.videoCallStore.status);
+    const screenShareStreamRef = useRef<MediaStream | null>(null);
+
     useVideoSocket(roomId || "");
 
+    // Network quality monitoring
+    const checkNetworkQuality = useCallback(() => {
+        if (!socketRef.current) return;
+
+        const socket = socketRef.current;
+        const pingStart = Date.now();
+
+        socket.emit('ping', () => {
+            const pingTime = Date.now() - pingStart;
+            setNetworkQuality(pingTime < 100 ? 'good' : 'poor');
+        });
+    }, []);
+
     useEffect(() => {
+        const interval = setInterval(checkNetworkQuality, 5000);
+        return () => clearInterval(interval);
+    }, [checkNetworkQuality]);
+
+    // Reconnection logic
+    const attemptReconnect = useCallback(async () => {
+        if (reconnectAttempts >= 3) {
+            toast.error("Failed to reconnect after multiple attempts");
+            return;
+        }
+
+        try {
+            setReconnectAttempts(prev => prev + 1);
+            await startVideoCall();
+            setReconnectAttempts(0);
+            toast.success("Successfully reconnected");
+        } catch (error) {
+            console.error("Reconnection failed:", error);
+            setTimeout(attemptReconnect, 5000);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reconnectAttempts]);
+
+    const startVideoCall = async () => {
         if (!roomId || !userId) return;
 
-        const startVideoCall = async () => {
+        try {
+            setIsLoading(true);
             const videoCallStatusData = await getVideoCallStatus(roomId);
 
             if (videoCallStatusData.isError) {
@@ -38,10 +115,10 @@ export default function VideoCallClient() {
             }
 
             const joinStatusData = await joinVideoCall(roomId);
-            if (joinStatusData.success && joinStatusData?.meetingStatus === IVideoCallStatus.WAITING) {
+            if (joinStatusData.success && joinStatusData?.meetingStatus === VideoCallStatus.WAITING) {
                 return;
             } else if (joinStatusData.success && joinStatusData?.meeting) {
-                setMeetingDetails(joinStatusData.meeting);
+                dispatch(setMeetingDetails(joinStatusData.meeting));
             }
 
             if (!socketRef.current) {
@@ -58,7 +135,11 @@ export default function VideoCallClient() {
 
             const createPeerConnection = (targetUserId: string) => {
                 const peer = new RTCPeerConnection({
-                    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+                    iceServers: [
+                        { urls: "stun:stun.l.google.com:19302" },
+                        { urls: "stun:stun1.l.google.com:19302" },
+                        { urls: "stun:stun2.l.google.com:19302" }
+                    ]
                 });
 
                 peer.onicecandidate = (e) => {
@@ -68,6 +149,12 @@ export default function VideoCallClient() {
                             targetUserId,
                             candidate: e.candidate
                         });
+                    }
+                };
+
+                peer.onconnectionstatechange = () => {
+                    if (peer.connectionState === 'disconnected' || peer.connectionState === 'failed') {
+                        attemptReconnect();
                     }
                 };
 
@@ -91,7 +178,6 @@ export default function VideoCallClient() {
                 return peer;
             };
 
-            // Someone else joined
             socket.on(VMSocketTriggerTypes.USER_JOINED, async ({ newUserId }) => {
                 if (newUserId === userId) return;
                 const peer = createPeerConnection(newUserId);
@@ -103,7 +189,6 @@ export default function VideoCallClient() {
                 socket.emit(VMSocketTriggerTypes.OFFER, { roomId, newUserId, offer });
             });
 
-            // Someone sent us an offer
             socket.on(VMSocketTriggerTypes.RECEIVE_OFFER, async ({ fromUserId, offer }) => {
                 const peer = createPeerConnection(fromUserId);
                 peersRef.current[fromUserId] = peer;
@@ -115,54 +200,320 @@ export default function VideoCallClient() {
                 socket.emit(VMSocketTriggerTypes.ANSWER, { roomId, fromUserId, answer });
             });
 
-            // Someone responded with an answer
             socket.on(VMSocketTriggerTypes.RECEIVE_ANSWER, async ({ fromUserId, answer }) => {
                 const peer = peersRef.current[fromUserId];
                 await peer?.setRemoteDescription(new RTCSessionDescription(answer));
             });
 
-            // Someone sent ICE
             socket.on(VMSocketTriggerTypes.RECEIVE_ICE_CANDIDATE, async ({ fromUserId, candidate }) => {
                 const peer = peersRef.current[fromUserId];
                 await peer?.addIceCandidate(new RTCIceCandidate(candidate));
             });
-        };
 
+            socket.on(SocketTriggerTypes.NEW_METING_CHAT_MESSAGE, (message: ChatMessage) => {
+                dispatch(addChatMessage(message));
+            });
+
+            socket.on(SocketTriggerTypes.DELETE_METING_CHAT_MESSAGE, ({ _id }: { _id: string }) => {
+                dispatch(removeChatMessage(_id));
+            });
+
+            socket.on(SocketTriggerTypes.NEW_PARTICIPANT_JOINED, (participant: VideoCallParticipant) => {
+                dispatch(updateParticipant(participant));
+            });
+
+            socket.on('disconnect', () => {
+                toast.error("Connection lost. Attempting to reconnect...");
+                attemptReconnect();
+            });
+
+            setIsLoading(false);
+        } catch (error) {
+            console.error("Error starting video call:", error);
+            setVideoCallStatus(VideoCallErrorTypes.MEETING_NOT_FOUND);
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
         startVideoCall();
 
         return () => {
             socketRef.current?.disconnect();
             localStreamRef.current?.getTracks().forEach((t) => t.stop());
-
+            screenShareStreamRef.current?.getTracks().forEach((t) => t.stop());
             Object.values(peersRef.current).forEach((peer) => peer.close());
             peersRef.current = {};
             remoteStreamsRef.current = {};
         };
-    }, [roomId, userId, JoinStatus]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [roomId, userId, dispatch]);
+
+    const toggleMute = async () => {
+        if (localStreamRef.current) {
+            const audioTrack = localStreamRef.current.getAudioTracks()[0];
+            if (audioTrack) {
+                audioTrack.enabled = !audioTrack.enabled;
+                setIsMuted(!audioTrack.enabled);
+                if (userId && roomId) {
+                    const objectBody = {
+                        type: VCallUpdateApiType.PARTICIPANTS_DATA,
+                        meetingId: roomId,
+                        data: {
+                            userId,
+                            isMuted: !audioTrack.enabled,
+                            isVideoOn,
+                            isScreenSharing,
+                        }
+                    };
+                    await updateVideoCall(objectBody);
+                    dispatch(updateParticipant({ userId, isMuted: !audioTrack.enabled }));
+                }
+            }
+        }
+    };
+
+    const toggleVideo = async () => {
+        if (localStreamRef.current) {
+            const videoTrack = localStreamRef.current.getVideoTracks()[0];
+            if (videoTrack) {
+                videoTrack.enabled = !videoTrack.enabled;
+                setIsVideoOn(!videoTrack.enabled);
+                if (userId && roomId) {
+                    const objectBody = {
+                        type: VCallUpdateApiType.PARTICIPANTS_DATA,
+                        meetingId: roomId,
+                        data: {
+                            userId,
+                            isMuted,
+                            isVideoOn: !videoTrack.enabled,
+                            isScreenSharing,
+                        }
+                    };
+                    await updateVideoCall(objectBody);
+                    dispatch(updateParticipant({ userId, isVideoOn: !videoTrack.enabled }));
+                }
+            }
+        }
+    };
+
+    const toggleScreenShare = async () => {
+        try {
+            if (!isScreenSharing) {
+                const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                screenShareStreamRef.current = screenStream;
+                const videoTrack = screenStream.getVideoTracks()[0];
+
+                Object.values(peersRef.current).forEach((peer) => {
+                    const sender = peer.getSenders().find(s => s.track?.kind === 'video');
+                    if (sender) {
+                        sender.replaceTrack(videoTrack);
+                    }
+                });
+
+                if (localVideo.current) {
+                    localVideo.current.srcObject = screenStream;
+                }
+
+                videoTrack.onended = () => {
+                    toggleScreenShare();
+                };
+
+                setIsScreenSharing(true);
+                if (userId && roomId) {
+                    const objectBody = {
+                        type: VCallUpdateApiType.PARTICIPANTS_DATA,
+                        meetingId: roomId,
+                        data: {
+                            userId,
+                            isMuted,
+                            isVideoOn,
+                            isScreenSharing: true,
+                        }
+                    };
+                    await updateVideoCall(objectBody);
+
+                    dispatch(updateParticipant({ userId, isScreenSharing: true }));
+                }
+            } else {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                const videoTrack = stream.getVideoTracks()[0];
+
+                Object.values(peersRef.current).forEach((peer) => {
+                    const sender = peer.getSenders().find(s => s.track?.kind === 'video');
+                    if (sender) {
+                        sender.replaceTrack(videoTrack);
+                    }
+                });
+
+                if (localVideo.current) {
+                    localVideo.current.srcObject = stream;
+                }
+
+                if (screenShareStreamRef.current) {
+                    screenShareStreamRef.current.getTracks().forEach(track => track.stop());
+                    screenShareStreamRef.current = null;
+                }
+
+                setIsScreenSharing(false);
+                if (userId && roomId) {
+                    const objectBody = {
+                        type: VCallUpdateApiType.PARTICIPANTS_DATA,
+                        meetingId: roomId,
+                        data: {
+                            userId,
+                            isMuted,
+                            isVideoOn,
+                            isScreenSharing: false,
+                        }
+                    };
+                    await updateVideoCall(objectBody);
+                    dispatch(updateParticipant({ userId, isScreenSharing: false }));
+                }
+            }
+        } catch (error) {
+            console.error("Error toggling screen share:", error);
+            toast.error("Failed to toggle screen sharing");
+        }
+    };
+
+    const handleSendChatMessage = async (message: string) => {
+        if (socketRef.current && roomId) {
+            const objectBody = {
+                type: VCallUpdateApiType.NEW_VIDEO_CHAT_MESSAGE,
+                meetingId: roomId,
+                data: { message }
+            }
+            const resData = await updateVideoCall(objectBody);
+            addChatMessage(resData.data);
+        }
+    };
+
+    const handleDeleteChatMessage = async (messageId: string) => {
+        if (socketRef.current && roomId) {
+            const objectBody = {
+                type: VCallUpdateApiType.REMOVE_VIDEO_CHAT_MESSAGE,
+                meetingId: roomId,
+                data: { messageId }
+            }
+            await updateVideoCall(objectBody);
+            removeChatMessage(messageId);
+        }
+    };
+
+    const handleEndCall = async () => {
+        if (roomId) {
+            const resData = await leaveVideoCall(roomId);
+            if (resData.success) {
+                dispatch(endMeeting(new Date().toISOString()));
+                socketRef.current?.emit(SocketTriggerTypes.LEAVE_ROOM, { roomId, userId });
+                router.back();
+            }
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
+                    <p>Connecting to meeting...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (videoCallStatus === VideoCallErrorTypes.USER_NOT_FOUND) return <FullPageError message="User not found. Please try to signin again." />
     if (videoCallStatus === VideoCallErrorTypes.MEETING_NOT_FOUND) return <FullPageError message="Meeting is not valid. Meeting maybe removed or Room ID is incorrect." />
     if (videoCallStatus === VideoCallErrorTypes.MEETING_ENDED) return <FullPageError message="The meeting is ended." />
     if (videoCallStatus === VideoCallErrorTypes.USER_NOT_PARTICIPANT) return <FullPageError message="You did not booked this meeting." />
     if (videoCallStatus === VideoCallErrorTypes.USER_ALREADY_JOINED) return <FullPageError message="You are already joined in this meeting." />
-    if (JoinStatus === VideoCallStatus.WAITING) return <MeetingNotStarted />
+    if (meetingState.status === VideoCallStatus.WAITING) return <MeetingNotStarted />
 
     return (
-        <div className="grid grid-cols-2 gap-4 p-4">
-            <video ref={localVideo} autoPlay muted className="rounded-xl border" />
-            {Object.entries(remoteUsers).map(([id, stream]) => (
-                <video
-                    key={id}
-                    autoPlay
-                    playsInline
-                    className="rounded-xl border"
-                    ref={(videoEl) => {
-                        if (videoEl && stream) {
-                            videoEl.srcObject = stream;
-                        }
-                    }}
-                />
-            ))}
-        </div>
+        <VideoCallErrorBoundary>
+            <div className="flex h-screen bg-gray-900 text-white">
+                <NetworkQualityIndicator quality={networkQuality} />
+
+                {/* Main Video Area */}
+                <div className="flex-1 flex flex-col">
+                    <div className="flex-1 p-4">
+                        <div className="grid grid-cols-2 gap-4 h-full">
+                            {/* Local Video */}
+                            {localStreamRef.current && (
+                                <VideoParticipant
+                                    stream={localStreamRef.current}
+                                    participant={meetingState.participants.find((p: VideoCallParticipant) => p.userId === userId) || {
+                                        userId: userId || '',
+                                        username: 'You',
+                                        image: '',
+                                        socketId: '',
+                                        isMuted,
+                                        isVideoOn,
+                                        isScreenSharing,
+                                        sessions: []
+                                    }}
+                                    isLocal
+                                />
+                            )}
+
+                            {/* Remote Videos */}
+                            {Object.entries(remoteUsers).map(([id, stream]) => {
+                                const participant = meetingState.participants.find((p: VideoCallParticipant) => p.userId === id);
+                                if (!participant) return null;
+                                return (
+                                    <VideoParticipant
+                                        key={id}
+                                        stream={stream}
+                                        participant={participant}
+                                    />
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <VideoControls
+                        isMuted={isMuted}
+                        isVideoOn={isVideoOn}
+                        isScreenSharing={isScreenSharing}
+                        showChat={showChat}
+                        showSettings={showSettings}
+                        onToggleMute={toggleMute}
+                        onToggleVideo={toggleVideo}
+                        onToggleScreenShare={toggleScreenShare}
+                        onToggleChat={() => setShowChat(!showChat)}
+                        onToggleSettings={() => setShowSettings(!showSettings)}
+                        onEndCall={handleEndCall}
+                    />
+                </div>
+
+                {/* Chat Sidebar */}
+                {showChat && (
+                    <ChatSidebar
+                        messages={meetingState.chatMessages}
+                        participants={meetingState.participants}
+                        onSendMessage={handleSendChatMessage}
+                        onDeleteMessage={handleDeleteChatMessage}
+                    />
+                )}
+
+                {/* Settings Sidebar */}
+                {showSettings && (
+                    <SettingsSidebar
+                        settings={meetingState.settings}
+                        onUpdateSettings={async (settings) => {
+                            const objectBody = {
+                                type: VCallUpdateApiType.HOST_SETTING,
+                                meetingId: roomId || "",
+                                data: settings
+                            };
+
+                            await updateVideoCall(objectBody)
+                            dispatch(updateSettings(settings))
+                        }}
+                    />
+                )}
+            </div>
+        </VideoCallErrorBoundary>
     );
-};
+}

@@ -110,7 +110,7 @@ export async function PUT(req: NextRequest) {
 
         switch (type) {
             case VCallUpdateApiType.PARTICIPANTS_DATA: {
-                const { userId, isMuted, isVideoOn, isScreenSharing, joinedAt } = data;
+                const { userId, isMuted, isVideoOn, isScreenSharing } = data;
                 if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
                 await VideoCallModel.updateOne(
@@ -120,7 +120,6 @@ export async function PUT(req: NextRequest) {
                             "participants.$.isMuted": isMuted,
                             "participants.$.isVideoOn": isVideoOn,
                             "participants.$.isScreenSharing": isScreenSharing,
-                            "participants.$.joinedAt": joinedAt,
                         },
                     }
                 );
@@ -134,6 +133,7 @@ export async function PUT(req: NextRequest) {
 
                 const { message } = data;
                 const msgObject = {
+                    _id: new mongoose.Types.ObjectId(),
                     userId: new mongoose.Types.ObjectId(userId),
                     message,
                     timestamp: new Date(),
@@ -151,7 +151,7 @@ export async function PUT(req: NextRequest) {
                     type: SocketTriggerTypes.NEW_METING_CHAT_MESSAGE,
                     data: msgObject,
                 });
-                break;
+                return NextResponse.json({ success: true, message: 'Message send.', data: msgObject }, { status: 200 });
             }
 
             case VCallUpdateApiType.REMOVE_VIDEO_CHAT_MESSAGE: {

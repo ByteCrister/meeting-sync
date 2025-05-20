@@ -259,7 +259,7 @@ export async function DELETE(req: NextRequest) {
 
         await videoCall.save();
 
-        return NextResponse.json({ message: 'Left the call successfully' }, { status: 200 });
+        return NextResponse.json({ success: true, message: 'Left the call successfully' }, { status: 200 });
 
     } catch (error) {
         console.error('[LEAVE_VIDEO_CALL_ERROR]', error);

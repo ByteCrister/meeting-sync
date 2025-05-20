@@ -77,10 +77,13 @@ const videoMeetingSlice = createSlice({
     addParticipant(state, action: PayloadAction<VideoCallParticipant>) {
       state.participants.push(action.payload);
     },
-    updateParticipant(state, action: PayloadAction<VideoCallParticipant>) {
+    updateParticipant(state, action: PayloadAction<Partial<VideoCallParticipant> & { userId: string }>) {
       const index = state.participants.findIndex(p => p.userId === action.payload.userId);
       if (index !== -1) {
-        state.participants[index] = action.payload;
+        state.participants[index] = {
+          ...state.participants[index],
+          ...action.payload
+        };
       }
     },
     removeParticipant(state, action: PayloadAction<string>) {

@@ -7,7 +7,7 @@ import Logo from '../layout/Logo';
 import SearchBar from '../layout/SearchBar';
 import NotificationIcon from '../notifications/NotificationIcon';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
-import { toggleSidebar, setSidebarState } from '@/lib/features/sidebarSlice';
+import { toggleSidebar, setSidebarState } from '@/lib/features/side-bar/sidebarSlice';
 import UserLogout from './user-logout/UserLogout';
 import ChatIconPopover from '../chat-box/ChatIconPopover';
 // import NotificationIcon from '../layout/NotificationIcon';
