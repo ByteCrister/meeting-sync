@@ -101,14 +101,23 @@ const SlotCard = ({ slot, isSearchedSlot }: { slot: registerSlot, isSearchedSlot
                     </div>
 
                     {/* Start Meeting button */}
-                    <button
-                        id="start-meeting"
-                        disabled={slot.status !== RegisterSlotStatus.Ongoing}
-                        onClick={handleStartVideoMeeting}
-                        className="w-full md:w-auto md:max-w-[180px] inline-flex items-center justify-center rounded-lg px-6 py-2 text-sm font-semibold shadow-sm transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
-                    >
-                        Start Meeting
-                    </button>
+                    {
+                        (slot.status !== RegisterSlotStatus.Expired && slot.status !== RegisterSlotStatus.Completed) && (
+                            <button
+                                id="start-meeting"
+                                disabled={slot.status !== RegisterSlotStatus.Ongoing}
+                                onClick={handleStartVideoMeeting}
+                                className={`w-full md:w-auto md:max-w-[180px] inline-flex items-center justify-center rounded-lg px-6 py-2 
+                            text-sm font-semibold shadow-sm transition-all duration-200
+                            ${slot.status === RegisterSlotStatus.Ongoing ?
+                                        'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700'
+                                        : 'bg-gradient-to-r from-blue-400 to-indigo-400 text-white hover:from-blue-400 hover:to-indigo-400 cursor-not-allowed'}
+                            `}
+                            >
+                                Start Meeting
+                            </button>
+                        )
+                    }
                 </div>
             </div>
         </motion.div>

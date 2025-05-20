@@ -50,16 +50,16 @@ const SlotSchema = new Schema<ISlot>(
             type: String,
             required: [true, "Description is required"],
         },
-        meetingDate: {
+        meetingDate: { 
             type: Date,
             required: true,
         },
         tags: [{ type: String, }],
-        durationFrom: {
+        durationFrom: {          // * 12: 00 PM
             type: String,
             required: true,
         },
-        durationTo: {
+        durationTo: {         // * 1: 00 PM
             type: String,
             required: true,
         },
