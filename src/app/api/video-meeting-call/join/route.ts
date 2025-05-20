@@ -1,10 +1,10 @@
 import ConnectDB from '@/config/ConnectDB';
-import VideoCallModel, { IVideoCallStatus } from '@/models/VideoCallModel';
+import VideoCallModel from '@/models/VideoCallModel';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/utils/server/getUserFromToken';
 import { Types } from 'mongoose';
 import { triggerSocketEvent } from '@/utils/socket/triggerSocketEvent';
-import { SocketTriggerTypes } from '@/utils/constants';
+import { IVideoCallStatus, SocketTriggerTypes } from '@/utils/constants';
 import SlotModel from '@/models/SlotModel';
 import NotificationsModel, { INotificationType } from '@/models/NotificationsModel';
 import UserModel from '@/models/UserModel';
@@ -64,52 +64,53 @@ export async function GET(req: NextRequest) {
             // Activate meeting if not already
             if (videoCall.status !== IVideoCallStatus.ACTIVE) {
                 videoCall.status = IVideoCallStatus.ACTIVE;
+
+                // * Join all waiting participants to the meeting
+                videoCall.waitingParticipants?.forEach((p: { userId: string | Types.ObjectId; requestedAt: Date; }) => {
+                    triggerSocketEvent({
+                        userId: p.userId.toString(),
+                        type: SocketTriggerTypes.HOST_JOINED,
+                        notificationData: {slot: meetingId, message: "The Host just started the meeting!" },
+                    });
+                });
+
+                // * Send notification all user who booked the slot
+                const user = await UserModel.findById(userId).select("image");
+                const slot = await SlotModel.findById(meetingId);
+                if (!slot) {
+                    return NextResponse.json({ message: 'Slot not found' }, { status: 404 });
+                }
+
+                // * Notification structure
+                const sendNewNotification = {
+                    type: INotificationType.MEETING_STARTED,
+                    sender: userId.toString(),
+                    image: user.image,
+                    slot: meetingId,
+                    message: "The Host just started the meeting!",
+                    isRead: false,
+                    isClicked: false,
+                    createdAt: new Date(),
+                    expiresAt: getNotificationExpiryDate(30),
+                };
+
+                await Promise.all(slot.bookedUsers.map(async (bookedUserId: string) => {
+                    const notificationDoc = new NotificationsModel({ ...sendNewNotification, receiver: bookedUserId });
+                    const savedNotification = await notificationDoc.save();
+
+                    await UserModel.findByIdAndUpdate(bookedUserId, { $inc: { countOfNotifications: 1 } });
+
+                    triggerSocketEvent({
+                        userId: bookedUserId,
+                        type: SocketTriggerTypes.MEETING_STARTED,
+                        notificationData: { ...sendNewNotification, receiver: bookedUserId, _id: savedNotification._id },
+                    });
+                }));
+                // * Clear waiting participants after host joins
+                videoCall.waitingParticipants = [];
             }
 
             await videoCall.save();
-
-            // * Join all waiting participants to the meeting
-            videoCall.waitingParticipants?.forEach((p: { userId: string | Types.ObjectId; requestedAt: Date; }) => {
-                triggerSocketEvent({
-                    userId: p.userId.toString(),
-                    type: SocketTriggerTypes.HOST_JOINED,
-                    notificationData: `The host has joined the meeting!`,
-                });
-            });
-
-            // * Send notification all user who booked the slot
-            const user = await UserModel.findById(userId).select("image");
-            const slot = await SlotModel.findById(meetingId);
-            if (!slot) {
-                return NextResponse.json({ message: 'Slot not found' }, { status: 404 });
-            }
-
-            // * Notification structure
-            const sendNewNotification = {
-                type: INotificationType.MEETING_STARTED,
-                sender: userId.toString(),
-                image: user.image,
-                slot: meetingId,
-                message: "The Host just started the meeting!",
-                isRead: false,
-                isClicked: false,
-                createdAt: new Date(),
-                expiresAt: getNotificationExpiryDate(30),
-            };
-
-            await Promise.all(slot.bookedUsers.map(async (bookedUserId: string) => {
-                const notificationDoc = new NotificationsModel({ ...sendNewNotification, receiver: bookedUserId });
-                const savedNotification = await notificationDoc.save();
-
-                await UserModel.findByIdAndUpdate(bookedUserId, { $inc: { countOfNotifications: 1 } });
-
-                triggerSocketEvent({
-                    userId: bookedUserId,
-                    type: SocketTriggerTypes.MEETING_STARTED,
-                    notificationData: { ...sendNewNotification, receiver: bookedUserId, _id: savedNotification._id },
-                });
-            }));
-
 
         } else {
             // * If user is NOT host
@@ -158,8 +159,7 @@ export async function GET(req: NextRequest) {
     }
 }
 
-// ? Leaving from a video meeting call or deleting it if host
-// ! Have to change the logic
+// ? Leaving from a video meeting call
 export async function DELETE(req: NextRequest) {
     try {
         await ConnectDB();
@@ -178,27 +178,18 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ message: 'Meeting not found' }, { status: 404 });
         }
 
-        const isHost = String(videoCall.hostId) === String(userId);
+        const updateResult = await VideoCallModel.updateOne(
+            { meetingId },
+            { $pull: { participants: { userId } } }
+        );
 
-        if (isHost) {
-            // If the user is the host, delete the entire video call document
-            await VideoCallModel.deleteOne({ meetingId });
-            return NextResponse.json({ message: 'Video call deleted by host' }, { status: 200 });
-        } else {
-            // If the user is a participant, remove them from the participants array
-            const updateResult = await VideoCallModel.updateOne(
-                { meetingId },
-                { $pull: { participants: { userId } } }
-            );
-
-            if (updateResult.modifiedCount === 0) {
-                return NextResponse.json({ message: 'User not found in participants or update failed' }, { status: 404 });
-            }
-
-            return NextResponse.json({ message: 'Left the call successfully' }, { status: 200 });
+        if (updateResult.modifiedCount === 0) {
+            return NextResponse.json({ message: 'User not found in participants or update failed' }, { status: 404 });
         }
+        return NextResponse.json({ message: 'Left the call successfully' }, { status: 200 });
+
     } catch (error) {
-        console.log('[LEAVE_VIDEO_CALL_ERROR]', error);
-        return NextResponse.json({ message: 'Server error' }, { status: 500 });
-    }
+    console.log('[LEAVE_VIDEO_CALL_ERROR]', error);
+    return NextResponse.json({ message: 'Server error' }, { status: 500 });
+}
 }

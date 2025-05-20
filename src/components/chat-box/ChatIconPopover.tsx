@@ -42,7 +42,7 @@ export default function ChatIconPopover() {
             setLoading(false);
         }
         fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (
@@ -63,7 +63,7 @@ export default function ChatIconPopover() {
                     </button>
                 </PopoverTrigger>
 
-                <PopoverContent className="w-96 p-4 absolute right-4 top-16 !translate-x-0 !translate-y-0 shadow">
+                <PopoverContent className="w-[85vw] sm:w-96 max-w-sm p-4 absolute right-2 sm:right-4 top-16 translate-x-4 bg-white sm:translate-x-0 shadow rounded-xl">
                     {
                         !activeParticipant?._id
                             ? (<div className="h-[300px] flex items-center justify-center">
@@ -99,7 +99,7 @@ export default function ChatIconPopover() {
                                                     <Plus className="w-5 h-5" />
                                                 </button>
                                             </TooltipTrigger>
-                                            <TooltipContent>
+                                            <TooltipContent className="bg-gray-800 text-white text-sm p-2 rounded-lg">
                                                 <p>Chat with Friend</p>
                                             </TooltipContent>
                                         </Tooltip>

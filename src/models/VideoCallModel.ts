@@ -1,15 +1,26 @@
+import { IVideoCallStatus } from '@/utils/constants';
 import mongoose, { Document, Schema } from 'mongoose';
+
+export interface IVideoCallParticipant {
+    userId: mongoose.Types.ObjectId | string;
+    socketId: string;
+    isMuted: boolean;
+    isVideoOn: boolean;
+    isScreenSharing?: boolean; 
+    joinedAt: Date;
+}
+
+export interface IWaitingParticipants{
+    userId: mongoose.Types.ObjectId | string;
+    requestedAt: Date;
+}
 
 export interface IVideoCall extends Document {
     meetingId: mongoose.Types.ObjectId | string;
     hostId: mongoose.Types.ObjectId | string;
-    participants: {
-        userId: mongoose.Types.ObjectId | string;
-        isMuted: boolean;
-        isVideoOn: boolean;
-        joinedAt: Date;
-    }[];
-    status: 'waiting' | 'active' | 'ended';
+    waitingParticipants: IWaitingParticipants[];
+    participants: IVideoCallParticipant[];
+    status: IVideoCallStatus;
     startTime: Date;
     endTime?: Date;
     chatMessages: {
@@ -19,16 +30,7 @@ export interface IVideoCall extends Document {
     }[];
     settings: {
         allowScreenShare: boolean;
-        allowWaitingRoom: boolean;
-        allowPrivateChat: boolean;
     };
-}
-
-export enum IVideoCallStatus {
-    WAITING = 'waiting',
-    ACTIVE = 'active',
-    ENDED = 'ended',
-    LEAVED = 'leaved',
 }
 
 const VideoCallSchema = new Schema<IVideoCall>(
@@ -44,6 +46,17 @@ const VideoCallSchema = new Schema<IVideoCall>(
             ref: 'users',
             required: true,
         },
+        waitingParticipants: [{
+            userId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'users',
+                required: true,
+            },
+            requestedAt: {
+                type: Date,
+                default: Date.now,
+            },
+        }],
         participants: [{
             userId: {
                 type: mongoose.Schema.Types.ObjectId,
@@ -51,6 +64,10 @@ const VideoCallSchema = new Schema<IVideoCall>(
                 required: true,
             },
             isMuted: {
+                type: Boolean,
+                default: false,
+            },
+            isScreenSharing: {
                 type: Boolean,
                 default: false,
             },
@@ -94,15 +111,8 @@ const VideoCallSchema = new Schema<IVideoCall>(
             allowScreenShare: {
                 type: Boolean,
                 default: true,
-            },
-            allowWaitingRoom: {
-                type: Boolean,
-                default: false,
-            },
-            allowPrivateChat: {
-                type: Boolean,
-                default: true,
-            },
+            }
+            // if I want to add more settings, I can do so here
         },
     },
     {

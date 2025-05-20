@@ -23,7 +23,7 @@ const UserLogout = () => {
             </div>
           </div>
         </TooltipTrigger>
-        <TooltipContent>
+        <TooltipContent className='bg-gray-100 text-gray-900 shadow-lg rounded-md p-2'>
           <p>Click to log out.</p>
         </TooltipContent>
       </Tooltip>

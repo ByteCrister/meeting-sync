@@ -7,13 +7,14 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { RegisterSlotStatus } from "@/types/client-types";
 import { APIBookMeeting, APIDeleteMeeting } from "@/utils/client/api/api-book-meetings";
 import { Plus } from "lucide-react";
 import React, { useState } from "react";
 
 type PropType = {
     filterType: "all" | "bookedByMe" | "bookedMine"
-    status: "upcoming" | "ongoing" | "completed" | "expired";
+    status: RegisterSlotStatus;
     isBooked: boolean;
     loadingBtns: {
         [key: string]: boolean;
@@ -23,10 +24,10 @@ type PropType = {
 };
 
 const statusMessages: Record<string, string> = {
-    upcoming: "Book Meeting",
-    completed: "Meeting has ended.",
-    ongoing: "Meeting is started.",
-    expired: "Meeting time has expired.",
+    [RegisterSlotStatus.Upcoming]: "Book Meeting",
+    [RegisterSlotStatus.Completed]: "Meeting has ended.",
+    [RegisterSlotStatus.Ongoing]: "Meeting is started.",
+    [RegisterSlotStatus.Expired]: "Meeting time has expired.",
 };
 
 const CAT = (prop: PropType) => {
@@ -39,7 +40,7 @@ const CAT = (prop: PropType) => {
 
 export default CAT;
 
-function TooltipCATButton({filterType, status, isBooked, loadingBtns, handleLoadingBtns, meetingSlotId }: PropType) {
+function TooltipCATButton({ filterType, status, isBooked, loadingBtns, handleLoadingBtns, meetingSlotId }: PropType) {
 
     const [isMeetingBooked, setIsMeetingBooked] = useState<boolean>(isBooked);
 
@@ -73,16 +74,16 @@ function TooltipCATButton({filterType, status, isBooked, loadingBtns, handleLoad
                             ? <LoadingSpinner />
                             : <Button
                                 variant="default"
-                                disabled={ filterType === 'bookedMine' || loadingBtns[meetingSlotId] || status !== "upcoming"}
+                                disabled={filterType === 'bookedMine' || loadingBtns[meetingSlotId] || status !== RegisterSlotStatus.Upcoming}
                                 onClick={() => isMeetingBooked ? handleRemoveBooking() : handleBooking()}
-                                className="w-full bg-gray-700 rounded-xl text-base font-medium flex items-center justify-center gap-2 group hover:bg-gray-800 transition-all"
+                                className="w-full bg-gray-700 rounded-xl text-white text-base font-medium flex items-center justify-center gap-2 group hover:bg-gray-800 transition-all"
                             >
                                 <Plus className="h-4 w-4 group-hover:scale-110 transition-transform" />
                                 {isMeetingBooked ? "Remove Meeting " : "Book Meeting"}
                             </Button>
                     }
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent className="bg-gray-800 text-white text-sm p-2 rounded-lg">
                     <p>{message}</p>
                 </TooltipContent>
             </Tooltip>

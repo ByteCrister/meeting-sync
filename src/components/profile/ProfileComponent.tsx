@@ -41,19 +41,6 @@ const LoadingButtonState: LoadingButtonStateType = {
   'image': false,
 }
 
-// const initialProfileData: ProfileData = {
-//   username: 'John Doe',
-//   title: 'Senior Software Engineer',
-//   timeZone: 'UTC+5:30',
-//   profession: 'Software Engineer.',
-//   image: 'https://i.pravatar.cc/300',
-//   followers: 245,
-//   following: 189,
-//   bookedSlots: 156,
-//   registeredSlots: 89,
-// };
-
-
 
 export default function ProfileComponent() {
   const { user } = useAppSelector(state => state.userStore);
@@ -87,8 +74,6 @@ export default function ProfileComponent() {
     setImagePreview(croppedImage);
     updateProfileField('image', croppedImage);
   };
-
-
 
   // * Change button loading
   const handleLoadingChange = (field: ('title' | 'timeZone' | 'username' | 'image' | 'profession'), isLoading: boolean) => {

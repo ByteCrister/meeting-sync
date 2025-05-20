@@ -35,11 +35,18 @@ function TooltipTrigger({
 }
 
 function TooltipContent({
-  className,
+  className = "",
   sideOffset = 0,
   children,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+  // Extract the background color class from className or fallback to bg-primary
+  // You can make this smarter if you use more dynamic colors
+  const bgClass =
+    className.match(/bg-[\w-]+/)?.[0] || "bg-primary";
+  const fillClass =
+    className.match(/fill-[\w-]+/)?.[0] || bgClass.replace("bg-", "fill-");
+
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
@@ -52,7 +59,7 @@ function TooltipContent({
         {...props}
       >
         {children}
-        <TooltipPrimitive.Arrow className="bg-primary fill-primary z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]" />
+        <TooltipPrimitive.Arrow className={cn(bgClass, fillClass, "z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]")} />
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   )

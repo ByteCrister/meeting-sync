@@ -18,7 +18,7 @@ const StatCard = ({ title, value }: { title: string; value: number }) => (
         <div className="bg-gray-100 p-3 rounded-full shadow-md">
             {iconMap[title] || <Users className="text-gray-400" size={28} />}
         </div>
-        <h3 className="text-3xl font-bold text-gray-800"><NumberTicker value={value} /></h3>
+        <NumberTicker value={value} className="text-3xl font-bold text-gray-800" />
         <p className="text-gray-600 text-sm font-medium tracking-wide">{title}</p>
     </motion.div>
 );

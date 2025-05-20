@@ -96,10 +96,13 @@ const NotificationIcon = () => {
     <div className="relative">
       <Popover>
         <PopoverTrigger asChild>
-          <button onClick={handleRefreshCount} className="relative p-2 rounded-full hover:bg-blue-100/40 transition cursor-pointer">
+          <button
+            onClick={handleRefreshCount}
+            className="relative p-2 rounded-full hover:bg-blue-100/40 transition cursor-pointer"
+          >
             <Bell className="w-6 h-6 text-gray-700" />
             {user?.countOfNotifications !== 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-medium w-5 h-5 flex items-center justify-center rounded-full shadow">
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[0.65rem] font-medium w-5 h-5 flex items-center justify-center rounded-full shadow">
                 {user?.countOfNotifications}
               </span>
             )}
@@ -109,15 +112,15 @@ const NotificationIcon = () => {
         <PopoverContent
           align="end"
           sideOffset={8}
-          className="w-[22rem] rounded-xl border shadow-lg bg-white p-0 z-50 overflow-x-hidden"
+          className="w-[80vw] sm:w-[20rem] max-w-sm translate-x-3 sm:translate-x-0 rounded-xl border shadow-lg bg-white p-0 z-50 overflow-x-hidden"
         >
           <div className="p-4 border-b">
-            <h3 className="text-lg font-semibold text-gray-800">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800">
               Notifications
             </h3>
           </div>
 
-          <div className="max-h-96 overflow-y-auto divide-y divide-gray-100">
+          <div className="max-h-[70vh] overflow-y-auto divide-y divide-gray-100">
             {notifications?.map((notification, index) => (
               <NotificationCard
                 key={notification._id + notification.createdAt + index}
@@ -125,11 +128,15 @@ const NotificationIcon = () => {
                 notification={notification}
               />
             ))}
-            {notifications?.length === 0 && <div className="h-96 flex items-center justify-center divide-gray-100">You have no notifications.</div>}
+            {notifications?.length === 0 && (
+              <div className="h-40 flex items-center justify-center text-sm text-gray-500">
+                You have no notifications.
+              </div>
+            )}
           </div>
 
-          <div className="p-4 border-t text-center">
-            <div className="h-[1.5rem]"></div>
+          <div className="p-4 border-t text-center text-sm text-gray-500">
+            End of notifications
           </div>
         </PopoverContent>
       </Popover>

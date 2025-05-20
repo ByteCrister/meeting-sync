@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from './utils/server/verifyToken';
 
-const PUBLIC_ROUTES = ['/', '/user-authentication', '/searched-profile']
+const PUBLIC_ROUTES = ['/', '/user-authentication', '/searched-profile', '/meeting-post-feed', '/followers', '/following', '/my-slots', '/popular', '/trending', '/booked-meetings', '/video-meeting'];
 const PUBLIC_API_ROUTES = [
     '/api/auth/user/auth-forgot-password',
     '/api/auth/user/auth-signup',
@@ -9,64 +9,90 @@ const PUBLIC_API_ROUTES = [
     '/api/auth/user/signin',
     '/api/auth/user/signup',
     '/api/auth/user/user-otp',
-    '/api/auth/status',
 ];
-
-const API_PREFIX = '/api'
+const ALWAYS_ALLOWED_AUTH_ROUTES = [
+    '/api/auth/user/logout',
+];
+const API_PREFIX = '/api';
 
 function isAuthPage(pathname: string) {
-    return PUBLIC_ROUTES.includes(pathname)
+    return PUBLIC_ROUTES.includes(pathname);
 }
 
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function isPublicApi(pathname: string) {
-    return PUBLIC_API_ROUTES.includes(pathname)
+    return PUBLIC_API_ROUTES.includes(pathname);
 }
 
 function isApiRoute(pathname: string) {
-    return pathname.startsWith(API_PREFIX)
+    return pathname.startsWith(API_PREFIX);
 }
 
 export async function middleware(request: NextRequest) {
-    const token = request.cookies.get(process.env.NEXT_TOKEN!)?.value || ''
-    // console.log('[Middleware] Token seen:', token);
-    const { pathname } = request.nextUrl
+    const { pathname } = request.nextUrl;
+    const isApi = isApiRoute(pathname);
+    const isPublicApiRoute = isPublicApi(pathname);
+    const isPublicPage = isAuthPage(pathname);
 
-    let isAuthenticated = false
+    let isAuthenticated = false;
+    const token = request.cookies.get(process.env.NEXT_TOKEN!)?.value || '';
 
-    try {
-        const payload = await verifyToken(token)
-        isAuthenticated = !!payload        
-        // console.log('[Middleware] Decoded token:', payload);
-    } catch (err) {
-        console.error('[Middleware] Token verification failed:', err);
-        isAuthenticated = false;
+    if (token) {
+        try {
+            const payload = await verifyToken(token);
+            isAuthenticated = !!payload;
+        } catch (err) {
+            console.warn('[Middleware] Invalid token:', err);
+            isAuthenticated = false;
+        }
     }
 
+    // 🔒 1. Block authenticated users from hitting auth-related public APIs
+    if (isAuthenticated
+        && isApi
+        && isPublicApiRoute
+        && !ALWAYS_ALLOWED_AUTH_ROUTES.includes(pathname)
+    ) {
+        return new NextResponse(
+            JSON.stringify({ error: 'Already authenticated. Access denied.' }),
+            {
+                status: 403,
+                headers: { 'Content-Type': 'application/json' },
+            }
+        );
+    }
 
-    // Protected App Routes
-    if (!isAuthenticated && !isAuthPage(pathname) && !isApiRoute(pathname)) {
-        return NextResponse.redirect(new URL('/user-authentication', request.url))
+    // 🔒 2. Block unauthenticated users from protected APIs
+    if (!isAuthenticated && isApi && !isPublicApiRoute) {
+        return new NextResponse(
+            JSON.stringify({ error: 'Unauthorized access to API route' }),
+            {
+                status: 401,
+                headers: { 'Content-Type': 'application/json' },
+            }
+        );
+    }
+
+    // 🔒 3. Block unauthenticated users from protected pages
+    if (!isAuthenticated && !isApi && !isPublicPage) {
+        return NextResponse.redirect(new URL('/user-authentication', request.url));
+    }
+
+    // 🔁 4. Redirect authenticated users away from login page
+    if (!isAuthenticated && !isApi && !isPublicPage) {
+        const redirectUrl = new URL('/user-authentication', request.url);
+        redirectUrl.searchParams.set('redirect', pathname); // ✅ capture previous page
+        return NextResponse.redirect(redirectUrl);
     }
 
     if (isAuthenticated && pathname === '/user-authentication') {
-        const referer = request.headers.get('referer') || '/'
-        return NextResponse.redirect(new URL(referer, request.url))
+        const redirectTarget = request.nextUrl.searchParams.get('redirect') || '/';
+        return NextResponse.redirect(new URL(redirectTarget, request.url));
     }
 
-    //Protected API Routes
-    // if (isApiRoute(pathname) && !isAuthenticated && !isPublicApi(pathname)) {
-    //     console.log('Protected API Routes error*****');
-    //     return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
-    //         status: 401,
-    //         headers: { 'Content-Type': 'application/json' },
-    //     })
-    // }
 
-    return NextResponse.next()
+    return NextResponse.next();
 }
 
 export const config = {
-    matcher: ['/((?!_next|favicon.ico).*)'], // Intercepts all except Next internals
-}
+    matcher: ['/((?!_next|favicon.ico).*)'],
+};

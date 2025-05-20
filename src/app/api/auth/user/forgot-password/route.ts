@@ -32,7 +32,7 @@ export const POST = async (req: NextRequest) => {
         const token = jwt.sign(tokenPayload, process.env.JWT_SECRET as string, { expiresIn: '30d' });
 
         // Set response with token in cookies
-        const response = NextResponse.json({ message: 'Password Updated Successfully.' }, { status: 201 });
+        const response = NextResponse.json({ success: true, message: 'Password Updated Successfully.' }, { status: 201 });
         response.cookies.set(process.env.NEXT_TOKEN as string, token, {
             httpOnly: false,
             secure: false, // true for production with HTTPS

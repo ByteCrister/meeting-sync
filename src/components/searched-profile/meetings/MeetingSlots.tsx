@@ -18,6 +18,8 @@ import { convertTimeBetweenTimeZones } from '@/utils/client/date-formatting/conv
 import { convertDateTimeBetweenTimeZones } from '@/utils/client/date-formatting/convertDateTimeBetweenTimeZones';
 import { calculateTimeDurationByConvertedTimes } from '@/utils/client/date-formatting/calculateTimeDurationByConvertedTimes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RegisterSlotStatus } from '../../../types/client-types';
+
 
 interface BookedMeeting {
   _id: string;
@@ -27,14 +29,14 @@ interface BookedMeeting {
   durationFrom: string;
   durationTo: string;
   participants: number;
-  status: "upcoming" | "ongoing" | "completed" | "expired";
+  status: RegisterSlotStatus;
   category: string;
   createdAt: string;
   isBooked: boolean;
 }
 
 
-export const MeetingSlots = ({ userId, userTimeZone }: { userId: string; userTimeZone: string }) => {
+export const MeetingSlots = ({ userId, userTimeZone, setMeetingCount }: { userId: string; userTimeZone: string, setMeetingCount: (count: number) => void }) => {
   const currentUserTimeZone = useAppSelector(state => state.userStore.user?.timeZone);
   const [isLoading, setIsLoading] = useState(true);
   const [allMeetings, setAllMeetings] = useState<BookedMeeting[]>([]);
@@ -55,8 +57,11 @@ export const MeetingSlots = ({ userId, userTimeZone }: { userId: string; userTim
     const responseData = await getSearchedUser(userId, ApiSPType.GET_USER_MEETINGS, filterType) as GetSearchedUserResponse<BookedMeeting[]>;
     const { data, success } = responseData as { data: BookedMeeting[], success: boolean, uniqueCategories: string[] };
     if (success && !isEqual(data, meetings)) {
-      setAllMeetings(data);
-      setMeetings(data);
+      const sorted = sortMeetingsByDate([...data], sortOrder);
+      setAllMeetings(sorted);
+      const filtered = filterMeetingsByCategory(sorted, selectedCategory);
+      setMeetings(filtered);
+      setMeetingCount(filtered.length || 0);
       setUniqueCategories(responseData.uniqueCategories || []);
     }
     setIsLoading(false);
@@ -67,45 +72,27 @@ export const MeetingSlots = ({ userId, userTimeZone }: { userId: string; userTim
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, filterType]);
 
-  // Apply filtering and sorting
-  useEffect(() => {
-    let filtered = [...allMeetings];
-
-    if (selectedCategory !== 'all' && selectedCategory !== '') {
-      filtered = filtered.filter(m => m.category === selectedCategory);
-    }
-
-    filtered.sort((a, b) => {
-      const dateA = new Date(a.meetingDate).getTime();
-      const dateB = new Date(b.meetingDate).getTime();
-      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-    });
-
-    setMeetings(filtered);
-  }, [sortOrder, selectedCategory, allMeetings]);
-
-
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: RegisterSlotStatus) => {
     switch (status) {
-      case 'upcoming':
+      case RegisterSlotStatus.Upcoming:
         return (
           <Badge className="bg-blue-100 text-blue-700 border border-blue-300 shadow-sm">
             Upcoming
           </Badge>
         );
-      case 'completed':
+      case RegisterSlotStatus.Completed:
         return (
           <Badge className="bg-green-100 text-green-700 border border-green-300 shadow-sm">
             Completed
           </Badge>
         );
-      case 'ongoing':
+      case RegisterSlotStatus.Ongoing:
         return (
           <Badge className="bg-green-100 text-gray-500 border border-gray-400 shadow-sm">
             Ongoing
           </Badge>
         );
-      case 'expired':
+      case RegisterSlotStatus.Expired:
         return (
           <Badge className="bg-red-100 text-red-700 border border-red-300 shadow-sm">
             Expired
@@ -120,14 +107,13 @@ export const MeetingSlots = ({ userId, userTimeZone }: { userId: string; userTim
     const nextOrder = sortOrder === 'asc' ? 'desc' : 'asc';
     setSortOrder(nextOrder);
 
-    setMeetings((prev) => {
-      return [...prev].sort((a, b) => {
-        const dateA = new Date(a.meetingDate).getTime();
-        const dateB = new Date(b.meetingDate).getTime();
-        return nextOrder === 'asc' ? dateA - dateB : dateB - dateA;
-      });
-    });
+    const sortedAll = sortMeetingsByDate([...allMeetings], nextOrder);
+    setAllMeetings(sortedAll);
+
+    const filtered = filterMeetingsByCategory(sortedAll, selectedCategory);
+    setMeetings(filtered);
   };
+
 
   const handleLoadingBtns = (
     meetingSlotId: string,
@@ -146,30 +132,55 @@ export const MeetingSlots = ({ userId, userTimeZone }: { userId: string; userTim
 
   const handleFilterChange = async (value: string) => {
     setSelectedCategory(value);
-  }
+    const filtered = filterMeetingsByCategory([...allMeetings], value);
+    const sorted = sortMeetingsByDate(filtered, sortOrder);
+    setMeetings(sorted);
+  };
+
+  const sortMeetingsByDate = (data: BookedMeeting[], order: 'asc' | 'desc') => {
+    return [...data].sort((a, b) => {
+      const dateA = new Date(a.meetingDate).getTime();
+      const dateB = new Date(b.meetingDate).getTime();
+      return order === 'asc' ? dateA - dateB : dateB - dateA;
+    });
+  };
+
+  const filterMeetingsByCategory = (data: BookedMeeting[], category: string) => {
+    if (category === 'all' || category === '') return data;
+    return data.filter(m => m.category === category);
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold tracking-tight">Booked Meetings</h2>
+      <div className="flex flex-col md:flex-row justify-between md:items-center gap-3.5 mb-4">
+        <h2 className="text-xl font-bold text-gray-700 tracking-tight">Meetings</h2>
         <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2">
-          <div className="flex flex-wrap gap-2">
-            <Select value={filterType} onValueChange={(val) => setFilterType(val as "all" | "bookedByMe" | "bookedMine")}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter Meetings" />
+          <div className="flex flex-col md:flex-row gap-2">
+            <Select name='select-meeting-sort' value={filterType} onValueChange={(val) => setFilterType(val as "all" | "bookedByMe" | "bookedMine")}>
+              <SelectTrigger id='select-meeting-sort-trigger' className="w-full focus:outline-none focus:ring-0">
+                <SelectValue id='select-meeting-sort-value' placeholder="Filter Meetings" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Meetings</SelectItem>
-                <SelectItem value="bookedByMe">Meetings I’ve Booked</SelectItem>
-                <SelectItem value="bookedMine">Meetings of Searched User Booked Mine</SelectItem>
+              <SelectContent id='select-meeting-sort-content' className='bg-white'>
+                {
+                  [{ value: 'all', label: 'All Meetings' },
+                  { value: 'bookedByMe', label: "Meetings I've Booked" },
+                  { value: 'bookedMine', label: "Meetings of Searched User Booked Mine" }
+                  ].map((option) => (
+                    <SelectItem key={option.value}
+                      value={option.value}
+                      className={filterType === option.value ? "text-gray-600" : ""}
+                    >
+                      {option.label}
+                    </SelectItem>
+                  ))
+                }
               </SelectContent>
             </Select>
-
-            <Select value={selectedCategory} onValueChange={(val) => handleFilterChange(val)}>
-              <SelectTrigger className="w-48">
+            <Select name='select-by-categories' value={selectedCategory} onValueChange={(val) => handleFilterChange(val)}>
+              <SelectTrigger className="w-full focus:outline-none focus:ring-0">
                 <SelectValue placeholder="Select Category" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className='bg-white'>
                 <SelectItem value="all">All Categories</SelectItem>
                 {uniqueCategories.map(category => (
                   <SelectItem key={category} value={category}>
@@ -180,22 +191,24 @@ export const MeetingSlots = ({ userId, userTimeZone }: { userId: string; userTim
             </Select>
           </div>
           <Button
+            id='sort-by-date'
+            name='sort-by-date'
             onClick={toggleSort}
             variant="ghost"
             className={`
     group
     relative
     flex items-center gap-1 text-sm font-medium
-    text-gray-500 dark:text-gray-400
+    text-gray-500
     hover:text-primary transition-colors duration-300
     px-3 py-1.5 rounded-lg
-    border border-transparent hover:border-gray-300 dark:hover:border-gray-600
+    border border-transparent hover:border-gray-300
     shadow-sm hover:shadow-md
-    bg-transparent hover:bg-gray-100/60 dark:hover:bg-gray-800/50
+    bg-transparent
     backdrop-blur-sm
   `}
           >
-            <span className="relative z-10">Created At</span>
+            <span className="relative z-10">Meeting At</span>
             <motion.div
               key={sortOrder}
               initial={{ y: -4, opacity: 0 }}
@@ -276,12 +289,12 @@ export const MeetingSlots = ({ userId, userTimeZone }: { userId: string; userTim
                     </div>
 
                     {/* CTA Button */}
-                    <CAT filterType={filterType} status={meeting.status} isBooked={meeting.isBooked} loadingBtns={loadingBtns} handleLoadingBtns={handleLoadingBtns} meetingSlotId={meeting._id} />
+                    <CAT key={`cat-index-${index}`} filterType={filterType} status={meeting.status} isBooked={meeting.isBooked} loadingBtns={loadingBtns} handleLoadingBtns={handleLoadingBtns} meetingSlotId={meeting._id} />
                   </div>
                 </Card>
               </motion.div>
             )) : (
-              <div className="w-full text-center py-6 text-muted-foreground text-sm italic">
+              <div className="w-full text-center py-6 text-muted-foreground text-sm italic text-gray-700">
                 User has no meetings yet.
               </div>
             )

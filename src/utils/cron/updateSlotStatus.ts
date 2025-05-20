@@ -9,6 +9,7 @@ import { emailAuthentication } from "@/config/NodeEmailer";
 import { DateTime } from "luxon"; // Make sure to install this package
 import { handleCreateVideoCallDirectly } from "../server/handleCreateVideoCallDirectly";
 import { handleDeleteVideoCallDirectly } from "../server/handleDeleteVideoCallDirectly";
+import getNotificationExpiryDate from "../server/getNotificationExpiryDate";
 
 declare global {
     // eslint-disable-next-line no-var
@@ -155,7 +156,7 @@ export async function updateSlotStatuses() {
                         isRead: false,
                         isClicked: false,
                         createdAt: new Date(),
-                        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                        expiresAt: getNotificationExpiryDate(30),
                     };
 
                     const notificationDoc = new NotificationsModel(baseNotification);

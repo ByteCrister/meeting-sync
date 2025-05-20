@@ -13,7 +13,7 @@ export const getSearchedUser = async (
     filterType?: string,
 ): Promise<GetSearchedUserResponse> => {
     try {
-        const response = await axios.get(`/api/searched-profile?searched_user_id=${userId}&type=${apiType}&filterType=${filterType}`, { withCredentials: true });
+        const response = await axios.get(`/api/searched-profile`, { withCredentials: true, params: { searched_user_id: userId, type: apiType, filterType } });
         return { success: true, data: response.data.data, uniqueCategories: response?.data?.uniqueCategories || [] };
     } catch (error: unknown) {
         if (error instanceof AxiosError) {

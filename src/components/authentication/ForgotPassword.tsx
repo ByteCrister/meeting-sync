@@ -50,7 +50,7 @@ const ForgotPassword = ({ setPageState, setUserInfo, userInfo, isEmailChecked }:
                         email: values.email,
                         password: userInfo?.password || "",
                     };
-                    const resData = await apiService.post(`/api/user/auth-forgot-password`, data);
+                    const resData = await apiService.post(`/api/auth/user/auth-forgot-password`, data);
                     if (resData.success) {
                         setUserInfo(updatedUserInfo);
                         setPageState(1);
@@ -70,6 +70,7 @@ const ForgotPassword = ({ setPageState, setUserInfo, userInfo, isEmailChecked }:
                 window.location.href = '/';
             }, 2000);
         }
+        setIsButtonLoading(true);
     };
 
     const getValidationString = (field: keyof typeof formik.initialValues): JSX.Element => {

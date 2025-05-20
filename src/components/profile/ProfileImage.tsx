@@ -10,7 +10,7 @@ type ProfileImageTypes = {
     handleImageClick: () => void;
     handleFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
     isLoading: boolean
-    fileInputRef: React.RefObject<HTMLInputElement | null>
+    fileInputRef: React.RefObject<HTMLInputElement>
 }
 
 const ProfileImage = ({ value, handleImageClick, handleFileChange, fileInputRef, isLoading }: ProfileImageTypes) => {
