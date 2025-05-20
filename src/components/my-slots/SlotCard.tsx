@@ -6,7 +6,6 @@ import { Sparkles } from "lucide-react";
 import { useCallback } from "react";
 import { registerSlot, RegisterSlotStatus } from "@/types/client-types";
 import SlotOption from "./SlotOption";
-import { createVideoCall } from '@/utils/client/api/api-video-meeting-call';
 import BookUsersPopover from './BookUsersPopover';
 import { useRouter } from 'next/navigation';
 
@@ -46,10 +45,7 @@ export const formatDateStringToDateYear = (dateString?: string) => {
 const SlotCard = ({ slot, isSearchedSlot }: { slot: registerSlot, isSearchedSlot: boolean }) => {
     const router = useRouter();
     const handleStartVideoMeeting = useCallback(async () => {
-        const resData = await createVideoCall(slot._id);
-        if (resData.success) {
-            router.push(`/video-meeting?meetingId=${slot._id}`);
-        }
+        router.push(`/video-meeting?roomId=${slot._id}`);
     }, [router, slot._id])
 
     return (
@@ -105,20 +101,15 @@ const SlotCard = ({ slot, isSearchedSlot }: { slot: registerSlot, isSearchedSlot
                     </div>
 
                     {/* Start Meeting button */}
-                    {
-                        slot.status === RegisterSlotStatus.Ongoing && (
-                            <button
-                                id="start-meeting"
-                                onClick={handleStartVideoMeeting}
-                                className="w-full md:w-auto md:max-w-[180px] inline-flex items-center justify-center rounded-lg px-6 py-2 text-sm font-semibold shadow-sm transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
-                            >
-                                Start Meeting
-                            </button>
-                        )
-                    }
+                    <button
+                        id="start-meeting"
+                        disabled={slot.status !== RegisterSlotStatus.Ongoing}
+                        onClick={handleStartVideoMeeting}
+                        className="w-full md:w-auto md:max-w-[180px] inline-flex items-center justify-center rounded-lg px-6 py-2 text-sm font-semibold shadow-sm transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+                    >
+                        Start Meeting
+                    </button>
                 </div>
-
-
             </div>
         </motion.div>
     );
