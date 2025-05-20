@@ -35,6 +35,43 @@ interface BookedMeeting {
   isBooked: boolean;
 }
 
+const normalizeMeetingsToUserTimeZone = (
+  meetings: BookedMeeting[],
+  fromTZ: string,
+  toTZ: string
+): BookedMeeting[] => {
+  return meetings.map((meeting) => {
+    const convertedDateTime = convertDateTimeBetweenTimeZones(
+      fromTZ,
+      toTZ,
+      meeting.meetingDate,
+      meeting.durationFrom
+    );
+
+    const convertedTimeFrom = convertTimeBetweenTimeZones(
+      fromTZ,
+      toTZ,
+      meeting.meetingDate,
+      meeting.durationFrom
+    );
+
+    const convertedTimeTo = convertTimeBetweenTimeZones(
+      fromTZ,
+      toTZ,
+      meeting.meetingDate,
+      meeting.durationTo
+    );
+
+    return {
+      ...meeting,
+      meetingDate: convertedDateTime,
+      durationFrom: convertedTimeFrom,
+      durationTo: convertedTimeTo,
+    };
+  });
+};
+
+
 
 export const MeetingSlots = ({ userId, userTimeZone, setMeetingCount }: { userId: string; userTimeZone: string, setMeetingCount: (count: number) => void }) => {
   const currentUserTimeZone = useAppSelector(state => state.userStore.user?.timeZone);
@@ -57,7 +94,8 @@ export const MeetingSlots = ({ userId, userTimeZone, setMeetingCount }: { userId
     const responseData = await getSearchedUser(userId, ApiSPType.GET_USER_MEETINGS, filterType) as GetSearchedUserResponse<BookedMeeting[]>;
     const { data, success } = responseData as { data: BookedMeeting[], success: boolean, uniqueCategories: string[] };
     if (success && !isEqual(data, meetings)) {
-      const sorted = sortMeetingsByDate([...data], sortOrder);
+      const converted = normalizeMeetingsToUserTimeZone(data, userTimeZone, currentUserTimeZone!);
+      const sorted = sortMeetingsByDate([...converted], sortOrder);
       setAllMeetings(sorted);
       const filtered = filterMeetingsByCategory(sorted, selectedCategory);
       setMeetings(filtered);
@@ -107,11 +145,21 @@ export const MeetingSlots = ({ userId, userTimeZone, setMeetingCount }: { userId
     const nextOrder = sortOrder === 'asc' ? 'desc' : 'asc';
     setSortOrder(nextOrder);
 
+    // Update All Meetings, used as main data source
     const sortedAll = sortMeetingsByDate([...allMeetings], nextOrder);
     setAllMeetings(sortedAll);
 
+    // Update Meetings, used as displayed data
     const filtered = filterMeetingsByCategory(sortedAll, selectedCategory);
     setMeetings(filtered);
+    setCurrentPage(1);
+
+    console.log(`Sorted into ${nextOrder}`);
+    console.table(filtered.map(f => ({
+      title: f.title,
+      meetingDate: f.meetingDate
+    })));
+
   };
 
 
@@ -264,7 +312,7 @@ export const MeetingSlots = ({ userId, userTimeZone, setMeetingCount }: { userId
                             <span>
                               {meeting.meetingDate ? (
                                 DateTime.fromISO(
-                                  convertDateTimeBetweenTimeZones(userTimeZone, currentUserTimeZone, meeting.meetingDate, meeting.durationFrom)
+                                  meeting.meetingDate,
                                 ).toFormat('ccc, LLL d')
                               ) : (
                                 'Meeting Date Unavailable'
@@ -277,7 +325,7 @@ export const MeetingSlots = ({ userId, userTimeZone, setMeetingCount }: { userId
                       <div className="flex items-center">
                         <Clock className="mr-2 h-4 w-4 text-primary" />
                         <span>
-                          {convertTimeBetweenTimeZones(currentUserTimeZone!, userTimeZone, meeting.meetingDate, meeting.durationFrom)}
+                          {meeting.durationFrom}
                           ({
                             calculateTimeDurationByConvertedTimes(currentUserTimeZone!, userTimeZone, meeting.meetingDate, meeting.durationFrom, meeting.durationTo)
                           })</span>
