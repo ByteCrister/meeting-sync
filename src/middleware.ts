@@ -1,7 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from './utils/server/verifyToken';
 
-const PUBLIC_ROUTES = ['/', '/user-authentication', '/searched-profile', '/meeting-post-feed', '/followers', '/following', '/my-slots', '/popular', '/trending', '/booked-meetings', '/video-meeting'];
+const PUBLIC_ROUTES = [
+    '/',
+    '/user-authentication',
+    '/searched-profile',
+    '/meeting-post-feed',
+    '/followers',
+    '/following',
+    '/my-slots',
+    '/popular',
+    '/trending',
+    '/booked-meetings',
+    '/video-meeting'
+];
+
 const PUBLIC_API_ROUTES = [
     '/api/auth/user/auth-forgot-password',
     '/api/auth/user/auth-signup',
@@ -10,6 +23,7 @@ const PUBLIC_API_ROUTES = [
     '/api/auth/user/signup',
     '/api/auth/user/user-otp',
 ];
+
 const ALWAYS_ALLOWED_AUTH_ROUTES = [
     '/api/auth/user/logout',
 ];
@@ -46,14 +60,14 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // 🔒 1. Block authenticated users from hitting auth-related public APIs
+    // 1. Block authenticated users from hitting auth-related public APIs
     if (isAuthenticated
         && isApi
         && isPublicApiRoute
         && !ALWAYS_ALLOWED_AUTH_ROUTES.includes(pathname)
     ) {
         return new NextResponse(
-            JSON.stringify({ error: 'Already authenticated. Access denied.' }),
+            JSON.stringify({ message: 'Already authenticated. Access denied.' }),
             {
                 status: 403,
                 headers: { 'Content-Type': 'application/json' },
@@ -61,10 +75,10 @@ export async function middleware(request: NextRequest) {
         );
     }
 
-    // 🔒 2. Block unauthenticated users from protected APIs
+    // 2. Block unauthenticated users from protected APIs
     if (!isAuthenticated && isApi && !isPublicApiRoute) {
         return new NextResponse(
-            JSON.stringify({ error: 'Unauthorized access to API route' }),
+            JSON.stringify({ message: 'Unauthorized access to API route' }),
             {
                 status: 401,
                 headers: { 'Content-Type': 'application/json' },
@@ -72,15 +86,15 @@ export async function middleware(request: NextRequest) {
         );
     }
 
-    // 🔒 3. Block unauthenticated users from protected pages
+    // 3. Block unauthenticated users from protected pages
     if (!isAuthenticated && !isApi && !isPublicPage) {
         return NextResponse.redirect(new URL('/user-authentication', request.url));
     }
 
-    // 🔁 4. Redirect authenticated users away from login page
+    // 4. Redirect authenticated users away from login page
     if (!isAuthenticated && !isApi && !isPublicPage) {
         const redirectUrl = new URL('/user-authentication', request.url);
-        redirectUrl.searchParams.set('redirect', pathname); // ✅ capture previous page
+        redirectUrl.searchParams.set('redirect', pathname); // capture previous page
         return NextResponse.redirect(redirectUrl);
     }
 

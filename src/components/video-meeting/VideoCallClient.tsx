@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import MeetingNotStarted from "../errors/MeetingNotStarted";
 import FullPageError from "../errors/FullPageError";
 import useVideoSocket from "@/hooks/useVideoSocket";
-import { setMeetingDetails } from "@/lib/features/videoMeeting/videoMeetingSlice";
+import { setMeetingDetails, VideoCallStatus } from "@/lib/features/videoMeeting/videoMeetingSlice";
 
 export default function VideoCallClient() {
     const searchParams = useSearchParams();
@@ -23,7 +23,7 @@ export default function VideoCallClient() {
     const remoteStreamsRef = useRef<{ [userId: string]: MediaStream }>({});
     const [remoteUsers, setRemoteUsers] = useState<{ [userId: string]: MediaStream }>({});
     const [videoCallStatus, setVideoCallStatus] = useState<VideoCallErrorTypes | null>(null);
-    const [JoinStatus, setJoinStatus] = useState<IVideoCallStatus | null>(null);
+    const JoinStatus = useAppSelector((state) => state.videoCallStore.status);
     useVideoSocket(roomId || "");
 
     useEffect(() => {
@@ -39,7 +39,6 @@ export default function VideoCallClient() {
 
             const joinStatusData = await joinVideoCall(roomId);
             if (joinStatusData.success && joinStatusData?.meetingStatus === IVideoCallStatus.WAITING) {
-                setJoinStatus(joinStatusData.meetingStatus);
                 return;
             } else if (joinStatusData.success && joinStatusData?.meeting) {
                 setMeetingDetails(joinStatusData.meeting);
@@ -139,14 +138,14 @@ export default function VideoCallClient() {
             peersRef.current = {};
             remoteStreamsRef.current = {};
         };
-    }, [roomId, userId]);
+    }, [roomId, userId, JoinStatus]);
 
     if (videoCallStatus === VideoCallErrorTypes.USER_NOT_FOUND) return <FullPageError message="User not found. Please try to signin again." />
     if (videoCallStatus === VideoCallErrorTypes.MEETING_NOT_FOUND) return <FullPageError message="Meeting is not valid. Meeting maybe removed or Room ID is incorrect." />
     if (videoCallStatus === VideoCallErrorTypes.MEETING_ENDED) return <FullPageError message="The meeting is ended." />
     if (videoCallStatus === VideoCallErrorTypes.USER_NOT_PARTICIPANT) return <FullPageError message="You did not booked this meeting." />
     if (videoCallStatus === VideoCallErrorTypes.USER_ALREADY_JOINED) return <FullPageError message="You are already joined in this meeting." />
-    if (JoinStatus === IVideoCallStatus.WAITING) return <MeetingNotStarted />
+    if (JoinStatus === VideoCallStatus.WAITING) return <MeetingNotStarted />
 
     return (
         <div className="grid grid-cols-2 gap-4 p-4">
@@ -166,4 +165,4 @@ export default function VideoCallClient() {
             ))}
         </div>
     );
-}
+};

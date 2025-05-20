@@ -60,7 +60,6 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
 
             socket.on("disconnect", async () => {
                 console.log("__Socket disconnected:", socket.id);
-                // const userId = getUserIdBySocketId(socket.id);
                 removeUserSocket(socket.id);
 
                 try {
@@ -97,6 +96,10 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
             });
 
 
+            socket.on(SocketTriggerTypes.LEAVE_ROOM, ({ roomId, userId }) => {
+                socket.leave(roomId);
+                socket.to(roomId).emit(SocketTriggerTypes.USER_LEAVED, { userId }); // <-- emit to all in the room
+            });
             // * Video Meeting Socket Events
             socket.on(VMSocketTriggerTypes.JOIN_ROOM, ({ roomId, userId }) => {
                 socket.join(roomId);

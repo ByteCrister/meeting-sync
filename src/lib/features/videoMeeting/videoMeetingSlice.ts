@@ -1,6 +1,13 @@
 // store/slices/videoMeetingSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+export enum VideoCallStatus {
+  WAITING = 'waiting',
+  ACTIVE = 'active',
+  ENDED = 'ended',
+  LEAVED = 'leaved',
+}
+
 export interface VideoCallSession {
   joinedAt: string;
   leftAt?: string;
@@ -38,6 +45,7 @@ export interface VideoCallSettings {
 export interface VideoMeetingState {
   meetingId: string;
   hostId: string;
+  status: VideoCallStatus;
   startTime: string;
   endTime?: string;
   participants: VideoCallParticipant[];
@@ -48,6 +56,7 @@ export interface VideoMeetingState {
 const initialVideoState: VideoMeetingState = {
   meetingId: '',
   hostId: '',
+  status: VideoCallStatus.WAITING,
   startTime: new Date().toISOString(),
   participants: [],
   chatMessages: [],
@@ -77,9 +86,14 @@ const videoMeetingSlice = createSlice({
     removeParticipant(state, action: PayloadAction<string>) {
       state.participants = state.participants.filter(p => p.userId !== action.payload);
     },
-
+    setVideoCallStatus(state, action: PayloadAction<VideoCallStatus>) {
+      state.status = action.payload;
+    },
     addChatMessage(state, action: PayloadAction<ChatMessage>) {
       state.chatMessages.push(action.payload);
+    },
+    removeChatMessage(state, action: PayloadAction<string>) {
+      state.chatMessages = state.chatMessages.filter(msg => msg._id !== action.payload);
     },
     updateSettings(state, action: PayloadAction<Partial<VideoCallSettings>>) {
       state.settings = {
@@ -101,7 +115,9 @@ export const {
   addParticipant,
   updateParticipant,
   removeParticipant,
+  setVideoCallStatus,
   addChatMessage,
+  removeChatMessage,
   updateSettings,
   endMeeting,
   resetMeeting,

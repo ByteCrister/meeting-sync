@@ -10,6 +10,7 @@ import NotificationsModel, { INotificationType } from '@/models/NotificationsMod
 import UserModel from '@/models/UserModel';
 import getNotificationExpiryDate from '@/utils/server/getNotificationExpiryDate';
 import { getUserSocketId } from '@/utils/socket/socketUserMap';
+import { triggerRoomSocketEvent } from '@/utils/socket/triggerRoomSocketEvent';
 
 // ? Joining to a video meeting
 export async function GET(req: NextRequest) {
@@ -27,6 +28,8 @@ export async function GET(req: NextRequest) {
 
     try {
         await ConnectDB();
+
+        const user = await UserModel.findById(userId).select('image username');
 
         // * Find the video call only if status is not ended
         const videoCall = await VideoCallModel.findOne({
@@ -62,6 +65,7 @@ export async function GET(req: NextRequest) {
                     isScreenSharing: false,
                     sessions: [{ joinedAt: new Date() }],
                 });
+                triggerRoomSocketEvent({ roomId: meetingId, type: SocketTriggerTypes.END_OF_WAITING, data: { userId } });
             } else {
                 const participant = videoCall.participants.find((p: IVideoCallParticipant) => String(p.userId) === String(userId));
                 participant.socketId = getUserSocketId(userId);
@@ -135,7 +139,7 @@ export async function GET(req: NextRequest) {
                     await videoCall.save();
                 }
 
-                return NextResponse.json({ success: true, message: 'Waiting for host to start the meeting' }, { status: 202 });
+                return NextResponse.json({ success: true, meetingStatus: IVideoCallStatus.WAITING, message: 'Waiting for host to start the meeting' }, { status: 202 });
             }
             const participantIndex = videoCall.participants.findIndex(
                 (p: IVideoCallParticipant) => String(p.userId) === String(userId)
@@ -156,6 +160,20 @@ export async function GET(req: NextRequest) {
                 videoCall.participant.sessions.push({ joinedAt: new Date() });
 
             }
+            triggerRoomSocketEvent({
+                roomId: meetingId,
+                type: SocketTriggerTypes.NEW_PARTICIPANT_JOINED,
+                data: {
+                    userId,
+                    image: user.image,
+                    username: user.username,
+                    socketId: getUserSocketId(userId),
+                    isMuted: false,
+                    isVideoOn: false,
+                    isScreenSharing: false,
+                    sessions: videoCall.participant.sessions
+                }
+            });
             await videoCall.save();
         }
 
@@ -180,6 +198,7 @@ export async function GET(req: NextRequest) {
             meeting: {
                 meetingId: videoCall.meetingId,
                 hostId: videoCall.hostId,
+                status: videoCall.status,
                 startTime: videoCall.startTime,
                 endTime: videoCall.endTime,
                 participants: enrichedParticipants,

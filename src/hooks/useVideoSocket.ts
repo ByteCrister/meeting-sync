@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { getSocket, initiateSocket } from "@/utils/socket/initiateSocket";
 import { initializeServerSocket } from "@/utils/socket/socketInitialized";
 import { SocketTriggerTypes } from "@/utils/constants";
-import { addParticipant } from "@/lib/features/videoMeeting/videoMeetingSlice";
+import { addChatMessage, addParticipant, removeParticipant, setVideoCallStatus, updateSettings, VideoCallStatus } from "@/lib/features/videoMeeting/videoMeetingSlice";
 
 
 const useVideoSocket = (roomId: string) => {
@@ -29,27 +29,29 @@ const useVideoSocket = (roomId: string) => {
                 socket.connect();
             }
 
-            // Remove previous listeners
+            //* Remove previous listeners
             socket.off(SocketTriggerTypes.NEW_PARTICIPANT_JOINED);
-            // socket.off(SocketTriggerTypes.PARTICIPANT_LEFT);
-            // socket.off(SocketTriggerTypes.STREAM_UPDATED);
-            // socket.off(SocketTriggerTypes.CALL_ENDED);
+            socket.off(SocketTriggerTypes.END_OF_WAITING);
+
 
             socket.on(SocketTriggerTypes.NEW_PARTICIPANT_JOINED, (data) => {
                 dispatch(addParticipant(data));
             });
-
-            // socket.on(SocketTriggerTypes.PARTICIPANT_LEFT, (data) => {
-            //     dispatch(removeParticipant(data.userId));
-            // });
-
-            // socket.on(SocketTriggerTypes.STREAM_UPDATED, (data) => {
-            //     dispatch(updateParticipantStream(data));
-            // });
-
-            // socket.on(SocketTriggerTypes.CALL_ENDED, () => {
-            //     dispatch(setCallStatus("ended"));
-            // });
+            socket.on(SocketTriggerTypes.NEW_METING_CHAT_MESSAGE, (data) => {
+                dispatch(addChatMessage(data));
+            });
+            socket.on(SocketTriggerTypes.DELETE_METING_CHAT_MESSAGE, ({ _id }) => {
+                dispatch(addChatMessage(_id));
+            });
+            socket.on(SocketTriggerTypes.CHANGE_MEETING_SETTING, (data) => {
+                dispatch(updateSettings(data));
+            });
+            socket.on(SocketTriggerTypes.END_OF_WAITING, () => {
+                setVideoCallStatus(VideoCallStatus.ACTIVE);
+            });
+            socket.on(SocketTriggerTypes.USER_LEAVED, ({ userId }) => {
+                removeParticipant(userId);
+            });
 
             socket.on("disconnect", (reason) => {
                 console.log("Video socket disconnected", reason);

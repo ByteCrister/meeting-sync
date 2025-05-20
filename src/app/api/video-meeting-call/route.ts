@@ -1,8 +1,9 @@
 import ConnectDB from "@/config/ConnectDB";
 import SlotModel, { ISlot } from "@/models/SlotModel";
 import VideoCallModel, { IVideoCall } from "@/models/VideoCallModel";
-import { IVideoCallStatus, VCallUpdateApiType, VideoCallErrorTypes } from "@/utils/constants";
+import { IVideoCallStatus, SocketTriggerTypes, VCallUpdateApiType, VideoCallErrorTypes } from "@/utils/constants";
 import { getUserIdFromRequest } from "@/utils/server/getUserFromToken";
+import { triggerRoomSocketEvent } from "@/utils/socket/triggerRoomSocketEvent";
 import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -132,20 +133,24 @@ export async function PUT(req: NextRequest) {
                 if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
                 const { message } = data;
-
+                const msgObject = {
+                    userId: new mongoose.Types.ObjectId(userId),
+                    message,
+                    timestamp: new Date(),
+                };
                 await VideoCallModel.updateOne(
                     { meetingId },
                     {
                         $push: {
-                            chatMessages: {
-                                userId: new mongoose.Types.ObjectId(userId),
-                                message,
-                                timestamp: new Date(),
-                            },
+                            chatMessages: msgObject,
                         },
                     }
                 );
-
+                triggerRoomSocketEvent({
+                    roomId: meetingId,
+                    type: SocketTriggerTypes.NEW_METING_CHAT_MESSAGE,
+                    data: msgObject,
+                });
                 break;
             }
 
@@ -168,7 +173,11 @@ export async function PUT(req: NextRequest) {
                 if (result.modifiedCount === 0) {
                     return NextResponse.json({ message: 'Message not found or already removed' }, { status: 404 });
                 }
-
+                triggerRoomSocketEvent({
+                    roomId: meetingId,
+                    type: SocketTriggerTypes.DELETE_METING_CHAT_MESSAGE,
+                    data: { _id },
+                });
                 break;
             }
 
@@ -191,7 +200,11 @@ export async function PUT(req: NextRequest) {
                         },
                     }
                 );
-
+                triggerRoomSocketEvent({
+                    roomId: meetingId,
+                    type: SocketTriggerTypes.CHANGE_MEETING_SETTING,
+                    data: { allowChat, allowRecording, allowScreenShare },
+                });
                 break;
             }
 
@@ -202,6 +215,6 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ success: true, message: 'New response got successfully.' }, { status: 200 });
     } catch (error) {
         console.error(error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
     }
 }
