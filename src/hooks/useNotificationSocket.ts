@@ -50,6 +50,7 @@ const useNotificationSocket = () => {
             // Always remove previous listeners before setting new ones
             socket.off(SocketTriggerTypes.RECEIVED_NOTIFICATION);
             socket.off(SocketTriggerTypes.MEETING_STARTED);
+            socket.off(SocketTriggerTypes.HOST_JOINED);
             socket.off(SocketTriggerTypes.USER_SLOT_BOOKED);
             socket.off(SocketTriggerTypes.INCREASE_BOOKED_USER);
             socket.off(SocketTriggerTypes.DECREASE_BOOKED_USER);

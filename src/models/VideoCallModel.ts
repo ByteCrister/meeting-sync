@@ -1,16 +1,22 @@
 import { IVideoCallStatus } from '@/utils/constants';
+import { calculateAndUpdateEngagement } from '@/utils/server/calculateAndUpdateEngagement';
 import mongoose, { Document, Schema } from 'mongoose';
+
+export interface IVideoCallSession {
+    joinedAt: Date;
+    leftAt?: Date;
+}
 
 export interface IVideoCallParticipant {
     userId: mongoose.Types.ObjectId | string;
     socketId: string;
     isMuted: boolean;
     isVideoOn: boolean;
-    isScreenSharing?: boolean; 
-    joinedAt: Date;
+    isScreenSharing?: boolean;
+    sessions: IVideoCallSession[];
 }
 
-export interface IWaitingParticipants{
+export interface IWaitingParticipants {
     userId: mongoose.Types.ObjectId | string;
     requestedAt: Date;
 }
@@ -24,12 +30,15 @@ export interface IVideoCall extends Document {
     startTime: Date;
     endTime?: Date;
     chatMessages: {
+        _id: mongoose.Types.ObjectId;
         userId: mongoose.Types.ObjectId | string;
         message: string;
         timestamp: Date;
     }[];
     settings: {
+        allowChat: boolean;
         allowScreenShare: boolean;
+        allowRecording: boolean;
     };
 }
 
@@ -75,10 +84,10 @@ const VideoCallSchema = new Schema<IVideoCall>(
                 type: Boolean,
                 default: true,
             },
-            joinedAt: {
-                type: Date,
-                default: Date.now,
-            },
+            sessions: [{
+                joinedAt: { type: Date, default: Date.now },
+                leftAt: { type: Date, default: null },
+            }]
         }],
         status: {
             type: String,
@@ -93,6 +102,10 @@ const VideoCallSchema = new Schema<IVideoCall>(
             type: Date,
         },
         chatMessages: [{
+            _id: {
+                type: mongoose.Schema.Types.ObjectId,
+                default: () => new mongoose.Types.ObjectId(),
+            },
             userId: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'users',
@@ -110,7 +123,15 @@ const VideoCallSchema = new Schema<IVideoCall>(
         settings: {
             allowScreenShare: {
                 type: Boolean,
-                default: true,
+                default: false,
+            },
+            allowRecording: {
+                type: Boolean,
+                default: false,
+            },
+            allowChat: {
+                type: Boolean,
+                default: false,
             }
             // if I want to add more settings, I can do so here
         },
@@ -120,6 +141,11 @@ const VideoCallSchema = new Schema<IVideoCall>(
         versionKey: false,
     }
 );
+
+VideoCallSchema.post("findOneAndUpdate", async function (doc) {
+    if (!doc) return;
+    await calculateAndUpdateEngagement(doc);
+});
 
 const VideoCallModel = mongoose.models.videoCalls || mongoose.model<IVideoCall>('videoCalls', VideoCallSchema);
 export default VideoCallModel; 

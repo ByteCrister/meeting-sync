@@ -1,5 +1,5 @@
 import ConnectDB from '@/config/ConnectDB';
-import VideoCallModel from '@/models/VideoCallModel';
+import VideoCallModel, { IVideoCallParticipant, IVideoCallSession } from '@/models/VideoCallModel';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/utils/server/getUserFromToken';
 import { Types } from 'mongoose';
@@ -9,6 +9,7 @@ import SlotModel from '@/models/SlotModel';
 import NotificationsModel, { INotificationType } from '@/models/NotificationsModel';
 import UserModel from '@/models/UserModel';
 import getNotificationExpiryDate from '@/utils/server/getNotificationExpiryDate';
+import { getUserSocketId } from '@/utils/socket/socketUserMap';
 
 // ? Joining to a video meeting
 export async function GET(req: NextRequest) {
@@ -48,17 +49,23 @@ export async function GET(req: NextRequest) {
                     userId: string | Types.ObjectId;
                     isMuted: boolean;
                     isVideoOn: boolean;
-                    joinedAt: Date;
+                    sessions: IVideoCallSession[];
                 }) => String(p.userId) === String(userId)
             );
 
             if (!alreadyJoined) {
                 videoCall.participants.push({
                     userId,
+                    socketId: getUserSocketId(userId),
                     isMuted: false,
                     isVideoOn: false,
-                    joinedAt: new Date(),
+                    isScreenSharing: false,
+                    sessions: [{ joinedAt: new Date() }],
                 });
+            } else {
+                const participant = videoCall.participants.find((p: IVideoCallParticipant) => String(p.userId) === String(userId));
+                participant.socketId = getUserSocketId(userId);
+                participant?.sessions.push({ joinedAt: new Date() });
             }
 
             // Activate meeting if not already
@@ -70,7 +77,7 @@ export async function GET(req: NextRequest) {
                     triggerSocketEvent({
                         userId: p.userId.toString(),
                         type: SocketTriggerTypes.HOST_JOINED,
-                        notificationData: {slot: meetingId, message: "The Host just started the meeting!" },
+                        notificationData: { slot: meetingId, message: "The Host just started the meeting!" },
                     });
                 });
 
@@ -128,31 +135,59 @@ export async function GET(req: NextRequest) {
                     await videoCall.save();
                 }
 
-                return NextResponse.json({ message: 'Waiting for host to start the meeting' }, { status: 202 });
+                return NextResponse.json({ success: true, message: 'Waiting for host to start the meeting' }, { status: 202 });
             }
-
-            // If meeting is ACTIVE and user is not in participants
-            const alreadyParticipant = videoCall.participants.some(
-                (p: {
-                    userId: string | Types.ObjectId;
-                    isMuted: boolean;
-                    isVideoOn: boolean;
-                    joinedAt: Date;
-                }) => String(p.userId) === String(userId)
+            const participantIndex = videoCall.participants.findIndex(
+                (p: IVideoCallParticipant) => String(p.userId) === String(userId)
             );
 
-            if (!alreadyParticipant) {
+            // If meeting is ACTIVE and user is not in participants
+            if (participantIndex === -1) {
                 videoCall.participants.push({
                     userId,
+                    socketid: getUserSocketId(userId),
                     isMuted: false,
                     isVideoOn: true,
-                    joinedAt: new Date(),
+                    sessions: [{ joinedAt: new Date() }],
                 });
-                await videoCall.save();
+            } else {
+                // Already a participant — update join time and clear leftAt
+                videoCall.participants[participantIndex].socketId = getUserSocketId(userId);
+                videoCall.participant.sessions.push({ joinedAt: new Date() });
+
             }
+            await videoCall.save();
         }
 
-        return NextResponse.json({ message: 'Joined the meeting successfully' }, { status: 202 });
+        // Fetch usernames and images
+        const userIds = videoCall.participants.map((p: IVideoCallParticipant) => p.userId.toString());
+        const users = await UserModel.find({ _id: { $in: userIds } }).select('username image');
+
+        // Map users to a lookup
+        const userMap = new Map(users.map(u => [u._id.toString(), { username: u.username, image: u.image }]));
+
+        // Enrich participants
+        const enrichedParticipants = videoCall.participants.map((p: IVideoCallParticipant) => ({
+            ...p,
+            username: userMap.get(p.userId.toString())?.username || 'Unknown',
+            image: userMap.get(p.userId.toString())?.image || '',
+        }));
+
+        // Then return full response
+        return NextResponse.json({
+            success: true,
+            message: 'Joined the meeting successfully',
+            meeting: {
+                meetingId: videoCall.meetingId,
+                hostId: videoCall.hostId,
+                startTime: videoCall.startTime,
+                endTime: videoCall.endTime,
+                participants: enrichedParticipants,
+                chatMessages: videoCall.chatMessages,
+                settings: videoCall.settings,
+            },
+        }, { status: 202 });
+
     } catch (error) {
         console.error('Error in joining meeting:', error);
         return NextResponse.json({ message: 'Server error' }, { status: 500 });
@@ -178,18 +213,37 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ message: 'Meeting not found' }, { status: 404 });
         }
 
-        const updateResult = await VideoCallModel.updateOne(
-            { meetingId },
-            { $pull: { participants: { userId } } }
+        // Prevent host from leaving this way
+        if (String(videoCall.hostId) === String(userId)) {
+            return NextResponse.json({ message: 'Host cannot leave the call this way' }, { status: 403 });
+        }
+
+        // Find the participant
+        const participant = videoCall.participants.find(
+            (p: IVideoCallParticipant) => String(p.userId) === String(userId)
         );
 
-        if (updateResult.modifiedCount === 0) {
-            return NextResponse.json({ message: 'User not found in participants or update failed' }, { status: 404 });
+        if (!participant || !participant.sessions || participant.sessions.length === 0) {
+            return NextResponse.json({ message: 'Participant not found or no sessions' }, { status: 404 });
         }
+
+        // Find the last session with no leftAt
+        const latestSession = [...participant.sessions].reverse().find(
+            (session) => !session.leftAt
+        );
+
+        if (!latestSession) {
+            return NextResponse.json({ message: 'No active session found for user' }, { status: 404 });
+        }
+
+        latestSession.leftAt = new Date();
+
+        await videoCall.save();
+
         return NextResponse.json({ message: 'Left the call successfully' }, { status: 200 });
 
     } catch (error) {
-    console.log('[LEAVE_VIDEO_CALL_ERROR]', error);
-    return NextResponse.json({ message: 'Server error' }, { status: 500 });
-}
+        console.error('[LEAVE_VIDEO_CALL_ERROR]', error);
+        return NextResponse.json({ message: 'Server error' }, { status: 500 });
+    }
 }

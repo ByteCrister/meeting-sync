@@ -1,20 +1,20 @@
 // store/slices/videoMeetingSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export enum VideoCallStatus {
-  WAITING = 'waiting',
-  ACTIVE = 'active',
-  ENDED = 'ended',
-  LEAVED = 'leaved',
+export interface VideoCallSession {
+  joinedAt: string;
+  leftAt?: string;
 }
 
 export interface VideoCallParticipant {
   userId: string;
+  image: string;
+  username: string;
   socketId: string;
   isMuted: boolean;
   isVideoOn: boolean;
   isScreenSharing?: boolean;
-  joinedAt: string;
+  sessions: VideoCallSession[];
 }
 
 export interface WaitingParticipant {
@@ -23,6 +23,7 @@ export interface WaitingParticipant {
 }
 
 export interface ChatMessage {
+  _id: string;
   userId: string;
   message: string;
   timestamp: string;
@@ -37,39 +38,32 @@ export interface VideoCallSettings {
 export interface VideoMeetingState {
   meetingId: string;
   hostId: string;
-  status: VideoCallStatus;
   startTime: string;
   endTime?: string;
   participants: VideoCallParticipant[];
-  waitingParticipants: WaitingParticipant[];
   chatMessages: ChatMessage[];
   settings: VideoCallSettings;
 }
 
-const initialState: VideoMeetingState = {
+const initialVideoState: VideoMeetingState = {
   meetingId: '',
   hostId: '',
-  status: VideoCallStatus.WAITING,
   startTime: new Date().toISOString(),
   participants: [],
-  waitingParticipants: [],
   chatMessages: [],
   settings: {
-    allowChat: true,
-    allowScreenShare: true,
-    allowRecording: true,
+    allowChat: false,
+    allowScreenShare: false,
+    allowRecording: false,
   },
 };
 
 const videoMeetingSlice = createSlice({
   name: 'videoMeeting',
-  initialState,
+  initialState: initialVideoState,
   reducers: {
     setMeetingDetails(state, action: PayloadAction<Partial<VideoMeetingState>>) {
       Object.assign(state, action.payload);
-    },
-    updateStatus(state, action: PayloadAction<VideoCallStatus>) {
-      state.status = action.payload;
     },
     addParticipant(state, action: PayloadAction<VideoCallParticipant>) {
       state.participants.push(action.payload);
@@ -83,12 +77,7 @@ const videoMeetingSlice = createSlice({
     removeParticipant(state, action: PayloadAction<string>) {
       state.participants = state.participants.filter(p => p.userId !== action.payload);
     },
-    addWaitingParticipant(state, action: PayloadAction<WaitingParticipant>) {
-      state.waitingParticipants.push(action.payload);
-    },
-    removeWaitingParticipant(state, action: PayloadAction<string>) {
-      state.waitingParticipants = state.waitingParticipants.filter(wp => wp.userId !== action.payload);
-    },
+
     addChatMessage(state, action: PayloadAction<ChatMessage>) {
       state.chatMessages.push(action.payload);
     },
@@ -99,23 +88,19 @@ const videoMeetingSlice = createSlice({
       };
     },
     endMeeting(state, action: PayloadAction<string>) {
-      state.status = VideoCallStatus.ENDED;
       state.endTime = action.payload;
     },
     resetMeeting() {
-      return initialState;
+      return initialVideoState;
     },
   },
 });
 
 export const {
   setMeetingDetails,
-  updateStatus,
   addParticipant,
   updateParticipant,
   removeParticipant,
-  addWaitingParticipant,
-  removeWaitingParticipant,
   addChatMessage,
   updateSettings,
   endMeeting,

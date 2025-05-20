@@ -50,7 +50,9 @@ export async function handleCreateVideoCallDirectly(meetingId: string, userId: s
     endTime,
     chatMessages: [],
     settings: {
+      allowChat: false,
       allowScreenShare: false,
+      allowRecording: false,
     }
   });
 

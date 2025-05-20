@@ -1,7 +1,6 @@
 // utils/socket/triggerSocketEvent.ts
 
 import { SocketTriggerTypes } from "../constants";
-import { removeParticipantFromAllCalls } from "../server/removeParticipantFromCall";
 // import { getSocket } from "./initiateSocket";
 import { getIOInstance } from "./setIOInstance";
 import { getUserSocketId } from "./socketUserMap";
@@ -24,7 +23,6 @@ export const triggerSocketEvent = async ({ userId, type, notificationData }: Tri
     if (!socketId) {
         // const socket = getSocket();
         // socket.emit(SocketTriggerTypes.REGISTER_USER, { userId: userId });
-        await removeParticipantFromAllCalls(userId);
         console.warn(`⚠️ No active socketId found for userId: ${userId}`);
         return;
     }

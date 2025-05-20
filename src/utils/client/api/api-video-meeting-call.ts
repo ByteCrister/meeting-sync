@@ -18,8 +18,8 @@ export const joinVideoCall = async (meetingId: string) => {
     return resData;
 };
 
-export const updateVideoCall = async (data: VideoCallUpdateData) => {
-    const resData = await apiService.put(`/api/video-meeting-call`, data);
+export const updateVideoCall = async (objectBody: VideoCallUpdateData) => {
+    const resData = await apiService.put(`/api/video-meeting-call`, objectBody);
     return resData;
 };
 

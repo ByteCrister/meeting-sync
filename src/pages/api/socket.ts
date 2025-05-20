@@ -4,6 +4,7 @@ import { Server as ServerIO } from "socket.io";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { SocketTriggerTypes, VMSocketTriggerTypes } from "@/utils/constants";
 import {
+    // getUserIdBySocketId,
     // getUserSocketId,
     registerUserSocket,
     removeUserSocket,
@@ -11,6 +12,8 @@ import {
 import { setIOInstance } from "@/utils/socket/setIOInstance";
 
 import '../../utils/cron/updateSlotStatus';
+import VideoCallModel, { IVideoCallParticipant, IVideoCallSession } from "@/models/VideoCallModel";
+// import { removeParticipantFromAllCalls } from "@/utils/server/removeParticipantFromCall";
 
 // Disable body parser for socket handling
 export const config = {
@@ -55,10 +58,44 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
                 registerUserSocket(data.userId, socket.id);
             });
 
-            socket.on("disconnect", () => {
+            socket.on("disconnect", async () => {
                 console.log("__Socket disconnected:", socket.id);
+                // const userId = getUserIdBySocketId(socket.id);
                 removeUserSocket(socket.id);
+
+                try {
+                    const call = await VideoCallModel.findOne({ "participants.socketId": socket.id });
+
+                    if (call) {
+                        const participantIndex = call.participants.findIndex((p: IVideoCallParticipant) => p.socketId === socket.id);
+
+                        if (participantIndex !== -1) {
+                            const participant = call.participants[participantIndex];
+
+                            // Find the last session with leftAt not set
+                            const sessionIndex = participant.sessions.findIndex((s: IVideoCallSession) => !s.leftAt);
+                            if (sessionIndex !== -1) {
+                                const path = `participants.${participantIndex}.sessions.${sessionIndex}.leftAt`;
+
+                                await VideoCallModel.updateOne(
+                                    { _id: call._id },
+                                    { $set: { [path]: new Date() } }
+                                );
+                                console.log(`Updated leftAt for session of socket: ${socket.id}`);
+                            } else {
+                                console.log(`No open session found for socket: ${socket.id}`);
+                            }
+                        }
+
+                        // await removeParticipantFromAllCalls(userId || "");
+                    } else {
+                        console.log(`No matching video call found for socket: ${socket.id}`);
+                    }
+                } catch (err) {
+                    console.error("Error updating participant session leftAt:", err);
+                }
             });
+
 
             // * Video Meeting Socket Events
             socket.on(VMSocketTriggerTypes.JOIN_ROOM, ({ roomId, userId }) => {

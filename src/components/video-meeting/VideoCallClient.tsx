@@ -8,6 +8,8 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import MeetingNotStarted from "../errors/MeetingNotStarted";
 import FullPageError from "../errors/FullPageError";
+import useVideoSocket from "@/hooks/useVideoSocket";
+import { setMeetingDetails } from "@/lib/features/videoMeeting/videoMeetingSlice";
 
 export default function VideoCallClient() {
     const searchParams = useSearchParams();
@@ -22,6 +24,7 @@ export default function VideoCallClient() {
     const [remoteUsers, setRemoteUsers] = useState<{ [userId: string]: MediaStream }>({});
     const [videoCallStatus, setVideoCallStatus] = useState<VideoCallErrorTypes | null>(null);
     const [JoinStatus, setJoinStatus] = useState<IVideoCallStatus | null>(null);
+    useVideoSocket(roomId || "");
 
     useEffect(() => {
         if (!roomId || !userId) return;
@@ -38,6 +41,8 @@ export default function VideoCallClient() {
             if (joinStatusData.success && joinStatusData?.meetingStatus === IVideoCallStatus.WAITING) {
                 setJoinStatus(joinStatusData.meetingStatus);
                 return;
+            } else if (joinStatusData.success && joinStatusData?.meeting) {
+                setMeetingDetails(joinStatusData.meeting);
             }
 
             if (!socketRef.current) {

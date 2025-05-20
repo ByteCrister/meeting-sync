@@ -1,7 +1,7 @@
 import ConnectDB from "@/config/ConnectDB";
 import SlotModel, { ISlot } from "@/models/SlotModel";
 import VideoCallModel, { IVideoCall } from "@/models/VideoCallModel";
-import { IVideoCallStatus, VideoCallErrorTypes } from "@/utils/constants";
+import { IVideoCallStatus, VCallUpdateApiType, VideoCallErrorTypes } from "@/utils/constants";
 import { getUserIdFromRequest } from "@/utils/server/getUserFromToken";
 import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
@@ -26,6 +26,8 @@ export async function GET(req: NextRequest) {
 
         const { searchParams } = new URL(req.url);
         const meetingId = searchParams.get("meetingId");
+
+        await ConnectDB();
 
         if (!meetingId || !mongoose.Types.ObjectId.isValid(meetingId)) {
             return NextResponse.json({
@@ -90,66 +92,116 @@ export async function GET(req: NextRequest) {
 
 // ? update states of video meeting
 export async function PUT(req: NextRequest) {
-
     try {
-        await ConnectDB();
-        // Parse the incoming request body
         const body = await req.json();
-        const { isMuted, isVideoOn, isScreenSharing, message, meetingId } = body;
-        const userId = await getUserIdFromRequest(req);
-        if (!userId) {
-            return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+        const { type, meetingId, data } = body;
+
+        if (!meetingId || !type) {
+            return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
         }
 
-        // Find the meeting by meetingId
-        const videoCall = await VideoCallModel.findOne({ meetingId });
+        await ConnectDB();
 
-        if (!videoCall) {
-            return NextResponse.json(
-                { message: 'Meeting not found' },
-                { status: 404 }
-            );
+        const call = await VideoCallModel.findOne({ meetingId });
+        if (!call) {
+            return NextResponse.json({ message: "Call not found" }, { status: 404 });
         }
 
-        // Find the participant in the video call
-        const participantIndex = videoCall.participants.findIndex(
-            (participant: IParticipant) => participant.userId.toString() === userId
-        );
+        switch (type) {
+            case VCallUpdateApiType.PARTICIPANTS_DATA: {
+                const { userId, isMuted, isVideoOn, isScreenSharing, joinedAt } = data;
+                if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-        if (participantIndex === -1) {
-            return NextResponse.json(
-                { message: 'Participant not found in the meeting' },
-                { status: 404 }
-            );
+                await VideoCallModel.updateOne(
+                    { meetingId, "participants.userId": userId },
+                    {
+                        $set: {
+                            "participants.$.isMuted": isMuted,
+                            "participants.$.isVideoOn": isVideoOn,
+                            "participants.$.isScreenSharing": isScreenSharing,
+                            "participants.$.joinedAt": joinedAt,
+                        },
+                    }
+                );
+
+                break;
+            }
+
+            case VCallUpdateApiType.NEW_VIDEO_CHAT_MESSAGE: {
+                const userId = await getUserIdFromRequest(req);
+                if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+                const { message } = data;
+
+                await VideoCallModel.updateOne(
+                    { meetingId },
+                    {
+                        $push: {
+                            chatMessages: {
+                                userId: new mongoose.Types.ObjectId(userId),
+                                message,
+                                timestamp: new Date(),
+                            },
+                        },
+                    }
+                );
+
+                break;
+            }
+
+            case VCallUpdateApiType.REMOVE_VIDEO_CHAT_MESSAGE: {
+                const { _id } = data;
+
+                if (!_id) {
+                    return NextResponse.json({ message: 'Message _id is required' }, { status: 400 });
+                }
+
+                const result = await VideoCallModel.updateOne(
+                    { meetingId },
+                    {
+                        $pull: {
+                            chatMessages: { _id },
+                        },
+                    }
+                );
+
+                if (result.modifiedCount === 0) {
+                    return NextResponse.json({ message: 'Message not found or already removed' }, { status: 404 });
+                }
+
+                break;
+            }
+
+
+            case VCallUpdateApiType.HOST_SETTING: {
+                const userId = await getUserIdFromRequest(req);
+                if (!userId || userId.toString() !== call.hostId.toString()) {
+                    return NextResponse.json({ message: "Only host can update settings" }, { status: 403 });
+                }
+
+                const { allowChat, allowRecording, allowScreenShare } = data;
+
+                await VideoCallModel.updateOne(
+                    { meetingId },
+                    {
+                        $set: {
+                            "settings.allowChat": allowChat,
+                            "settings.allowRecording": allowRecording,
+                            "settings.allowScreenShare": allowScreenShare,
+                        },
+                    }
+                );
+
+                break;
+            }
+
+            default:
+                return NextResponse.json({ error: "Invalid update type" }, { status: 400 });
         }
 
-        // Update the participant's settings
-        const updatedParticipant = videoCall.participants[participantIndex];
-        if (isMuted !== undefined) updatedParticipant.isMuted = isMuted;
-        if (isVideoOn !== undefined) updatedParticipant.isVideoOn = isVideoOn;
-        if (isScreenSharing !== undefined) updatedParticipant.isScreenSharing = isScreenSharing;
-
-        // Update the chat messages if there's a new message
-        if (message) {
-            videoCall.chatMessages.push({
-                userId,
-                message,
-                timestamp: new Date(),
-            });
-        }
-
-        // Save the updated video call
-        await videoCall.save();
-
-        return NextResponse.json(
-            { success: true, message: 'Video call updated successfully', videoCall },
-            { status: 200 }
-        );
+        return NextResponse.json({ success: true, message: 'New response got successfully.' }, { status: 200 });
     } catch (error) {
-        console.log('Error updating video call:', error);
-        return NextResponse.json(
-            { error: 'An error occurred while updating the video call' },
-            { status: 500 }
-        );
+        console.error(error);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
-};
+}
