@@ -2,9 +2,9 @@ import ConnectDB from "@/config/ConnectDB";
 import NotificationsModel, { INotificationType } from "@/models/NotificationsModel";
 import SlotModel from "@/models/SlotModel";
 import UserModel from "@/models/UserModel";
-import VideoCallModel, { IVideoCallStatus } from "@/models/VideoCallModel";
+import VideoCallModel from "@/models/VideoCallModel";
 import { triggerSocketEvent } from "../socket/triggerSocketEvent";
-import { SocketTriggerTypes } from "../constants";
+import { IVideoCallStatus, SocketTriggerTypes } from "../constants";
 import getNotificationExpiryDate from "./getNotificationExpiryDate";
 import { parse } from 'date-fns';
 
@@ -50,7 +50,7 @@ export async function handleCreateVideoCallDirectly(meetingId: string, userId: s
     endTime,
     chatMessages: [],
     settings: {
-      allowScreenShare: true,
+      allowScreenShare: false,
     }
   });
 
@@ -60,7 +60,7 @@ export async function handleCreateVideoCallDirectly(meetingId: string, userId: s
     sender: userId.toString(),
     image: user.image,
     slot: meetingId,
-    message: "The Host just started the meeting!",
+    message: `Get ready! The meeting is about to start.`,
     isRead: false,
     isClicked: false,
     createdAt: new Date(),

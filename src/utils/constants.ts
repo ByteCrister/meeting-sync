@@ -53,7 +53,6 @@ export enum ApiChatBoxMessageType {
     TOGGLE_IS_CHATBOX_OPEN = "TOGGLE_IS_CHATBOX_OPEN",
 }
 
-
 export enum VMSocketTriggerTypes {
     JOIN_ROOM = "join-room",
     ICE_CANDIDATE = "ice-candidate",
@@ -63,4 +62,23 @@ export enum VMSocketTriggerTypes {
     USER_JOINED = "user-joined",
     RECEIVE_OFFER = "receive-offer",
     RECEIVE_ANSWER = "receive-answer",
+}
+
+export enum IVideoCallStatus {
+    WAITING = 'waiting',
+    ACTIVE = 'active',
+    ENDED = 'ended',
+    LEAVED = 'leaved',
+}
+
+export enum VideoCallErrorTypes{
+    USER_NOT_FOUND = "USER_NOT_FOUND",
+    MEETING_NOT_FOUND = "MEETING_NOT_FOUND",
+    MEETING_ENDED = "MEETING_ENDED",
+    MEETING_ALREADY_STARTED = "MEETING_ALREADY_STARTED",
+    MEETING_NOT_STARTED = "MEETING_NOT_STARTED",
+    USER_NOT_HOST = "USER_NOT_HOST",
+    USER_NOT_PARTICIPANT = "USER_NOT_PARTICIPANT",
+    USER_ALREADY_JOINED = "USER_ALREADY_JOINED",
+    USER_NOT_JOINED = "USER_NOT_JOINED",
 }

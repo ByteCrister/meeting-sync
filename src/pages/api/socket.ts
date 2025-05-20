@@ -21,7 +21,7 @@ export const config = {
 let socketServerInitialized = false;
 
 const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
-    // Access the extended `http.Server` which includes `io`
+    // Access the extended http.Server which includes io
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const httpServer = (res.socket as unknown as { server: any }).server;
 
@@ -60,31 +60,22 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
                 removeUserSocket(socket.id);
             });
 
-            // socket.on("send_notification", (data) => {
-            //     const { userId, notificationData } = data;
-            //     const userSocketId = getUserSocketId(userId);
-            //     if (userSocketId) {
-            //         io.to(userSocketId).emit(SocketTriggerTypes.RECEIVED_NOTIFICATION, notificationData);
-            //         io.to(userSocketId).emit(SocketTriggerTypes.USER_SLOT_BOOKED, notificationData);
-            //         io.to(userSocketId).emit(SocketTriggerTypes.USER_SLOT_UNBOOKED, notificationData);
-            //     }
-            // });
-
+            // * Video Meeting Socket Events
             socket.on(VMSocketTriggerTypes.JOIN_ROOM, ({ roomId, userId }) => {
                 socket.join(roomId);
-                socket.to(roomId).emit(VMSocketTriggerTypes.USER_JOINED, { userId });
+                socket.to(roomId).emit(VMSocketTriggerTypes.USER_JOINED, { newUserId: userId });
             });
 
-            socket.on(VMSocketTriggerTypes.OFFER, ({ roomId, offer }) => {
-                socket.to(roomId).emit(VMSocketTriggerTypes.RECEIVE_OFFER, { offer });
+            socket.on(VMSocketTriggerTypes.OFFER, ({ roomId, newUserId, offer }) => {
+                socket.to(roomId).emit(VMSocketTriggerTypes.RECEIVE_OFFER, { fromUserId: newUserId, offer });
             });
 
-            socket.on(VMSocketTriggerTypes.ANSWER, ({ roomId, answer }) => {
-                socket.to(roomId).emit(VMSocketTriggerTypes.RECEIVE_ANSWER, { answer });
+            socket.on(VMSocketTriggerTypes.ANSWER, ({ roomId, fromUserId, answer }) => {
+                socket.to(roomId).emit(VMSocketTriggerTypes.RECEIVE_ANSWER, { fromUserId, answer });
             });
 
-            socket.on(VMSocketTriggerTypes.ICE_CANDIDATE, ({ roomId, candidate }) => {
-                socket.to(roomId).emit(VMSocketTriggerTypes.RECEIVE_ICE_CANDIDATE, { candidate });
+            socket.on(VMSocketTriggerTypes.ICE_CANDIDATE, ({ roomId, targetUserId, candidate }) => {
+                socket.to(roomId).emit(VMSocketTriggerTypes.RECEIVE_ICE_CANDIDATE, { fromUserId: targetUserId, candidate });
             });
         });
     } else {
