@@ -69,7 +69,7 @@ export async function handleCreateVideoCallDirectly(meetingId: string, userId: s
     expiresAt: getNotificationExpiryDate(30),
   };
 
-  for (const bookedUserId of slot.bookedUsers) {
+  await Promise.all(slot.bookedUsers.map(async (bookedUserId: string) => {
     const notificationDoc = new NotificationsModel({ ...sendNewNotification, receiver: bookedUserId });
     const savedNotification = await notificationDoc.save();
 
@@ -78,9 +78,19 @@ export async function handleCreateVideoCallDirectly(meetingId: string, userId: s
     triggerSocketEvent({
       userId: bookedUserId,
       type: SocketTriggerTypes.MEETING_STARTED,
-      notificationData: { ...sendNewNotification, receiver: bookedUserId, _id: savedNotification._id },
+      notificationData: {
+        // ? New notification body
+        notification: {
+          ...sendNewNotification,
+          receiver: bookedUserId,
+          _id: savedNotification._id
+        },
+        // ? Slot id to change the slot status to Ongoing for specific user's account
+        slotId: meetingId,
+      },
     });
-  }
+
+  }));
 
   return newCall;
 }

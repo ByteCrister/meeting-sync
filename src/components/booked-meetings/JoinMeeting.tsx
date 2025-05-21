@@ -19,7 +19,7 @@ export default function JoinMeeting({ isJoinEnabled, meetingId }: { isJoinEnable
                             ? 'text-white bg-blue-600 hover:bg-blue-700'
                             : 'text-gray-400 bg-gray-100 cursor-not-allowed'
                             }`}
-                        onClick={() => window.open(`/video-meeting?meetingId=${meetingId}`, '_blank')}
+                        onClick={() => window.open(`/video-meeting?roomId=${meetingId}`, '_blank')}
                         disabled={!isJoinEnabled}
                     >
                         <Video className="w-4 h-4 mr-2" />

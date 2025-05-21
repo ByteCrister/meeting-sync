@@ -2,6 +2,8 @@ import ConnectDB from "@/config/ConnectDB";
 import VideoCallModel, { IVideoCallParticipant, IVideoCallSession } from "@/models/VideoCallModel";
 import mongoose from "mongoose";
 import { calculateAndUpdateEngagement } from "./calculateAndUpdateEngagement";
+import { triggerRoomSocketEvent } from "../socket/triggerRoomSocketEvent";
+import { SocketTriggerTypes } from "../constants";
 
 export async function handleDeleteVideoCallDirectly(meetingId: string) {
   if (!mongoose.Types.ObjectId.isValid(meetingId)) {
@@ -10,23 +12,30 @@ export async function handleDeleteVideoCallDirectly(meetingId: string) {
 
   await ConnectDB();
 
-  const videoCall = await VideoCallModel.findOne({ meetingId });
-  if (!videoCall) throw new Error("Meeting not found");
+  const videoCallDoc = await VideoCallModel.findOne({ meetingId: new mongoose.Types.ObjectId(meetingId) });
+  if (!videoCallDoc) throw new Error("Meeting not found");
 
-  // Update all open sessions (null leftAt) to endTime or now
-  videoCall.participants.forEach((participant: IVideoCallParticipant) => {
+  // Filter out host participants in memory if you want
+  videoCallDoc.participants = videoCallDoc.participants.filter(
+    (p: IVideoCallParticipant) => p.userId.toString() !== videoCallDoc.hostId.toString()
+  );
+
+  // Update open sessions
+  videoCallDoc.participants.forEach((participant: IVideoCallParticipant) => {
     participant.sessions.forEach((session: IVideoCallSession) => {
       if (!session.leftAt) {
-        session.leftAt = videoCall.endTime || new Date();
+        session.leftAt = videoCallDoc.endTime || new Date();
       }
     });
   });
 
-  await videoCall.save();
+  await videoCallDoc.save();
 
   // Recalculate engagement before deleting
-  await calculateAndUpdateEngagement(videoCall);
+  await calculateAndUpdateEngagement(videoCallDoc);
 
   // Now delete the call
   await VideoCallModel.deleteOne({ meetingId });
+
+  triggerRoomSocketEvent({ roomId: meetingId, type: SocketTriggerTypes.MEETING_ENDED, data: null });
 }

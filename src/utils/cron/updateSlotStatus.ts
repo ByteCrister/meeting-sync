@@ -12,8 +12,11 @@ import { handleDeleteVideoCallDirectly } from "../server/handleDeleteVideoCallDi
 import getNotificationExpiryDate from "../server/getNotificationExpiryDate";
 
 declare global {
-    let slotStatusCronStarted: boolean | undefined;
+    // Extend the globalThis interface to include slotStatusCronStarted
+    // eslint-disable-next-line no-var
+    var slotStatusCronStarted: boolean | undefined;
 }
+globalThis.slotStatusCronStarted = globalThis.slotStatusCronStarted || false;
 
 // Parse 12-hour time to 24-hour
 function parseTimeTo24Hour(timeStr: string): { hours: number; minutes: number } | null {
@@ -52,7 +55,7 @@ export async function updateSlotStatuses() {
         });
 
         if (!slots.length) {
-            console.log("No slots found for status update.");
+            console.log("No slots found for status update.\n");
             return;
         }
 
@@ -172,7 +175,7 @@ export async function updateSlotStatuses() {
             }
         }
 
-        console.log("END updateSlotStatuses:", new Date());
+        console.log(`END updateSlotStatuses: ${new Date()}\n`);
     } catch (error) {
         console.error("[updateSlotStatuses Error]:", (error as Error).message);
     }
@@ -183,24 +186,26 @@ let isRunning = false;
 
 // Ensure the DB connection is established before starting the cron job
 async function startCronJob() {
-    try {
-        await ConnectDB(); // Ensure DB connection is ready before cron job starts
-        console.log("Database connected. Starting cron job.");
-        cron.schedule("* * * * *", async () => {
-            if (isRunning) return;
-            isRunning = true;
-            console.log("Cron job running for slot status update");
-            try {
-                await updateSlotStatuses();
-            } catch (e) {
-                console.error(e);
-            } finally {
-                isRunning = false;
-            }
-        });
-    } catch (error) {
-        console.error("[Cron Job Error]: Database connection failed", error);
+    if (globalThis.slotStatusCronStarted) {
+        console.log("Cron job already started. Skipping initialization.");
+        return;
     }
+
+    cron.schedule("* * * * *", async () => {
+        if (isRunning) return;
+        isRunning = true;
+        console.log("\nCron job running for slot status update");
+        try {
+            await updateSlotStatuses();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            isRunning = false;
+        }
+    });
+
+    globalThis.slotStatusCronStarted = true;
+
 }
 
-startCronJob(); // Start the cron job after DB connection is ensured
+startCronJob(); 

@@ -5,7 +5,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { getSocket, initiateSocket } from "@/utils/socket/initiateSocket";
 import { initializeServerSocket } from "@/utils/socket/socketInitialized";
 import { SocketTriggerTypes } from "@/utils/constants";
-import { addChatMessage, addParticipant, removeParticipant, setVideoCallStatus, updateSettings, VideoCallStatus } from "@/lib/features/videoMeeting/videoMeetingSlice";
+import { addChatMessage, addParticipant, removeChatMessage, removeParticipant, setVideoCallStatus, updateSettings, VideoCallStatus } from "@/lib/features/videoMeeting/videoMeetingSlice";
+import ShadcnToast from "@/components/global-ui/toastify-toaster/ShadcnToast";
 
 
 const useVideoSocket = (roomId: string) => {
@@ -30,10 +31,19 @@ const useVideoSocket = (roomId: string) => {
             }
 
             //* Remove previous listeners
+            socket.off(SocketTriggerTypes.HOST_JOINED);
             socket.off(SocketTriggerTypes.NEW_PARTICIPANT_JOINED);
-            socket.off(SocketTriggerTypes.END_OF_WAITING);
+            socket.off(SocketTriggerTypes.NEW_METING_CHAT_MESSAGE);
+            socket.off(SocketTriggerTypes.DELETE_METING_CHAT_MESSAGE);
+            socket.off(SocketTriggerTypes.CHANGE_MEETING_SETTING);
+            socket.off(SocketTriggerTypes.USER_LEAVED);
 
 
+            // Host just joined the meeting
+            socket.on(SocketTriggerTypes.HOST_JOINED, () => {
+                ShadcnToast("Host just joined to the meeting.");
+                setVideoCallStatus(VideoCallStatus.ACTIVE);
+            });
             socket.on(SocketTriggerTypes.NEW_PARTICIPANT_JOINED, (data) => {
                 dispatch(addParticipant(data));
             });
@@ -41,16 +51,16 @@ const useVideoSocket = (roomId: string) => {
                 dispatch(addChatMessage(data));
             });
             socket.on(SocketTriggerTypes.DELETE_METING_CHAT_MESSAGE, ({ _id }) => {
-                dispatch(addChatMessage(_id));
+                dispatch(removeChatMessage(_id));
             });
             socket.on(SocketTriggerTypes.CHANGE_MEETING_SETTING, (data) => {
                 dispatch(updateSettings(data));
             });
-            socket.on(SocketTriggerTypes.END_OF_WAITING, () => {
-                setVideoCallStatus(VideoCallStatus.ACTIVE);
-            });
             socket.on(SocketTriggerTypes.USER_LEAVED, ({ userId }) => {
                 removeParticipant(userId);
+            });
+            socket.on(SocketTriggerTypes.MEETING_ENDED, () => {
+                setVideoCallStatus(VideoCallStatus.ENDED);
             });
 
             socket.on("disconnect", (reason) => {
@@ -70,7 +80,7 @@ const useVideoSocket = (roomId: string) => {
             socketRef.current = null;
         };
 
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?._id, roomId]);
 };
 

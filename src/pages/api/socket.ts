@@ -4,6 +4,7 @@ import { Server as ServerIO } from "socket.io";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { SocketTriggerTypes, VMSocketTriggerTypes } from "@/utils/constants";
 import {
+    getUserIdBySocketId,
     // getUserIdBySocketId,
     // getUserSocketId,
     registerUserSocket,
@@ -60,12 +61,18 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
 
             socket.on("disconnect", async () => {
                 console.log("__Socket disconnected:", socket.id);
+                const userId = getUserIdBySocketId(socket.id);
                 removeUserSocket(socket.id);
 
                 try {
                     const call = await VideoCallModel.findOne({ "participants.socketId": socket.id });
 
                     if (call) {
+                        if (userId && userId.toString() === call.hostId.toString()) {
+                            console.log("Host disconnected — skip updating participant session.");
+                            return;
+                        }
+                        
                         const participantIndex = call.participants.findIndex((p: IVideoCallParticipant) => p.socketId === socket.id);
 
                         if (participantIndex !== -1) {

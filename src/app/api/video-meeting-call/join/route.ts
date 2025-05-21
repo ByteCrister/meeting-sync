@@ -1,5 +1,5 @@
 import ConnectDB from '@/config/ConnectDB';
-import VideoCallModel, { IVideoCallParticipant, IVideoCallSession } from '@/models/VideoCallModel';
+import VideoCallModel, { IVideoCallParticipant } from '@/models/VideoCallModel';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/utils/server/getUserFromToken';
 import { Types } from 'mongoose';
@@ -48,12 +48,7 @@ export async function GET(req: NextRequest) {
         if (isHost) {
             // Add host to participants if not already there
             const alreadyJoined = videoCall.participants.some(
-                (p: {
-                    userId: string | Types.ObjectId;
-                    isMuted: boolean;
-                    isVideoOn: boolean;
-                    sessions: IVideoCallSession[];
-                }) => String(p.userId) === String(userId)
+                (p: IVideoCallParticipant) => String(p.userId) === String(userId)
             );
 
             if (!alreadyJoined) {
@@ -65,14 +60,13 @@ export async function GET(req: NextRequest) {
                     isScreenSharing: false,
                     sessions: [{ joinedAt: new Date() }],
                 });
-                triggerRoomSocketEvent({ roomId: meetingId, type: SocketTriggerTypes.END_OF_WAITING, data: { userId } });
             } else {
-                const participant = videoCall.participants.find((p: IVideoCallParticipant) => String(p.userId) === String(userId));
-                participant.socketId = getUserSocketId(userId);
-                participant?.sessions.push({ joinedAt: new Date() });
+                const participantIndex = videoCall.participants.findIndex((p: IVideoCallParticipant) => String(p.userId) === String(userId));
+                videoCall.participants[participantIndex].socketId = getUserSocketId(userId);
+                videoCall.participants[participantIndex].sessions.push({ joinedAt: new Date() });
             }
 
-            // Activate meeting if not already
+            //* Activate meeting if not already and join all waiting participants to the meeting
             if (videoCall.status !== IVideoCallStatus.ACTIVE) {
                 videoCall.status = IVideoCallStatus.ACTIVE;
 
@@ -107,24 +101,20 @@ export async function GET(req: NextRequest) {
 
                 await Promise.all(slot.bookedUsers.map(async (bookedUserId: string) => {
                     const notificationDoc = new NotificationsModel({ ...sendNewNotification, receiver: bookedUserId });
-                    const savedNotification = await notificationDoc.save();
-
+                    await notificationDoc.save();
                     await UserModel.findByIdAndUpdate(bookedUserId, { $inc: { countOfNotifications: 1 } });
-
-                    triggerSocketEvent({
-                        userId: bookedUserId,
-                        type: SocketTriggerTypes.MEETING_STARTED,
-                        notificationData: { ...sendNewNotification, receiver: bookedUserId, _id: savedNotification._id },
-                    });
                 }));
+
+                // ? emit socket event to notify user's that host is joined and join waiting participants in the meeting
+                triggerRoomSocketEvent({ roomId: meetingId, type: SocketTriggerTypes.HOST_JOINED, data: { userId } });
+
                 // * Clear waiting participants after host joins
                 videoCall.waitingParticipants = [];
             }
-
             await videoCall.save();
 
+            // *** If user is NOT host ***
         } else {
-            // * If user is NOT host
             if (videoCall.status === IVideoCallStatus.WAITING) {
                 // * Push to waitingParticipants if not already added
                 const alreadyWaiting = videoCall.waitingParticipants?.some(
@@ -265,4 +255,4 @@ export async function DELETE(req: NextRequest) {
         console.error('[LEAVE_VIDEO_CALL_ERROR]', error);
         return NextResponse.json({ message: 'Server error' }, { status: 500 });
     }
-}
+};

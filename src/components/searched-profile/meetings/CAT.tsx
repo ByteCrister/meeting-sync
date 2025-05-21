@@ -83,7 +83,7 @@ function TooltipCATButton({ filterType, status, isBooked, loadingBtns, handleLoa
                             </Button>
                     }
                 </TooltipTrigger>
-                <TooltipContent className="bg-gray-800 text-white text-sm p-2 rounded-lg">
+                <TooltipContent className="bg-gray-800 fill-gray-800 text-white text-sm p-2 rounded-lg">
                     <p>{message}</p>
                 </TooltipContent>
             </Tooltip>

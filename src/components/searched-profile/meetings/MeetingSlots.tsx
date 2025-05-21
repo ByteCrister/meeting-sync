@@ -205,7 +205,7 @@ export const MeetingSlots = ({ userId, userTimeZone, setMeetingCount }: { userId
         <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2">
           <div className="flex flex-col md:flex-row gap-2">
             <Select name='select-meeting-sort' value={filterType} onValueChange={(val) => setFilterType(val as "all" | "bookedByMe" | "bookedMine")}>
-              <SelectTrigger id='select-meeting-sort-trigger' className="w-full focus:outline-none focus:ring-0">
+              <SelectTrigger id='select-meeting-sort-trigger' className="w-full border border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-400 rounded-md px-3 py-2 bg-white">
                 <SelectValue id='select-meeting-sort-value' placeholder="Filter Meetings" />
               </SelectTrigger>
               <SelectContent id='select-meeting-sort-content' className='bg-white'>
@@ -225,7 +225,7 @@ export const MeetingSlots = ({ userId, userTimeZone, setMeetingCount }: { userId
               </SelectContent>
             </Select>
             <Select name='select-by-categories' value={selectedCategory} onValueChange={(val) => handleFilterChange(val)}>
-              <SelectTrigger className="w-full focus:outline-none focus:ring-0">
+              <SelectTrigger className="w-full border border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-400 rounded-md px-3 py-2 bg-white">
                 <SelectValue placeholder="Select Category" />
               </SelectTrigger>
               <SelectContent className='bg-white'>

@@ -47,9 +47,10 @@ export function ChatSidebar({ messages, participants, onSendMessage, onDeleteMes
                                     <p className="text-sm mt-1">{message.message}</p>
                                 </div>
                                 <Button
+                                    id={`delete-button-${message._id}`}
                                     variant="ghost"
                                     size="icon"
-                                    className="opacity-0 group-hover:opacity-100"
+                                    className="opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900"
                                     onClick={() => onDeleteMessage(message._id)}
                                 >
                                     <Trash2 className="w-4 h-4 text-red-500" />
@@ -62,13 +63,17 @@ export function ChatSidebar({ messages, participants, onSendMessage, onDeleteMes
             <div className="p-4 border-t border-gray-800">
                 <div className="flex space-x-2">
                     <Input
+                        is="video-call-input-message"
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                         placeholder="Type a message..."
                         className="flex-1"
+                        autoComplete="off"
+                        spellCheck={false}
+                        autoCorrect="off"
                     />
-                    <Button onClick={handleSendMessage}>
+                    <Button is="video-call-send-message" onClick={handleSendMessage}>
                         <Send className="h-4 w-4" />
                     </Button>
                 </div>

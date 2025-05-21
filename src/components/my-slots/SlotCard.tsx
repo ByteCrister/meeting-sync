@@ -84,6 +84,7 @@ const SlotCard = ({ slot, isSearchedSlot }: { slot: registerSlot, isSearchedSlot
                                 <Tag className="w-4 h-4 mr-1" />
                                 {slot.category}
                             </div>
+                            {/* See all booked users */}
                             <BookUsersPopover Slot={slot} />
                             <div className="flex items-center text-sm text-gray-500">
                                 <Calendar className="w-4 h-4 mr-1" />

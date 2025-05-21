@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
             meetingDate: slot.meetingDate,
             guestSize: slot.guestSize,
             bookedUsers: slot.bookedUsers,
+            blockedUsers: slot.blockedUsers,
             trendScore: slot.trendScore,
             engagementRate: slot.engagementRate,
             status: slot.status,

@@ -8,6 +8,7 @@ import UserModel, { IUserFollowInfo, IUsers } from "@/models/UserModel";
 import { SocketTriggerTypes } from "@/utils/constants";
 import { triggerSocketEvent } from "@/utils/socket/triggerSocketEvent";
 import getNotificationExpiryDate from "@/utils/server/getNotificationExpiryDate";
+import mongoose from "mongoose";
 
 // ? Get request for booked page fetchData API
 export const GET = async (req: NextRequest) => {
@@ -93,9 +94,19 @@ export async function POST(req: NextRequest,) {
             return NextResponse.json({ message: "All slots are booked!" }, { status: 400 });
         }
 
+        // Check if user is blocked in this meeting slot
+        if (slot.blockedUsers.some((id: mongoose.Types.ObjectId) => id.toString() === userId.toString())) {
+            return NextResponse.json({ message: "You are not allowed to booked this slot." }, { status: 400 });
+        };
+
         // Check if user already booked this slot
         if (slot.bookedUsers.includes(userId)) {
             return NextResponse.json({ message: "Already booked!" }, { status: 400 });
+        }
+
+        // Check if owner try's to book there own meeting
+        if (slot.ownerId!.toString() === userId.toString()) {
+            return NextResponse.json({ message: "You can't book you'r own meeting slot." }, { status: 400 });
         }
 
         //  Getting user for image
@@ -121,7 +132,7 @@ export async function POST(req: NextRequest,) {
         const sendNewNotification = {
             type: INotificationType.SLOT_BOOKED,
             sender: userId.toString(), // Me - booked a meeting slot
-            receiver: slot.ownerId.toString(), // Owner of the meeting slot
+            receiver: slot.ownerId!.toString(), // Owner of the meeting slot
             image: user.image,
             message: "Someone booked your meeting slot.",
             isRead: false,
@@ -137,7 +148,7 @@ export async function POST(req: NextRequest,) {
 
         // emit notification to the slot owner's account
         triggerSocketEvent({
-            userId: slot.ownerId.toString(),
+            userId: slot.ownerId!.toString(),
             type: SocketTriggerTypes.RECEIVED_NOTIFICATION,
             notificationData: {
                 ...sendNewNotification,
@@ -175,7 +186,7 @@ export async function POST(req: NextRequest,) {
 
         // ? Emit real-time update on the booked users count for the owner
         triggerSocketEvent({
-            userId: slot.ownerId.toString(),
+            userId: slot.ownerId!.toString(),
             type: SocketTriggerTypes.INCREASE_BOOKED_USER,
             notificationData: {
                 newBookedUserId: userId.toString(),

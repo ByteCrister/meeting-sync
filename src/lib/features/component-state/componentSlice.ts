@@ -28,6 +28,9 @@ const componentSlice = createSlice({
     toggleSlotDropDialog: (state, action: PayloadAction<{ isOpen: boolean, slotTitle: string | null, slotId: string | null }>) => {
       state.slotDropDialog = action.payload;
     },
+    toggleBlockedUsersDialog: (state, action: PayloadAction<{isOpen: boolean, slotId: string | null}>)=>{
+      state.blockedUsersDialog = action.payload;
+    },
     // ! -------------------- end -----------------------
 
     // ? ---------- Booked Slot Dialog -----------
@@ -65,6 +68,7 @@ export const {
   toggleAlertDialog,
   toggleSlotDialog,
   toggleSlotDropDialog,
+  toggleBlockedUsersDialog,
   toggleNotifyChangeDialog,
   toggleUpdateProfileDialog,
   toggleDeleteBookedSlotAlert,

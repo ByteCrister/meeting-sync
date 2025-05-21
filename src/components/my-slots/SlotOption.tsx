@@ -1,7 +1,7 @@
 "use client";
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { setSlotFiledValues, toggleSlotDialog, toggleSlotDropDialog } from '@/lib/features/component-state/componentSlice';
+import { setSlotFiledValues, toggleBlockedUsersDialog, toggleSlotDialog, toggleSlotDropDialog } from '@/lib/features/component-state/componentSlice';
 import { useAppDispatch } from '@/lib/hooks';
 import { registerSlot, RegisterSlotStatus } from '@/types/client-types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@radix-ui/react-tooltip';
@@ -18,6 +18,10 @@ const SlotOption = ({ slot }: { slot: registerSlot }) => {
         } else {
             dispatch(toggleSlotDropDialog({ isOpen: true, slotTitle: slot.title, slotId: slot._id }));
         }
+    };
+
+    const handleBlockedUsers = () => {
+        dispatch(toggleBlockedUsersDialog({ isOpen: true, slotId: slot._id }));
     };
 
     const EditSlotBtn = ({ slot }: { slot: registerSlot }) => {
@@ -80,10 +84,16 @@ const SlotOption = ({ slot }: { slot: registerSlot }) => {
                 >
                     Delete
                 </button>
+                <button
+                    id="blocked-users"
+                    onClick={handleBlockedUsers}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                    Blocked Users
+                </button>
             </PopoverContent>
 
         </Popover>
     )
-}
-
+};
 export default SlotOption;

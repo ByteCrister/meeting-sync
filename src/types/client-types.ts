@@ -54,6 +54,7 @@ export interface registerSlot {
     durationTo: string;
     guestSize: number;
     bookedUsers: string[];
+    blockedUsers: string[];
     trendScore: number;
     engagementRate: number;
     status: RegisterSlotStatus;
@@ -183,6 +184,10 @@ export interface componentSliceInitialTypes {
     slotDropDialog: {
         isOpen: boolean;
         slotTitle: string | null;
+        slotId: string | null;
+    };
+    blockedUsersDialog: {
+        isOpen: boolean;
         slotId: string | null;
     };
     notifyChangeDialog: {

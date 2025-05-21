@@ -16,6 +16,7 @@ import MeetingDialog from "@/components/global-ui/dialoges/meeting-dialog/Meetin
 import { BookedSlotDialog } from "@/components/booked-meetings/BookedSlotDialog";
 import { AlertDeleteBookedSlot } from "@/components/booked-meetings/AlertDeleteBookedSlot";
 import { Toaster } from "sonner";
+import BlockedUsersDialog from "@/components/my-slots/BlockedUsersDialog";
 
 
 export default function StoreProvider({
@@ -60,6 +61,7 @@ export default function StoreProvider({
           <AlertLogout />
           <MeetingDialog />
           <SlotDropDialog />
+          <BlockedUsersDialog />
           <NotifyChangeDialog />
           <BookedSlotDialog />
           <AlertDialogComponent />

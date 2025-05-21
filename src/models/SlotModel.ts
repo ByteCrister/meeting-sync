@@ -19,6 +19,7 @@ export interface ISlot extends Document {
     durationTo: string;
     guestSize: number;
     bookedUsers: string[]; // Array of userIds
+    blockedUsers: string[]; // Array of userIds
     trendScore: number;
     engagementRate: number;
     status: IRegisterStatus;
@@ -50,7 +51,7 @@ const SlotSchema = new Schema<ISlot>(
             type: String,
             required: [true, "Description is required"],
         },
-        meetingDate: { 
+        meetingDate: {
             type: Date,
             required: true,
         },
@@ -69,6 +70,12 @@ const SlotSchema = new Schema<ISlot>(
             min: [1, "Guest size must be at least 1"],
         },
         bookedUsers: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "users",
+            },
+        ],
+        blockedUsers: [
             {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "users",

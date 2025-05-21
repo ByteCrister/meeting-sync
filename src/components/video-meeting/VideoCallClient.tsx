@@ -15,10 +15,10 @@ import {
     updateParticipant,
     addChatMessage,
     removeChatMessage,
-    updateSettings,
     endMeeting,
     VideoCallParticipant,
     ChatMessage,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     VideoMeetingState
 } from "@/lib/features/videoMeeting/videoMeetingSlice";
 import { toast } from "sonner";
@@ -28,22 +28,20 @@ import { VideoParticipant } from "./VideoParticipant";
 import { VideoControls } from "./VideoControls";
 import { ChatSidebar } from "./ChatSidebar";
 import { SettingsSidebar } from "./SettingsSidebar";
-import { RootState } from "@/lib/store";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Users, Notification } from "@/types/client-types";
 import { useRouter } from "next/navigation";
 
-interface UserState {
-    user: Users | null;
-    notifications: Notification[] | null;
-    activities: { type: string; message: string; timestamp: string }[] | null;
-}
 
 export default function VideoCallClient() {
     const dispatch = useAppDispatch();
+
     const searchParams = useSearchParams();
     const roomId = searchParams?.get("roomId");
-    const userId = useAppSelector((state: RootState) => (state.userStore as UserState).user?._id);
-    const meetingState = useAppSelector((state: RootState) => state.videoMeeting) as VideoMeetingState;
+
+    const userId = useAppSelector((state) => state.userStore.user?._id);
+    const meetingState = useAppSelector((state) => state.videoMeeting);
+
     const [isMuted, setIsMuted] = useState(false);
     const [isVideoOn, setIsVideoOn] = useState(true);
     const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -52,6 +50,7 @@ export default function VideoCallClient() {
     const [isLoading, setIsLoading] = useState(true);
     const [networkQuality, setNetworkQuality] = useState<'good' | 'poor'>('good');
     const [reconnectAttempts, setReconnectAttempts] = useState(0);
+
     const router = useRouter();
 
     const localVideo = useRef<HTMLVideoElement>(null);
@@ -119,6 +118,9 @@ export default function VideoCallClient() {
                 return;
             } else if (joinStatusData.success && joinStatusData?.meeting) {
                 dispatch(setMeetingDetails(joinStatusData.meeting));
+            } else if (!joinStatusData.success) {
+                setVideoCallStatus(VideoCallErrorTypes.MEETING_NOT_FOUND);
+                return;
             }
 
             if (!socketRef.current) {
@@ -247,7 +249,16 @@ export default function VideoCallClient() {
             remoteStreamsRef.current = {};
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [roomId, userId, dispatch]);
+    }, [roomId, userId]);
+
+    useEffect(() => {
+        if (
+            meetingState.status === VideoCallStatus.ACTIVE ||
+            meetingState.status === VideoCallStatus.ENDED
+        ) {
+            console.log("Meeting status changed:", meetingState.status);
+        }
+    }, [meetingState.status]);
 
     const toggleMute = async () => {
         if (localStreamRef.current) {
@@ -384,8 +395,7 @@ export default function VideoCallClient() {
                 meetingId: roomId,
                 data: { message }
             }
-            const resData = await updateVideoCall(objectBody);
-            addChatMessage(resData.data);
+            await updateVideoCall(objectBody);
         }
     };
 
@@ -397,7 +407,6 @@ export default function VideoCallClient() {
                 data: { messageId }
             }
             await updateVideoCall(objectBody);
-            removeChatMessage(messageId);
         }
     };
 
@@ -502,14 +511,16 @@ export default function VideoCallClient() {
                     <SettingsSidebar
                         settings={meetingState.settings}
                         onUpdateSettings={async (settings) => {
-                            const objectBody = {
-                                type: VCallUpdateApiType.HOST_SETTING,
-                                meetingId: roomId || "",
-                                data: settings
-                            };
+                            // ? Setting can change only by the Host
+                            if (meetingState.hostId.toString() === userId?.toString()) {
+                                const objectBody = {
+                                    type: VCallUpdateApiType.HOST_SETTING,
+                                    meetingId: roomId || "",
+                                    data: settings
+                                };
 
-                            await updateVideoCall(objectBody)
-                            dispatch(updateSettings(settings))
+                                await updateVideoCall(objectBody);
+                            }
                         }}
                     />
                 )}

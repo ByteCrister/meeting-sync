@@ -50,7 +50,6 @@ const useNotificationSocket = () => {
             // Always remove previous listeners before setting new ones
             socket.off(SocketTriggerTypes.RECEIVED_NOTIFICATION);
             socket.off(SocketTriggerTypes.MEETING_STARTED);
-            socket.off(SocketTriggerTypes.HOST_JOINED);
             socket.off(SocketTriggerTypes.USER_SLOT_BOOKED);
             socket.off(SocketTriggerTypes.INCREASE_BOOKED_USER);
             socket.off(SocketTriggerTypes.DECREASE_BOOKED_USER);
@@ -75,16 +74,11 @@ const useNotificationSocket = () => {
 
                 // Video Meeting is created soon Host will join
                 socket.on(SocketTriggerTypes.MEETING_STARTED, (data) => {
-                    dispatch(addSingleNotification(data.notificationData));
+                    const { notification, slotId } = data.notificationData;
+                    dispatch(addSingleNotification(notification));
                     dispatch(incrementNotificationCount());
+                    dispatch(updateBookedMeetingStatus({ slotId, newStatus: RegisterSlotStatus.Ongoing }));
                     ShadcnToast("New notification arrived!");
-                    // dispatch(updateBookedMeetingStatus({ slotId: slot, newStatus: RegisterSlotStatus.Ongoing }));
-                });
-
-                // Host just joined the meeting
-                socket.on(SocketTriggerTypes.HOST_JOINED, (data) => {
-                    ShadcnToast("Meeting is started!");
-                    dispatch(updateBookedMeetingStatus({ slotId: data.notificationData.slot, newStatus: RegisterSlotStatus.Ongoing }));
                 });
 
                 socket.on(SocketTriggerTypes.USER_SLOT_BOOKED, (data) => {
