@@ -33,7 +33,7 @@ const BookUsersPopover = ({ Slot }: { Slot: registerSlot }) => {
     if (open) {
       fetchUsers();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const handleUserClick = (userId: string) => {
@@ -44,20 +44,25 @@ const BookUsersPopover = ({ Slot }: { Slot: registerSlot }) => {
     setIsBlockLoading(true);
     const resData = await performPopBlockUser(userId, slotId);
     if (resData.success) {
-      await handlerUserRemove(userId, slotId);
+      await handlerUserRemove(userId, slotId, true); 
     }
-    setIsBlockLoading(true);
+    setIsBlockLoading(false); 
   };
 
-  const handlerUserRemove = async (userId: string, slotId: string) => {
-    setIsRemoveLoading(isBlockLoading ? false : true);
+  const handlerUserRemove = async (
+    userId: string,
+    slotId: string,
+    calledFromBlock = false
+  ) => {
+    if (!calledFromBlock) setIsRemoveLoading(true); 
     const resData = await performPopRemoveUser(userId, slotId);
     if (resData.success) {
-      setUsers(prev => prev.filter(user => user._id !== userId));
+      setUsers((prev) => prev.filter((user) => user._id !== userId));
       decreaseBookedUsers({ bookedUserId: userId, sloId: slotId });
     }
-    setIsRemoveLoading(false);
+    if (!calledFromBlock) setIsRemoveLoading(false); 
   };
+
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
