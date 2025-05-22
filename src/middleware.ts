@@ -4,15 +4,6 @@ import { verifyToken } from './utils/server/verifyToken';
 const PUBLIC_ROUTES = [
     '/',
     '/user-authentication',
-    '/searched-profile',
-    '/meeting-post-feed',
-    '/followers',
-    '/following',
-    '/my-slots',
-    '/popular',
-    '/trending',
-    '/booked-meetings',
-    '/video-meeting'
 ];
 
 const PUBLIC_API_ROUTES = [
@@ -25,7 +16,7 @@ const PUBLIC_API_ROUTES = [
 ];
 
 const ALWAYS_ALLOWED_AUTH_ROUTES = [
-    '/api/auth/user/logout',
+    '/api/auth/user/signup',
 ];
 const API_PREFIX = '/api';
 
