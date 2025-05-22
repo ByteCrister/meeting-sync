@@ -41,10 +41,10 @@ type CustomTooltipProps = TooltipProps<number, string> & {
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800">
-                <p className="font-semibold text-gray-900 dark:text-gray-100">{label}</p>
+            <div className="bg-white p-4 rounded-lg shadow-lg border border-gray-200">
+                <p className="font-semibold text-gray-900">{label}</p>
                 <div className="space-y-1 mt-2">
-                    <p className="text-indigo-600 dark:text-indigo-400">
+                    <p className="text-indigo-600">
                         Score: {payload[0].value.toFixed(2)}
                     </p>
                     {payload[0].payload.category && (
@@ -57,10 +57,10 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
                             variant="secondary"
                             className={`${
                                 payload[0].payload.trend === "up"
-                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                                    ? "bg-emerald-100 text-emerald-700"
                                     : payload[0].payload.trend === "down"
-                                    ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                                    : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-gray-100 text-gray-700"
                             }`}
                         >
                             {payload[0].payload.trend === "up" ? "↑ Trending Up" : 
@@ -103,7 +103,7 @@ export default function TrendingKeywordsChart() {
 
     if (loading) {
         return (
-            <Card className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+            <Card className="bg-gradient-to-br from-white to-gray-50">
                 <CardHeader>
                     <Skeleton className="h-8 w-48" />
                 </CardHeader>
@@ -116,7 +116,7 @@ export default function TrendingKeywordsChart() {
 
     if (error) {
         return (
-            <Card className="w-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+            <Card className="w-full bg-gradient-to-br from-white to-gray-50">
                 <CardHeader>
                     <CardTitle>Error</CardTitle>
                 </CardHeader>
@@ -133,7 +133,7 @@ export default function TrendingKeywordsChart() {
     const trendingUp = data.filter((k) => k.trend === "up").slice(0, 3);
 
     return (
-        <Card className="w-full hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+        <Card className="w-full hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-gray-50">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                 <Image src='/images/word.png' width={30} height={30} alt="world-image" />
@@ -152,7 +152,7 @@ export default function TrendingKeywordsChart() {
                                 <Badge
                                     key={keyword.word}
                                     variant="secondary"
-                                    className="bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700 dark:from-emerald-900 dark:to-emerald-800 dark:text-emerald-300 hover:from-emerald-200 hover:to-emerald-100 dark:hover:from-emerald-800 dark:hover:to-emerald-700 transition-all duration-200"
+                                    className="bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700 hover:from-emerald-200 hover:to-emerald-100 transition-all duration-200"
                                 >
                                     {keyword.word} ↑
                                 </Badge>
@@ -162,7 +162,7 @@ export default function TrendingKeywordsChart() {
 
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={topKeywords}>
-                            <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-800" />
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
                             <XAxis
                                 dataKey="word"
                                 tick={{ fontSize: 12, fill: 'currentColor' }}

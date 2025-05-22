@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import ClientProvider from "./ClientProvider";
 import NotificationSocketProvider from "@/utils/socket/NotificationSocketProvider";
+import ForceLightMode from "@/components/global-ui/ui-component/ForceLightMode";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <ForceLightMode />
         <ClientProvider>
           <NotificationSocketProvider />
           {children}

@@ -67,7 +67,7 @@ export default function TrendingTopicsCluster() {
 
     if (loading) {
         return (
-            <Card className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+            <Card className="bg-gradient-to-br from-white to-gray-50">
                 <CardHeader>
                     <Skeleton className="h-8 w-48" />
                 </CardHeader>
@@ -80,7 +80,7 @@ export default function TrendingTopicsCluster() {
 
     if (error) {
         return (
-            <Card className="w-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+            <Card className="w-full bg-gradient-to-br from-white to-gray-50">
                 <CardHeader>
                     <CardTitle>Error</CardTitle>
                 </CardHeader>
@@ -95,7 +95,7 @@ export default function TrendingTopicsCluster() {
 
     if (data.length === 0) {
         return (
-            <Card className="w-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+            <Card className="w-full bg-gradient-to-br from-white to-gray-50">
                 <CardHeader>
                     <CardTitle>No Trending Topics</CardTitle>
                 </CardHeader>
@@ -107,7 +107,7 @@ export default function TrendingTopicsCluster() {
     }
 
     return (
-        <Card className="w-full hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+        <Card className="w-full hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-gray-50">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Image src='/images/trend.png' width={30} height={30} alt="world-image" />
@@ -122,37 +122,37 @@ export default function TrendingTopicsCluster() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.1 }}
-                            className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 border border-gray-100 dark:border-gray-800"
+                            className="p-4 rounded-lg bg-gradient-to-r from-gray-50 to-white border border-gray-100"
                         >
                             <div className="flex items-center gap-3 mb-4">
                                 <div className={`h-8 w-8 rounded-full bg-gradient-to-r ${clusterColors[parseInt(clusterId) % clusterColors.length]} flex items-center justify-center text-white font-bold`}>
                                     {clusterId}
                                 </div>
-                                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                                <h3 className="text-lg font-medium text-gray-900">
                                     Topic Cluster {clusterId}
                                 </h3>
                             </div>
                             <ul className="space-y-3">
                                 {slots.slice(0, 3).map((slot, index) => (
                                     <motion.li
-                                        key={slot._id + index}
+                                        key={slot._id + index + slot.category}
                                         whileHover={{ scale: 1.02 }}
-                                        className="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition-all duration-200"
+                                        className="flex items-center gap-3 p-3 rounded-lg bg-white shadow-sm hover:shadow-md transition-all duration-200"
                                     >
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                            <p className="font-semibold text-gray-900  truncate">
                                                 {slot.title}
                                             </p>
                                             <div className="flex items-center gap-2 mt-1">
-                                                <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-800">
+                                                <Badge variant="secondary" className="bg-gray-100">
                                                     {slot.category}
                                                 </Badge>
                                                 {slot.sentiment !== undefined && (
                                                     <Badge
                                                         variant="secondary"
                                                         className={`${slot.sentiment > 0
-                                                            ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                                                            : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                                                            ? "bg-green-100 text-green-700"
+                                                            : "bg-red-100 text-red-700"
                                                             }`}
                                                     >
                                                         {slot.sentiment > 0 ? "↑ Positive" : "↓ Negative"}

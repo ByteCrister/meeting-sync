@@ -14,7 +14,7 @@ function LoadingSkeleton() {
     return (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
             {[1, 2, 3].map((i) => (
-                <Card key={i} className="p-6 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+                <Card key={i} className="p-6 bg-gradient-to-br from-white to-gray-50">
                     <Skeleton className="h-8 w-3/4 mb-4" />
                     <Skeleton className="h-32 w-full" />
                 </Card>
