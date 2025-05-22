@@ -11,18 +11,18 @@ export const POST = async (req: NextRequest) => {
     try {
         const body = await req.json();
 
-        const { username, email, password, image, profession, timeZone } = body;
+        const { full_name, email, password, timeZone } = body;
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const newUser = new UserModel({
-            username,
             email,
-            password: hashedPassword,
-            image,
             timeZone,
-            profession,
+            username: full_name,
+            password: hashedPassword,
+            image: "",
+            profession: "",
             trendScore: 0,
             searchScore: 0,
             followers: [],

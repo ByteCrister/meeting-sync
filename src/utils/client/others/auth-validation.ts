@@ -44,24 +44,20 @@ export const signInValidation = Yup.object({
     password: passwordYupObject(),
 });
 
-export const signUpValidation = Yup.object({
-    username: Yup.string()
-        .trim()
-        .matches(/^[A-Za-z\s]+$/, "Name must contain only letters and spaces")
-        .min(3, "Name must be at least 3 characters")
-        .max(50, "Name must be 50 characters or less")
-        .required("Name is required"),
-    image: Yup.string()
-        .trim()
-        .required("Profile image is required"),
-    profession: Yup.string()
-        .trim()
-        .min(2, "Profession must be at least 2 characters")
-        .max(100, "Profession must be 100 characters or less")
-        .required("Profession is required"),
-    timeZone: Yup.string()
-        .trim()
-        .required("Time zone is required"),
-    email: emailYupObject(),
-    password: passwordYupObject(),
-});
+export const signUpValidation = (isConfirmStage: boolean) => {
+    Yup.object({
+        full_name: Yup.string()
+            .trim()
+            .matches(/^[A-Za-z\s]+$/, "Name must contain only letters and spaces")
+            .min(3, "Name must be at least 3 characters")
+            .max(50, "Name must be 50 characters or less")
+            .required("Name is required"),
+        email: emailYupObject(),
+        password: passwordYupObject(),
+        ...(isConfirmStage && {
+            confirm_password: Yup.string()
+                .oneOf([Yup.ref("password")], "Passwords must match")
+                .required("Confirm password is required"),
+        }),
+    });
+}

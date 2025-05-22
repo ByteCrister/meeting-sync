@@ -34,6 +34,12 @@ const chatBoxSlice = createSlice({
                     ? { ...item, [action.payload.keyField]: action.payload.value } : item;
             })
         },
+        updateSeenMessage: (state, action: PayloadAction<string[]>) => {
+            const seenIds = new Set(action.payload);
+            state.activeUserChat.chats = state.activeUserChat.chats.map((msg) =>
+                seenIds.has(msg._id) ? { ...msg, seen: true } : msg
+            );
+        },
         addNewMessage: (state, action: PayloadAction<chatBoxUserChatType>) => {
             state.activeUserChat.chats.push(action.payload);
         },
@@ -51,6 +57,7 @@ export const {
     setChatBoxUserList,
     setCountOfUnseenMessage,
     updateChatBoxUserList,
+    updateSeenMessage,
     addNewMessage,
     deleteChatMessage
 } = chatBoxSlice.actions;

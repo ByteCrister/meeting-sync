@@ -6,6 +6,7 @@ import { triggerSocketEvent } from '@/utils/socket/triggerSocketEvent';
 import mongoose, { Types } from 'mongoose';
 import { NextRequest, NextResponse } from 'next/server';
 
+
 // GET: get booked users or get blocked users
 export async function GET(req: NextRequest) {
     try {
@@ -18,6 +19,11 @@ export async function GET(req: NextRequest) {
         if (!slotId || !Types.ObjectId.isValid(slotId)) {
             return NextResponse.json({ message: "Valid slotId is required" }, { status: 400 });
         }
+
+        if (type !== "users" && type !== "blocked-users") {
+            return NextResponse.json({ message: "Invalid type. Must be 'users' or 'blocked'" }, { status: 400 });
+        }
+
 
         const fieldToPopulate = type === "users" ? "bookedUsers" : "blockedUsers";
 
@@ -34,6 +40,7 @@ export async function GET(req: NextRequest) {
             username: user.username,
             email: user.email,
             image: user.image,
+            ...(type === 'users' && { isRemoved: false }),
         }));
 
         return NextResponse.json({ success: true, data: formattedUsers }, { status: 200 });
@@ -79,14 +86,18 @@ export async function POST(req: NextRequest) {
     }
 }
 
-// PUT: Unblock user (remove from blockedUsers)
+// PUT: Unblock user (remove from blockedUsers) + Un-do remove users
 export async function PUT(req: NextRequest) {
     try {
         await ConnectDB();
-        const { userId, slotId } = await req.json();
+        const { userId, slotId, type } = await req.json();
 
-        if (!userId || !slotId) {
+        if (!userId || !slotId || !type) {
             return NextResponse.json({ message: "Missing userId or slotId" }, { status: 400 });
+        }
+
+        if (type !== "unblock-user" && type !== "undo-remove-user") {
+            return NextResponse.json({ message: "Invalid type. Must be 'unblock-user' or 'undo-remove-user'" }, { status: 400 });
         }
 
         const slot = await SlotModel.findById(slotId);
@@ -94,19 +105,30 @@ export async function PUT(req: NextRequest) {
             return NextResponse.json({ message: "Slot not found" }, { status: 404 });
         }
 
-        // Remove userId from blockedUsers
-        slot.blockedUsers = slot.blockedUsers.filter(
-            (id: mongoose.Types.ObjectId) => id.toString() !== userId
-        );
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+
+        if (type === 'unblock-user') {
+            // Remove user from blockedUsers if exists
+            slot.blockedUsers = slot.blockedUsers.filter(
+                (id: mongoose.Types.ObjectId) => !id.equals(userObjectId)
+            );
+        } else {
+            // Add user back to bookedUsers if not already there
+            if (!slot.bookedUsers.some((id: mongoose.Types.ObjectId) => id.equals(userObjectId))) {
+                slot.bookedUsers.push(userObjectId);
+            }
+        }
 
         await slot.save();
 
-        return NextResponse.json({ success: true, message: "User unblocked successfully" });
+        const action = type === 'unblock-user' ? "unblocked" : "re-added to booked users";
+        return NextResponse.json({ success: true, message: `User ${action} successfully` });
+
     } catch (error) {
-        console.error("Error unblocking user:", error);
+        console.error("Error unblocking or re-adding user:", error);
         return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
     }
-};
+}
 
 export async function DELETE(req: NextRequest) {
     try {

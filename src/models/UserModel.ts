@@ -66,12 +66,9 @@ const UserSchema = new Schema<IUsers>(
         },
         image: {
             type: String,
-            required: true,
         },
         profession: {
-            type: String,
-            trim: true,
-            required: [true, "Profession is required"],
+            type: String
         },
         timeZone: {
             type: String,

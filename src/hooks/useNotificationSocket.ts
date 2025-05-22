@@ -2,7 +2,7 @@
 
 import ShadcnToast from "@/components/global-ui/toastify-toaster/ShadcnToast";
 import { updateBookedMeetingStatus } from "@/lib/features/booked-meetings/bookedSlice";
-import { addNewMessage, deleteChatMessage, setCountOfUnseenMessage } from "@/lib/features/chat-box-slice/chatBoxSlice";
+import { addNewMessage, deleteChatMessage, setCountOfUnseenMessage, updateSeenMessage } from "@/lib/features/chat-box-slice/chatBoxSlice";
 import { updateSlotBookedUsers } from "@/lib/features/news-feed/newsFeedSlice";
 import { decreaseBookedUsers, increaseBookedUsers, updateSlotStatus } from "@/lib/features/Slots/SlotSlice";
 import { addSingleNotification, incrementNotificationCount } from "@/lib/features/users/userSlice";
@@ -127,6 +127,12 @@ const useNotificationSocket = () => {
                     }
                 });
 
+                socket.on(SocketTriggerTypes.UPDATE_MESSAGE_SEEN, (data) => {
+                    if (activeChatRef.current?._id === data.notificationData.user_id) {
+                        dispatch(updateSeenMessage(data.notificationData.data));
+                    }
+                });
+
                 socket.on(SocketTriggerTypes.DELETE_CHAT_MESSAGE, (data) => {
                     dispatch(deleteChatMessage(data.notificationData));
                 });
@@ -160,7 +166,7 @@ const useNotificationSocket = () => {
         };
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?._id]);
+    }, [dispatch, user?._id]);
 
 };
 

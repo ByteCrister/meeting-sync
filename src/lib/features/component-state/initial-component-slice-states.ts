@@ -26,9 +26,11 @@ export const initialSate: componentSliceInitialTypes = {
     friendDropDialog: { isOpen: false, user: null },
     slotDialog: { isOpen: false, mode: 'create', slotField: initialSlotField },
     slotDropDialog: { isOpen: false, slotTitle: null, slotId: null },
-    blockedUsersDialog: {isOpen: false, slotId: null},
+    blockedUsersDialog: { isOpen: false, slotId: null },
     notifyChangeDialog: { isOpen: false, notificationId: null, senderId: null, mode: 'notification', isDisable: false },
     profileUpdateDialog: { isOpen: false, updateField: null, username: null, title: null, category: null, timeZone: null, image: null },
     deleteBookedSlotAlert: { isOpen: false, slotId: null },
-    viewBookedSlotDialog: { isOpen: false, Slot: null }
+    viewBookedSlotDialog: { isOpen: false, Slot: null },
+    viewMessageUserList: { isOpen: false },
+    viewChatBox: {isOpen: false},
 };

@@ -44,7 +44,7 @@ const FriendDropDialog = ({ listType }: PropTypes) => {
 
   return (
     <AlertDialog open={friendDropDialog.isOpen} onOpenChange={handleOnChange}>
-      <AlertDialogContent className="border-gray-400 !rounded-2xl">
+      <AlertDialogContent className="bg-white border-gray-400 !rounded-2xl">
         <AlertDialogHeader>
           <AlertDialogTitle>{listType === 'followers' ? 'Remove' : 'Unfollow'}</AlertDialogTitle>
           <AlertDialogDescription>

@@ -5,6 +5,7 @@ import { userSignInType, userSignUpType } from "@/types/client-types";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import ShowToaster from "../global-ui/toastify-toaster/show-toaster";
 import apiService from "@/utils/client/api/api-services";
+import { getFormattedTimeZone } from "@/utils/client/date-formatting/getFormattedTimeZone";
 
 type AuthenticateOTPPropTypes = {
     userInfo: userSignUpType | userSignInType | undefined;
@@ -60,7 +61,7 @@ const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setP
 
     // * Api function for sign Up
     const signUpApi = async () => {
-        const resData = await apiService.post(`/api/auth/user/signup`, { ...userInfo });
+        const resData = await apiService.post(`/api/auth/user/signup`, { ...userInfo, timeZone: getFormattedTimeZone() });
         if (resData.success) {
             ShowToaster('Successfully registered.', 'success');
             setTimeout(() => {

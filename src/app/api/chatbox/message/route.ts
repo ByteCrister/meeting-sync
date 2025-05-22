@@ -53,6 +53,7 @@ export async function GET(req: NextRequest) {
                     user_id: currentUserChats.includes(msg)
                         ? currentUserId.toString()
                         : selectedFriendId,
+                    seen: msg.seen
                 }))
                 .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
@@ -156,21 +157,23 @@ export async function POST(req: NextRequest) {
             message: newMessage.message,
             createdAt: newMessage.time,
             user_id: currentUserId,
+            seen: isSeen,
         };
+
 
         // Save message only in sender's chatbox
         await updateUserChatBox(currentUserId, participantsId, newMessage);
 
         // Trigger socket to send message
-        triggerSocketEvent({
-            userId: participantsId,
-            type: SocketTriggerTypes.SEND_NEW_CHAT_MESSAGE,
-            notificationData: responseMessage
-        });
+        if (isParticipantsChatBoxOpened) {
+            triggerSocketEvent({
+                userId: participantsId,
+                type: SocketTriggerTypes.SEND_NEW_CHAT_MESSAGE,
+                notificationData: responseMessage
+            });
+        }
 
-        // Notify participant if they are online but chatbox is closed
-        // console.log(`Should increase count of unseen messages: ${!!isParticipantsChatBoxOpened && isParticipantOnline && isSenderIsLastParticipant}`);
-        if (!isParticipantsChatBoxOpened && isParticipantOnline && isSenderIsLastParticipant) {
+        if (!isParticipantsChatBoxOpened) {
             triggerSocketEvent({
                 userId: participantsId,
                 type: SocketTriggerTypes.INCREASE_UNSEEN_MESSAGE_COUNT,
@@ -205,8 +208,8 @@ export async function PUT(req: NextRequest) {
                     return NextResponse.json({ message: "Participant ID required" }, { status: 400 });
                 }
                 // Update the sender's message "seen" status in recipient's chatBox
-                await resetUnseenMessageCount(participantId, currentUserId);
-                return NextResponse.json({ success: true, message: "Unseen messages reset" });
+                const unseenMsgIds = await resetUnseenMessageCount(participantId, currentUserId);
+                return NextResponse.json({ success: true, message: "Unseen messages reset", data: unseenMsgIds });
 
             case ApiChatBoxMessageType.TOGGLE_IS_CHATBOX_OPEN:
                 if (isOpened === undefined) {

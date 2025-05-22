@@ -16,11 +16,16 @@ export const performPopBlockUser = async (userId: string, slotId: string) => {
 };
 
 export const performPopUnBlockUser = async (userId: string, slotId: string) => {
-    const resData = await apiService.put(`/api/user-slot-register/booked-users`, { userId, slotId });
+    const resData = await apiService.put(`/api/user-slot-register/booked-users`, { userId, slotId, type: 'unblock-user' });
     return resData;
 };
 
 export const performPopRemoveUser = async (userId: string, slotId: string) => {
     const responseData = await apiService.delete("/api/user-slot-register/booked-users", { slotId, userId });
     return responseData;
+}
+
+export const performUndoPopUserRemove = async(userId: string, slotId: string)=>{
+    const resData = await apiService.put(`/api/user-slot-register/booked-users`, { userId, slotId, type: 'undo-remove-user' });
+    return resData;
 }

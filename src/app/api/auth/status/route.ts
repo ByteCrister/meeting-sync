@@ -81,7 +81,7 @@ export async function PUT(req: NextRequest) {
         const body = await req.json();
         const { field, value } = body;
 
-        if (!field || !value) {
+        if (!field || (field !== 'image' && !value)) {
             return NextResponse.json({ message: 'Missing query parameters' }, { status: 400 });
         }
 

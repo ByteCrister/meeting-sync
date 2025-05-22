@@ -67,9 +67,8 @@ export const resetUnseenMessageCount = async (participantId: string) => {
             participantId,
             type: ApiChatBoxMessageType.RESET_UNSEEN_MESSAGE_COUNT
         });
-    if (!resData.success) return false;
 
-    return resData.success;
+    return resData;
 };
 
 // ? Toggle chat box open/close status
@@ -79,4 +78,4 @@ export const toggleChatBoxStatus = async (isOpened: boolean) => {
         type: ApiChatBoxMessageType.TOGGLE_IS_CHATBOX_OPEN
     });
     return true;
-}
+};

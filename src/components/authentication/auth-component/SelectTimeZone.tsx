@@ -69,7 +69,7 @@ export const timeZones = [
 interface SelectTimeZoneProps {
     OnChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     Value: string;
-    GetValidationString: (field: "username" | "profession" | "image" | "timeZone" | "email" | "password") => React.JSX.Element;
+    GetValidationString: (field: "full_name" | "profession" | "image" | "timeZone" | "email" | "password") => React.JSX.Element;
 }
 
 export function SelectTimeZone({

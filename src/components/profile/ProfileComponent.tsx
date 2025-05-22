@@ -1,18 +1,17 @@
-'use client';
+"use client";
 
-import React, { useRef, useState } from 'react';
-import EditableField from './EditableField';
-import StatCard from './StatCard';
-import ProfileImage from './ProfileImage';
-import { useAppDispatch, useAppSelector } from '@/lib/hooks';
-import { handleImage } from '@/utils/client/others/image-handler';
-import ImageCropDialog from '../global-ui/dialoges/ImageCropDialog';
-import LoadingUIBlackBullfrog from '../global-ui/ui-component/LoadingUIBlackBullfrog';
-import apiService from '@/utils/client/api/api-services';
-import { updateUserInfo } from '@/lib/features/users/userSlice';
-import ShowToaster from '../global-ui/toastify-toaster/show-toaster';
-import { APISendUpdatedTimeZoneEmail } from '@/utils/client/api/api-send-email';
-
+import React, { useRef, useState } from "react";
+import EditableField from "./EditableField";
+import StatCard from "./StatCard";
+import ProfileImage from "./ProfileImage";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { handleImage } from "@/utils/client/others/image-handler";
+import ImageCropDialog from "../global-ui/dialoges/ImageCropDialog";
+import LoadingUIBlackBullfrog from "../global-ui/ui-component/LoadingUIBlackBullfrog";
+import apiService from "@/utils/client/api/api-services";
+import { updateUserInfo } from "@/lib/features/users/userSlice";
+import ShowToaster from "../global-ui/toastify-toaster/show-toaster";
+import { APISendUpdatedTimeZoneEmail } from "@/utils/client/api/api-send-email";
 
 // interface ProfileData {
 //   username: string;
@@ -32,28 +31,30 @@ type LoadingButtonStateType = {
   timeZone: boolean;
   profession: boolean;
   image: boolean;
-}
+};
 const LoadingButtonState: LoadingButtonStateType = {
-  'username': false,
-  'title': false,
-  'timeZone': false,
-  'profession': false,
-  'image': false,
-}
-
+  username: false,
+  title: false,
+  timeZone: false,
+  profession: false,
+  image: false,
+};
 
 export default function ProfileComponent() {
-  const { user } = useAppSelector(state => state.userStore);
+  const { user } = useAppSelector((state) => state.userStore);
   const dispatch = useAppDispatch();
 
-  const [isLoading, setIsLoading] = useState<LoadingButtonStateType>(LoadingButtonState)
+  const [isLoading, setIsLoading] =
+    useState<LoadingButtonStateType>(LoadingButtonState);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isOpen, setIsOpen] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(user?.image || '');
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    user?.image || ""
+  );
 
-  if (!user) return <LoadingUIBlackBullfrog />
+  if (!user) return <LoadingUIBlackBullfrog />;
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -61,38 +62,59 @@ export default function ProfileComponent() {
 
   // * Handle file selection, validation & trigger cropping
   const onFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    handleLoadingChange('image', true);
+    handleLoadingChange("image", true);
     const base64Image = await handleImage(event, dispatch); // * return base64 string
     if (base64Image) {
       setImagePreview(base64Image);
       setIsOpen(true);
     }
-    handleLoadingChange('image', false);
+    handleLoadingChange("image", false);
   };
 
   const handleCroppedImage = (croppedImage: string) => {
     setImagePreview(croppedImage);
-    updateProfileField('image', croppedImage);
+    updateProfileField("image", croppedImage);
   };
 
   // * Change button loading
-  const handleLoadingChange = (field: ('title' | 'timeZone' | 'username' | 'image' | 'profession'), isLoading: boolean) => {
-    setIsLoading(prev => ({
+  const handleLoadingChange = (
+    field: "title" | "timeZone" | "username" | "image" | "profession",
+    isLoading: boolean
+  ) => {
+    setIsLoading((prev) => ({
       ...prev,
-      [field]: isLoading
+      [field]: isLoading,
     }));
   };
 
   // * Update fields
-  const updateProfileField = async (field: ('title' | 'timeZone' | 'username' | 'image' | 'profession'), value: string) => {
-    const responseData = await apiService.put(`/api/auth/status`, { field, value, });
+  const updateProfileField = async (
+    field: "title" | "timeZone" | "username" | "image" | "profession",
+    value: string
+  ) => {
+    const responseData = await apiService.put(`/api/auth/status`, {
+      field,
+      value,
+    });
     if (responseData.success) {
       dispatch(updateUserInfo({ field: field, updatedValue: value }));
-      ShowToaster(responseData.message, 'success');
+      ShowToaster(responseData.message, "success");
       // ? executes only if the field is timeZone and updated timeZone is not same as the previous timeZone
-      if (field === 'timeZone' && value !== responseData.previous) {
-        await APISendUpdatedTimeZoneEmail({ updatedValue: value, previousValue: responseData.previous })
+      if (field === "timeZone" && value !== responseData.previous) {
+        await APISendUpdatedTimeZoneEmail({
+          updatedValue: value,
+          previousValue: responseData.previous,
+        });
       }
+    }
+    if (field === "image") return responseData.success;
+  };
+
+  //* Remove Image directly
+  const handleRemoveImage = async () => {
+    const resData = await updateProfileField("image", "");
+    if (resData.success) {
+      dispatch(updateUserInfo({ field: 'image', updatedValue: "" }));
     }
   };
 
@@ -107,6 +129,7 @@ export default function ProfileComponent() {
             handleFileChange={onFileChange}
             isLoading={isLoading.image}
             fileInputRef={fileInputRef}
+            handleRemoveImage={handleRemoveImage}
           />
 
           {/* Editable Fields & Stats */}
@@ -114,34 +137,42 @@ export default function ProfileComponent() {
             <div className="space-y-4">
               <EditableField
                 label="Name"
-                field={'username'}
+                field={"username"}
                 value={user.username}
                 isLoading={isLoading.username}
-                handleLoadingChange={(isLoading: boolean) => handleLoadingChange('username', isLoading)}
+                handleLoadingChange={(isLoading: boolean) =>
+                  handleLoadingChange("username", isLoading)
+                }
                 updateProfileField={updateProfileField}
               />
               <EditableField
                 label="Title"
-                field={'title'}
+                field={"title"}
                 value={user.title}
                 isLoading={isLoading.title}
-                handleLoadingChange={(isLoading: boolean) => handleLoadingChange('title', isLoading)}
+                handleLoadingChange={(isLoading: boolean) =>
+                  handleLoadingChange("title", isLoading)
+                }
                 updateProfileField={updateProfileField}
               />
               <EditableField
                 label="Profession"
-                field={'profession'}
+                field={"profession"}
                 value={user.profession}
                 isLoading={isLoading.profession}
-                handleLoadingChange={(isLoading: boolean) => handleLoadingChange('profession', isLoading)}
+                handleLoadingChange={(isLoading: boolean) =>
+                  handleLoadingChange("profession", isLoading)
+                }
                 updateProfileField={updateProfileField}
               />
               <EditableField
                 label="Timezone"
-                field={'timeZone'}
+                field={"timeZone"}
                 value={user.timeZone}
                 isLoading={isLoading.timeZone}
-                handleLoadingChange={(isLoading: boolean) => handleLoadingChange('timeZone', isLoading)}
+                handleLoadingChange={(isLoading: boolean) =>
+                  handleLoadingChange("timeZone", isLoading)
+                }
                 updateProfileField={updateProfileField}
               />
             </div>
@@ -149,8 +180,14 @@ export default function ProfileComponent() {
             <div className="grid grid-cols-2 gap-4">
               <StatCard title="Followers" value={user.followers.length} />
               <StatCard title="Following" value={user.following.length} />
-              <StatCard title="Booked Meetings" value={user.bookedSlots.length} />
-              <StatCard title="Created Slots" value={user.registeredSlots.length} />
+              <StatCard
+                title="Booked Meetings"
+                value={user.bookedSlots.length}
+              />
+              <StatCard
+                title="Created Slots"
+                value={user.registeredSlots.length}
+              />
             </div>
           </div>
         </div>

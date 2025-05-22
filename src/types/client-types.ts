@@ -141,12 +141,10 @@ export interface ActivityType {
 
 // ? User Form Types
 export type userSignUpType = {
-    username: string;
+    full_name: string;
     email: string;
     password: string;
-    image: string,
-    profession: string,
-    timeZone: string
+    confirm_password: string;
 }
 export type userSignInType = {
     email: string;
@@ -213,6 +211,12 @@ export interface componentSliceInitialTypes {
     viewBookedSlotDialog: {
         isOpen: boolean;
         Slot: null | BookedSlotsTypes;
+    },
+    viewMessageUserList: {
+        isOpen: boolean;
+    },
+    viewChatBox: {
+        isOpen: boolean;
     }
 }
 
@@ -242,6 +246,7 @@ export interface chatBoxUserChatType {
     user_id: string;
     message: string;
     createdAt: string;
+    seen: boolean;
 }
 export interface chatBoxSliceTypes {
     isOpened: boolean;

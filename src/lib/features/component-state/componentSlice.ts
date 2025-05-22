@@ -42,6 +42,16 @@ const componentSlice = createSlice({
     },
     // ? ---------------- end --------------------
 
+
+    // ! ---------------- Chat box ----------------
+    toggleChatBox: (state, action: PayloadAction<{isOpen: boolean}>)=>{
+      state.viewChatBox.isOpen = action.payload.isOpen;
+    },
+    toggleMessageUserList: (state, action: PayloadAction<{isOpen: boolean}>)=>{
+      state.viewMessageUserList.isOpen = action.payload.isOpen;
+    },
+  // ! -------------------- end -------------------- 
+
     // ? For any kind of alert toggle this
     toggleAlertDialog: (state, action: PayloadAction<{ isOpen: boolean, title: string, description: string }>) => {
       state.alertDialogState = action.payload;
@@ -72,7 +82,9 @@ export const {
   toggleNotifyChangeDialog,
   toggleUpdateProfileDialog,
   toggleDeleteBookedSlotAlert,
-  toggleViewBookedSlot
+  toggleViewBookedSlot,
+  toggleChatBox,
+  toggleMessageUserList,
 } = componentSlice.actions;
 
 export default componentSlice;

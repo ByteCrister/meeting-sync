@@ -10,14 +10,14 @@ import { useRouter } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import LoaderBars from '../global-ui/ui-component/LoaderBars';
 import { decreaseBookedUsers } from '@/lib/features/Slots/SlotSlice';
-import { getPopBookedUsers, performPopBlockUser, performPopRemoveUser } from '@/utils/client/api/api-booked-users';
+import { getPopBookedUsers, performPopBlockUser, performPopRemoveUser, performUndoPopUserRemove } from '@/utils/client/api/api-booked-users';
 
 const BookUsersPopover = ({ Slot }: { Slot: registerSlot }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [isBlockLoading, setIsBlockLoading] = useState<boolean>(false);
   const [isRemoveLoading, setIsRemoveLoading] = useState<boolean>(false);
-  const [users, setUsers] = useState<{ _id: string; username: string; email: string; image: string }[]>([]);
+  const [users, setUsers] = useState<{ _id: string; username: string; email: string; image: string, isRemoved: boolean; }[]>([]);
   const router = useRouter();
 
   const fetchUsers = async () => {
@@ -44,9 +44,9 @@ const BookUsersPopover = ({ Slot }: { Slot: registerSlot }) => {
     setIsBlockLoading(true);
     const resData = await performPopBlockUser(userId, slotId);
     if (resData.success) {
-      await handlerUserRemove(userId, slotId, true); 
+      await handlerUserRemove(userId, slotId, true);
     }
-    setIsBlockLoading(false); 
+    setIsBlockLoading(false);
   };
 
   const handlerUserRemove = async (
@@ -54,13 +54,27 @@ const BookUsersPopover = ({ Slot }: { Slot: registerSlot }) => {
     slotId: string,
     calledFromBlock = false
   ) => {
-    if (!calledFromBlock) setIsRemoveLoading(true); 
+    if (!calledFromBlock) setIsRemoveLoading(true);
     const resData = await performPopRemoveUser(userId, slotId);
     if (resData.success) {
-      setUsers((prev) => prev.filter((user) => user._id !== userId));
-      decreaseBookedUsers({ bookedUserId: userId, sloId: slotId });
+      if (calledFromBlock) {
+        setUsers((prev) => prev.filter((user) => user._id !== userId));
+        decreaseBookedUsers({ bookedUserId: userId, sloId: slotId });
+      } else {
+        setUsers(prev => [...prev.map((user) => user._id === userId ? { ...user, isRemoved: true } : user)]);
+      }
     }
-    if (!calledFromBlock) setIsRemoveLoading(false); 
+    if (!calledFromBlock) setIsRemoveLoading(false);
+  };
+
+
+  const handleUndoRemove = async (userId: string, slotId: string) => {
+    setIsRemoveLoading(true);
+    const resData = await performUndoPopUserRemove(userId, slotId);
+    if (resData.success) {
+      setUsers(prev => [...prev.map((user) => user._id === userId ? { ...user, isRemoved: false } : user)]);
+    }
+    setIsRemoveLoading(false);
   };
 
 
@@ -112,14 +126,33 @@ const BookUsersPopover = ({ Slot }: { Slot: registerSlot }) => {
                 <div className="flex items-center space-x-2">
                   {
                     isRemoveLoading ? <LoaderBars />
-                      : (<button
-                        id='remove-user'
-                        disabled={isRemoveLoading}
-                        className="text-xs px-2 py-1 rounded-md bg-red-100 hover:bg-red-200 text-red-600"
-                        onClick={() => handlerUserRemove(user._id, Slot._id)} // Replace with real handler
-                      >
-                        Remove
-                      </button>)
+                      : user.isRemoved
+                        ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  id="undo-remove"
+                                  className="text-xs px-2 py-1 rounded-md bg-blue-100 hover:bg-blue-200 text-blue-600"
+                                  onClick={() => handleUndoRemove(user._id, Slot._id)}
+                                >
+                                  Undo
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-white bg-gray-800">
+                                Re-add user to bookings
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )
+                        : (<button
+                          id='remove-user'
+                          disabled={isRemoveLoading}
+                          className="text-xs px-2 py-1 rounded-md bg-red-100 hover:bg-red-200 text-red-600"
+                          onClick={() => handlerUserRemove(user._id, Slot._id)} // Replace with real handler
+                        >
+                          Remove
+                        </button>)
                   }
 
                   <TooltipProvider>
