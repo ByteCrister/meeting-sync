@@ -13,13 +13,8 @@ import {
     setMeetingDetails,
     VideoCallStatus,
     updateParticipant,
-    addChatMessage,
-    removeChatMessage,
     endMeeting,
     VideoCallParticipant,
-    ChatMessage,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    VideoMeetingState
 } from "@/lib/features/videoMeeting/videoMeetingSlice";
 import { toast } from "sonner";
 import { VideoCallErrorBoundary } from "./VideoCallErrorBoundary";
@@ -28,8 +23,6 @@ import { VideoParticipant } from "./VideoParticipant";
 import { VideoControls } from "./VideoControls";
 import { ChatSidebar } from "./ChatSidebar";
 import { SettingsSidebar } from "./SettingsSidebar";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Users, Notification } from "@/types/client-types";
 import { useRouter } from "next/navigation";
 
 
@@ -40,14 +33,15 @@ export default function VideoCallClient() {
     const roomId = searchParams?.get("roomId");
 
     const userId = useAppSelector((state) => state.userStore.user?._id);
+    const currentUser = useAppSelector(state => state.userStore.user);
     const meetingState = useAppSelector((state) => state.videoMeeting);
 
     const [isMuted, setIsMuted] = useState(false);
-    const [isVideoOn, setIsVideoOn] = useState(true);
+    const [isVideoOn, setIsVideoOn] = useState(false);
     const [isScreenSharing, setIsScreenSharing] = useState(false);
     const [showChat, setShowChat] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [networkQuality, setNetworkQuality] = useState<'good' | 'poor'>('good');
     const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
@@ -110,16 +104,19 @@ export default function VideoCallClient() {
 
             if (videoCallStatusData.isError) {
                 setVideoCallStatus(videoCallStatusData.errorType);
+                setIsLoading(false);
                 return;
             }
 
             const joinStatusData = await joinVideoCall(roomId);
             if (joinStatusData.success && joinStatusData?.meetingStatus === VideoCallStatus.WAITING) {
+                setIsLoading(false);
                 return;
             } else if (joinStatusData.success && joinStatusData?.meeting) {
                 dispatch(setMeetingDetails(joinStatusData.meeting));
             } else if (!joinStatusData.success) {
                 setVideoCallStatus(VideoCallErrorTypes.MEETING_NOT_FOUND);
+                setIsLoading(false);
                 return;
             }
 
@@ -210,18 +207,6 @@ export default function VideoCallClient() {
             socket.on(VMSocketTriggerTypes.RECEIVE_ICE_CANDIDATE, async ({ fromUserId, candidate }) => {
                 const peer = peersRef.current[fromUserId];
                 await peer?.addIceCandidate(new RTCIceCandidate(candidate));
-            });
-
-            socket.on(SocketTriggerTypes.NEW_METING_CHAT_MESSAGE, (message: ChatMessage) => {
-                dispatch(addChatMessage(message));
-            });
-
-            socket.on(SocketTriggerTypes.DELETE_METING_CHAT_MESSAGE, ({ _id }: { _id: string }) => {
-                dispatch(removeChatMessage(_id));
-            });
-
-            socket.on(SocketTriggerTypes.NEW_PARTICIPANT_JOINED, (participant: VideoCallParticipant) => {
-                dispatch(updateParticipant(participant));
             });
 
             socket.on('disconnect', () => {
@@ -453,9 +438,9 @@ export default function VideoCallClient() {
                                 <VideoParticipant
                                     stream={localStreamRef.current}
                                     participant={meetingState.participants.find((p: VideoCallParticipant) => p.userId === userId) || {
-                                        userId: userId || '',
-                                        username: 'You',
-                                        image: '',
+                                        userId: currentUser?._id || '',
+                                        username: currentUser?.username || '',
+                                        image: currentUser?.image || '',
                                         socketId: '',
                                         isMuted,
                                         isVideoOn,

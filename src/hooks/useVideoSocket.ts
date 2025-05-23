@@ -37,6 +37,7 @@ const useVideoSocket = (roomId: string) => {
             socket.off(SocketTriggerTypes.DELETE_METING_CHAT_MESSAGE);
             socket.off(SocketTriggerTypes.CHANGE_MEETING_SETTING);
             socket.off(SocketTriggerTypes.USER_LEAVED);
+            socket.off(SocketTriggerTypes.MEETING_ENDED);
 
 
             // Host just joined the meeting
@@ -48,6 +49,8 @@ const useVideoSocket = (roomId: string) => {
                 dispatch(addParticipant(data));
             });
             socket.on(SocketTriggerTypes.NEW_METING_CHAT_MESSAGE, (data) => {
+                console.log(`****New Message****`);
+                console.log(JSON.stringify(data, null, 2));
                 dispatch(addChatMessage(data));
             });
             socket.on(SocketTriggerTypes.DELETE_METING_CHAT_MESSAGE, ({ _id }) => {
@@ -80,7 +83,7 @@ const useVideoSocket = (roomId: string) => {
             socketRef.current = null;
         };
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?._id, roomId]);
 };
 

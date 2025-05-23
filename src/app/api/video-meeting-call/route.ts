@@ -56,7 +56,11 @@ export async function GET(req: NextRequest) {
         }
 
         const slot = await SlotModel.findById(meetingId).lean() as ISlot | null;
-        if (!slot || !slot.bookedUsers.map(id => id.toString()).includes(userId.toString())) {
+        const isHost = slot?.ownerId?.toString() === userId.toString();
+        const isValidParticipant = slot?.bookedUsers.some(id => id.toString() === userId.toString()) ? true : false;
+
+        if (!slot || !isHost || !isValidParticipant) {
+            console.log(`USER_NOT_PARTICIPANT`);
             return NextResponse.json({
                 success: true,
                 isError: true,

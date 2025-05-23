@@ -20,10 +20,10 @@ const apiService = {
             const response: AxiosResponse = await api.get(url, { params });
             const data = response.data;
 
-            if (data.isError) {
-                ShowToaster(`Error: ${data.errorType}`, "error");
-                return { success: false, errorType: data.errorType };
-            }
+            // if (data.isError) {
+            //     ShowToaster(`Error: ${data.errorType}`, "error");
+            //     return { success: false, errorType: data.errorType };
+            // }
 
             return data;
         } catch (error: unknown) {

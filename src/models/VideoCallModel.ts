@@ -72,6 +72,9 @@ const VideoCallSchema = new Schema<IVideoCall>(
                 ref: 'users',
                 required: true,
             },
+            socketId: {
+                type: String
+            },
             isMuted: {
                 type: Boolean,
                 default: false,
@@ -82,7 +85,7 @@ const VideoCallSchema = new Schema<IVideoCall>(
             },
             isVideoOn: {
                 type: Boolean,
-                default: true,
+                default: false,
             },
             sessions: [{
                 joinedAt: { type: Date, default: Date.now },

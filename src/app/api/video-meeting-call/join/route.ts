@@ -1,5 +1,5 @@
 import ConnectDB from '@/config/ConnectDB';
-import VideoCallModel, { IVideoCallParticipant } from '@/models/VideoCallModel';
+import VideoCallModel, { IVideoCall, IVideoCallParticipant } from '@/models/VideoCallModel';
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/utils/server/getUserFromToken';
 import { Types } from 'mongoose';
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
         const user = await UserModel.findById(userId).select('image username');
 
         // * Find the video call only if status is not ended
-        const videoCall = await VideoCallModel.findOne({
+        const videoCall: IVideoCall | null = await VideoCallModel.findOne({
             meetingId,
             status: { $ne: IVideoCallStatus.ENDED }
         });
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
             if (!alreadyJoined) {
                 videoCall.participants.push({
                     userId,
-                    socketId: getUserSocketId(userId),
+                    socketId: getUserSocketId(userId) || "",
                     isMuted: false,
                     isVideoOn: false,
                     isScreenSharing: false,
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
                 });
             } else {
                 const participantIndex = videoCall.participants.findIndex((p: IVideoCallParticipant) => String(p.userId) === String(userId));
-                videoCall.participants[participantIndex].socketId = getUserSocketId(userId);
+                videoCall.participants[participantIndex].socketId = getUserSocketId(userId) || "";
                 videoCall.participants[participantIndex].sessions.push({ joinedAt: new Date() });
             }
 
@@ -139,15 +139,16 @@ export async function GET(req: NextRequest) {
             if (participantIndex === -1) {
                 videoCall.participants.push({
                     userId,
-                    socketid: getUserSocketId(userId),
+                    socketId: getUserSocketId(userId) || "",
                     isMuted: false,
-                    isVideoOn: true,
+                    isVideoOn: false,
+                    isScreenSharing: false,
                     sessions: [{ joinedAt: new Date() }],
                 });
             } else {
                 // Already a participant — update join time and clear leftAt
-                videoCall.participants[participantIndex].socketId = getUserSocketId(userId);
-                videoCall.participant.sessions.push({ joinedAt: new Date() });
+                videoCall.participants[participantIndex].socketId = getUserSocketId(userId) || "";
+                videoCall.participants[participantIndex].sessions.push({ joinedAt: new Date() });
 
             }
             triggerRoomSocketEvent({
@@ -161,7 +162,7 @@ export async function GET(req: NextRequest) {
                     isMuted: false,
                     isVideoOn: false,
                     isScreenSharing: false,
-                    sessions: videoCall.participant.sessions
+                    sessions: participantIndex !== -1 ? videoCall.participants[participantIndex].sessions : [{ joinedAt: new Date() }]
                 }
             });
             await videoCall.save();
