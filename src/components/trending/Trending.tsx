@@ -15,8 +15,8 @@ function LoadingSkeleton() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
             {[1, 2, 3].map((i) => (
                 <Card key={i} className="p-6 bg-gradient-to-br from-white to-gray-50">
-                    <Skeleton className="h-8 w-3/4 mb-4" />
-                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-8 w-3/4 bg-neutral-300 mb-4" />
+                    <Skeleton className="h-32 bg-neutral-200 w-full" />
                 </Card>
             ))}
         </div>
@@ -45,10 +45,10 @@ export default function Trending() {
                         Real-time analysis of your meeting patterns and trends
                     </p>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                {/* <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
                     Live Updates
-                </div>
+                </div> */}
             </div>
 
             <Suspense fallback={<LoadingSkeleton />}>

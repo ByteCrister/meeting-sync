@@ -61,7 +61,7 @@ export const deleteMessage = async (participantId: string, messageId: string) =>
 };
 
 // ? reset unseen message count
-export const resetUnseenMessageCount = async (participantId: string) => {
+export const APIresetUnseenMessageCount = async (participantId: string) => {
     const resData = await apiService.put(`/api/chatbox/message`,
         {
             participantId,
@@ -79,3 +79,12 @@ export const toggleChatBoxStatus = async (isOpened: boolean) => {
     });
     return true;
 };
+
+
+export const setLastActiveParticipant = async (participantId: string) => {
+    await apiService.put(`/api/chatbox/message`, {
+        participantId,
+        type: ApiChatBoxMessageType.SET_LAST_ACTIVE_PARTICIPANT
+    });
+    return true;
+}

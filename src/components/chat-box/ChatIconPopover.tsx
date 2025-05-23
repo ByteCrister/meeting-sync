@@ -34,32 +34,33 @@ export default function ChatIconPopover() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (isPopOverOpen) {
-            const fetchData = async () => {
-                setLoading(true);
-                const responseData = await getLastParticipants(ApiChatBoxMessageType.GET_ACTIVE_USER);
-                dispatch(setChatBoxActiveUser(responseData.data));
-                dispatch(setCountOfUnseenMessage(responseData.count));
-                setLoading(false);
-            };
-            fetchData();
-        }
+        const fetchData = async () => {
+            setLoading(true);
+            const responseData = await getLastParticipants(ApiChatBoxMessageType.GET_ACTIVE_USER);
+            dispatch(setChatBoxActiveUser(responseData.data));
+            dispatch(setCountOfUnseenMessage(responseData.count));
+            setLoading(false);
+        };
+        fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [activeParticipant?._id]);
 
     const openPopoverFromDialog = async () => {
-        setDialogOpen(false);
+        setIsUserListOpen(false);
+        // console.log(`****openPopoverFromDialog: ${true}`);
         await toggleChatBoxStatus(true);
         dispatch(toggleChatBox({ isOpen: true }));
         dispatch(setChatBoxStatus(true));
     };
 
-    const setDialogOpen = async (isOpen: boolean) => {
+    const setIsUserListOpen = async (isOpen: boolean) => {
         dispatch(toggleMessageUserList({ isOpen: isOpen }));
     }
 
+    // * Handle open/close to this Popover
     const handlePopOver = async (open: boolean) => {
         dispatch(toggleChatBox({ isOpen: open }));
+        // console.log(`*****handlePopOver: ${open}`);
         await toggleChatBoxStatus(open);
     };
 
@@ -69,7 +70,7 @@ export default function ChatIconPopover() {
                 <PopoverTrigger asChild>
                     <button
                         onClick={() => {
-                            setDialogOpen(true);
+                            setIsUserListOpen(true);
                         }} // Open dialog instead of popover
                         className="relative p-2 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
                     >
@@ -114,7 +115,7 @@ export default function ChatIconPopover() {
                                             <button
                                                 id="chat-with-other-"
                                                 type="button"
-                                                onClick={() => { setDialogOpen(true) }}
+                                                onClick={() => { setIsUserListOpen(true) }}
                                                 className="p-1 rounded-full hover:bg-gray-100"
                                             >
                                                 <UserPlus className="w-5 h-5" />
@@ -141,7 +142,7 @@ export default function ChatIconPopover() {
 
             <NewMessageDialog
                 open={isUserListOpen}
-                onOpenChange={setDialogOpen}
+                onOpenChange={setIsUserListOpen}
                 onContinueToChatBox={openPopoverFromDialog}
             />
         </>

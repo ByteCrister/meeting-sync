@@ -10,32 +10,41 @@ import { SocketTriggerTypes } from "../constants";
  */
 export async function resetUnseenMessageCount(senderId: string, viewerUserId: string) {
     const chatBox = await ChatBoxModel.findOne({ ownerId: senderId });
-    if (!chatBox) return;
+    if (!chatBox) return [];
 
     const participant = chatBox.participants.get(viewerUserId);
-    if (!participant) return;
+    if (!participant) return [];
 
-    const unseenMsgIds: string[] = [];
+    // Step 1: Find all unseen messages
+    const unseenMessages = participant.chats.filter((chat: IMessage) => !chat.seen && chat._id);
+    const unseenMsgIds = unseenMessages.map((chat: IMessage) => chat._id!.toString());
 
-    // Mark messages as seen locally
-    const updatedChats = participant.chats.map((chat: IMessage) => {
-        if (!chat?.seen) {
-            if (chat._id) unseenMsgIds.push(chat._id.toString());
-            return { ...chat, seen: true };
-        }
-        return chat;
-    });
+    if (unseenMsgIds.length === 0) return [];
 
-    // Use $set to atomically replace the chat array
+    // Step 2: Perform atomic update using MongoDB array filters
     await ChatBoxModel.updateOne(
-        { ownerId: senderId },
-        { $set: { [`participants.${viewerUserId}.chats`]: updatedChats } }
+        {
+            ownerId: senderId,
+            [`participants.${viewerUserId}.chats._id`]: { $in: unseenMsgIds }
+        },
+        {
+            $set: {
+                [`participants.${viewerUserId}.chats.$[elem].seen`]: true
+            }
+        },
+        {
+            arrayFilters: [{ "elem._id": { $in: unseenMessages.map((chat: IMessage) => chat._id) } }]
+        }
     );
 
+    // Step 3: Trigger real-time event
     triggerSocketEvent({
         userId: senderId,
         type: SocketTriggerTypes.UPDATE_MESSAGE_SEEN,
-        notificationData: { data: unseenMsgIds, user_id: viewerUserId },
+        notificationData: {
+            data: unseenMsgIds,
+            user_id: viewerUserId,
+        },
     });
 
     return unseenMsgIds;

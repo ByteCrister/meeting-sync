@@ -7,7 +7,6 @@ import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import {
     deleteMessage,
     getChatMessages,
-    resetUnseenMessageCount,
     sendMessage,
 } from '@/utils/client/api/api-chat-box';
 import { ApiChatBoxMessageType } from '@/utils/constants';
@@ -15,7 +14,6 @@ import {
     addNewMessage,
     deleteChatMessage,
     setActiveUserChats,
-    updateSeenMessage,
 } from '@/lib/features/chat-box-slice/chatBoxSlice';
 import { chatBoxUserChatType } from '@/types/client-types';
 
@@ -23,24 +21,23 @@ export default function ChatBox() {
     const currentUserId = useAppSelector(state => state.userStore.user?._id);
     const participantId = useAppSelector(state => state.chatBoxStore.activeUserChat.user?._id);
     const chatMessages = useAppSelector(state => state.chatBoxStore.activeUserChat.chats);
+    const isUserListOpen = useAppSelector(state => state.componentStore.viewMessageUserList.isOpen);
     const [message, setMessage] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
     const dispatch = useAppDispatch();
 
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            const data = await getChatMessages(ApiChatBoxMessageType.GET_MESSAGES, participantId);
-            dispatch(setActiveUserChats(data as chatBoxUserChatType[]));
-            setLoading(false);
-            const resData = await resetUnseenMessageCount(participantId!);
-            if (resData.success) {
-                dispatch(updateSeenMessage(resData.data));
-            }
-        };
-        fetchData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [participantId]);
+        if(!isUserListOpen){
+            const fetchData = async () => {
+                setLoading(true);
+                const chatMessageData = await getChatMessages(ApiChatBoxMessageType.GET_MESSAGES, participantId);
+                dispatch(setActiveUserChats(chatMessageData as chatBoxUserChatType[]));
+                setLoading(false);
+            };
+            fetchData();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isUserListOpen, participantId]);
 
     useEffect(() => {
         const messagesContainer = document.querySelector('.messages-container');

@@ -5,6 +5,7 @@ import { ApiChatBoxMessageType, SocketTriggerTypes } from "@/utils/constants";
 import { getUnseenMessageCountFromUser } from "@/utils/server/getUnseenMessageCountFromUser";
 import { getUserIdFromRequest } from "@/utils/server/getUserFromToken";
 import { resetUnseenMessageCount } from "@/utils/server/resetUnseenMessageCount";
+import { setLastParticipantToChat } from "@/utils/server/setLastParticipantToChat";
 import { updateUserChatBox } from "@/utils/server/updateUserChatBox";
 import { getUserSocketId } from "@/utils/socket/socketUserMap";
 import { triggerSocketEvent } from "@/utils/socket/triggerSocketEvent";
@@ -160,12 +161,17 @@ export async function POST(req: NextRequest) {
             seen: isSeen,
         };
 
+        // console.log(`isParticipantOnline: ${isParticipantOnline}`);
+        // console.log(`lastChattedUserOfParticipants: ${lastChattedUserOfParticipants}`);
+        // console.log(`isSenderIsLastParticipant: ${isSenderIsLastParticipant}`);
+        // console.log(`isSenderIsLastParticipantAndChatBoxOpened: ${isSenderIsLastParticipantAndChatBoxOpened}`);
+        // console.log(`isSeen: ${isSeen}`);
 
         // Save message only in sender's chatbox
         await updateUserChatBox(currentUserId, participantsId, newMessage);
 
         // Trigger socket to send message
-        if (isParticipantsChatBoxOpened) {
+        if (isSenderIsLastParticipantAndChatBoxOpened) {
             triggerSocketEvent({
                 userId: participantsId,
                 type: SocketTriggerTypes.SEND_NEW_CHAT_MESSAGE,
@@ -209,6 +215,7 @@ export async function PUT(req: NextRequest) {
                 }
                 // Update the sender's message "seen" status in recipient's chatBox
                 const unseenMsgIds = await resetUnseenMessageCount(participantId, currentUserId);
+
                 return NextResponse.json({ success: true, message: "Unseen messages reset", data: unseenMsgIds });
 
             case ApiChatBoxMessageType.TOGGLE_IS_CHATBOX_OPEN:
@@ -218,6 +225,14 @@ export async function PUT(req: NextRequest) {
                 // Update the chatbox open/close status
                 await ChatBoxModel.updateOne({ ownerId: currentUserId }, { $set: { isChatBoxOpened: isOpened } });
                 return NextResponse.json({ success: true, message: "Chatbox status updated" });
+
+            case ApiChatBoxMessageType.SET_LAST_ACTIVE_PARTICIPANT:
+                if (!participantId) {
+                    return NextResponse.json({ message: "Participant ID required" }, { status: 400 });
+                }
+                // Update chat participant
+                await setLastParticipantToChat(currentUserId, participantId);
+                return NextResponse.json({ success: true, message: "Participant Updated Successfully." });
 
 
             default:

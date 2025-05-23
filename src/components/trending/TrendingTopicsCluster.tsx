@@ -9,9 +9,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
 
 type ClusteredSlot = {
-    _id: string;
     title: string;
     category: string;
+    tags: string[],
     cluster: number;
     sentiment?: number;
 };
@@ -69,10 +69,10 @@ export default function TrendingTopicsCluster() {
         return (
             <Card className="bg-gradient-to-br from-white to-gray-50">
                 <CardHeader>
-                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-8 w-48 bg-neutral-300" />
                 </CardHeader>
                 <CardContent>
-                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full bg-neutral-300" />
                 </CardContent>
             </Card>
         );
@@ -133,9 +133,9 @@ export default function TrendingTopicsCluster() {
                                 </h3>
                             </div>
                             <ul className="space-y-3">
-                                {slots.slice(0, 3).map((slot, index) => (
+                                {slots.slice(0, 3).map((slot, idx) => (
                                     <motion.li
-                                        key={slot._id + index + slot.category}
+                                        key={`${clusterId}-${idx}-${slot.title}`}
                                         whileHover={{ scale: 1.02 }}
                                         className="flex items-center gap-3 p-3 rounded-lg bg-white shadow-sm hover:shadow-md transition-all duration-200"
                                     >
@@ -159,6 +159,20 @@ export default function TrendingTopicsCluster() {
                                                     </Badge>
                                                 )}
                                             </div>
+                                            {/* TAGS */}
+                                            {slot.tags.length > 0 && (
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    {slot.tags.map((tag, tagIdx) => (
+                                                        <Badge
+                                                            key={`tag-${tagIdx}`}
+                                                            variant="outline"
+                                                            className="border border-gray-300 text-gray-600 text-xs bg-gray-50"
+                                                        >
+                                                            #{tag}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </motion.li>
                                 ))}

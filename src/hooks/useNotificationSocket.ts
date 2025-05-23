@@ -166,7 +166,7 @@ const useNotificationSocket = () => {
         };
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dispatch, user?._id]);
+    }, [dispatch, user?._id, countOfUnseenMessages]);
 
 };
 

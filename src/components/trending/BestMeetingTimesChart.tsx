@@ -91,12 +91,33 @@ export default function BestMeetingTimesChart() {
 
     if (loading) {
         return (
-            <Card className="bg-gradient-to-br from-white to-gray-50">
+            <Card className="w-full bg-gradient-to-br from-white to-gray-50">
                 <CardHeader>
-                    <Skeleton className="h-8 w-48" />
+                    <div className="flex items-center gap-2">
+                        <Skeleton className="w-8 h-8 rounded-full bg-neutral-300" />
+                        <Skeleton className="h-6 w-48 bg-neutral-300" />
+                    </div>
                 </CardHeader>
                 <CardContent>
-                    <Skeleton className="h-[300px] w-full" />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div className="p-4 rounded-lg space-y-2 bg-neutral-100">
+                            <Skeleton className="h-4 w-20 bg-neutral-300" />
+                            <Skeleton className="h-6 w-24 bg-neutral-300" />
+                            <Skeleton className="h-5 w-28 bg-neutral-300" />
+                        </div>
+                        <div className="p-4 rounded-lg space-y-2 bg-neutral-100">
+                            <Skeleton className="h-4 w-24 bg-neutral-300" />
+                            <Skeleton className="h-6 w-20 bg-neutral-300" />
+                            <Skeleton className="h-5 w-28 bg-neutral-300" />
+                        </div>
+                        <div className="p-4 rounded-lg space-y-2 bg-neutral-100">
+                            <Skeleton className="h-4 w-24 bg-neutral-300" />
+                            <Skeleton className="h-6 w-20 bg-neutral-300" />
+                            <Skeleton className="h-5 w-28 bg-neutral-300" />
+                        </div>
+                    </div>
+
+                    <Skeleton className="h-[300px] w-full bg-neutral-300 rounded-lg" />
                 </CardContent>
             </Card>
         );

@@ -105,10 +105,10 @@ export default function TrendingKeywordsChart() {
         return (
             <Card className="bg-gradient-to-br from-white to-gray-50">
                 <CardHeader>
-                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-8 w-48 bg-neutral-300" />
                 </CardHeader>
                 <CardContent>
-                    <Skeleton className="h-[300px] w-full" />
+                    <Skeleton className="h-[300px] w-full bg-neutral-300" />
                 </CardContent>
             </Card>
         );
