@@ -45,7 +45,7 @@ export const signInValidation = Yup.object({
 });
 
 export const signUpValidation = (isConfirmStage: boolean) => {
-    Yup.object({
+    return Yup.object({
         full_name: Yup.string()
             .trim()
             .matches(/^[A-Za-z\s]+$/, "Name must contain only letters and spaces")

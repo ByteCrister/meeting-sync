@@ -55,10 +55,9 @@ const SignIn = () => {
     };
 
     return (
-        <form onSubmit={formik.handleSubmit} className="flex flex-col items-center gap-2 w-full">
+        <form onSubmit={formik.handleSubmit} className="flex flex-col items-center gap-4 w-full">
             <div className="w-full">
                 {getValidationString('email')}
-                <br />
                 <input
                     type='email'
                     name="email"
@@ -67,14 +66,13 @@ const SignIn = () => {
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
                     value={formik.values.email}
-                    placeholder='email'
-                    className={`w-full bg-white rounded px-2 py-1 outline-none ${openSans.className} font-bold text-slate-500`}
+                    placeholder='Email'
+                    className={`w-full bg-white/95 backdrop-blur-sm rounded-xl px-4 py-3.5 outline-none border border-indigo-100 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all duration-300 ${openSans.className} font-medium text-gray-700 placeholder:text-gray-400 shadow-sm`}
                 ></input>
             </div>
             <section className="w-full">
                 {getValidationString('password')}
-                <br />
-                <div className={`flex justify-between bg-white rounded px-2 py-1 outline-none ${openSans.className} font-bold text-slate-500`}>
+                <div className={`flex justify-between bg-white/95 backdrop-blur-sm rounded-xl px-4 py-3.5 outline-none border border-indigo-100 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all duration-300 ${openSans.className} font-medium text-gray-700 shadow-sm`}>
                     <input
                         type={isPasswordShow ? 'text' : 'password'}
                         name="password"
@@ -82,15 +80,15 @@ const SignIn = () => {
                         required
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
-                        placeholder='password'
+                        placeholder='Password'
                         value={formik.values.password}
-                        className={`w-full bg-white outline-none ${openSans.className} font-bold text-slate-500`} />
-                    <button type="button" onClick={(e) => { e.preventDefault(); setIsPasswordShow(prev => !prev); }}>
-                        {isPasswordShow ? <IoEyeSharp className="text-slate-500" /> : <IoEyeOffSharp className="text-slate-500" />}
+                        className={`w-full bg-transparent outline-none placeholder:text-gray-400`} />
+                    <button type="button" onClick={(e) => { e.preventDefault(); setIsPasswordShow(prev => !prev); }} className="text-indigo-500 hover:text-indigo-600 transition-colors duration-200">
+                        {isPasswordShow ? <IoEyeSharp className="text-xl" /> : <IoEyeOffSharp className="text-xl" />}
                     </button>
                 </div>
             </section>
-            <button type='submit' className='w-full bg-slate-500 px-2 py-1 font-semibold rounded text-gray-100 hover:bg-slate-300 hover:text-slate-600 transition duration-300 ease-in-out cursor-pointer'>
+            <button type='submit' className='w-full bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-3.5 font-semibold rounded-xl text-white hover:from-indigo-500 hover:to-indigo-400 transform hover:scale-[1.02] transition-all duration-300 ease-in-out shadow-lg hover:shadow-xl'>
                 {isButtonLoading ? <LoadingSpinner /> : <span>Sign In</span>}
             </button>
         </form>
