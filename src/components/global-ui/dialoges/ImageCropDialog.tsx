@@ -47,7 +47,7 @@ const ImageCropDialog = ({ isOpen, setIsOpen, image, handleCroppedImage }: PropT
 
     return (
         <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-            <AlertDialogContent className="w-[100%] border-none outline-none bg-transparent shadow-none">
+            <AlertDialogContent className="w-[100%] bg-white border-none outline-none shadow-none">
                 <AlertDialogHeader>
                     <AlertDialogTitle className="text-white">Crop Your Image</AlertDialogTitle>
                     {/* Add a description for accessibility */}
@@ -55,7 +55,7 @@ const ImageCropDialog = ({ isOpen, setIsOpen, image, handleCroppedImage }: PropT
                         Please adjust the crop area by scrolling the mouse.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <div className="relative h-64 w-[100%]">
+                <div className="relative h-64 w-[100%] bg-transparent">
                     {image && (
                         <Cropper
                             image={image}
@@ -72,7 +72,7 @@ const ImageCropDialog = ({ isOpen, setIsOpen, image, handleCroppedImage }: PropT
                     )}
                 </div>
                 <AlertDialogFooter>
-                    <AlertDialogAction className="bg-slate-100 text-blue-950 rounded hover:bg-slate-300 cursor-pointer transition-all duration-100 ease-in-out" onClick={handleSave}>Save</AlertDialogAction>
+                    <AlertDialogAction className="bg-gray-800 text-white rounded hover:bg-gray-600 cursor-pointer transition-all duration-100 ease-in-out" onClick={handleSave}>Save</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

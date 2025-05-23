@@ -11,7 +11,7 @@ export const POST = async (req: NextRequest) => {
     try {
         const body = await req.json();
 
-        const { full_name, email, password, timeZone } = body;
+        const { full_name, email, password, timeZone, isRemember } = body;
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -52,7 +52,7 @@ export const POST = async (req: NextRequest) => {
             secure: false,// true for production with HTTPS
             sameSite: "lax",
             path: "/",
-            maxAge: 30 * 24 * 60 * 60,
+            maxAge: isRemember ? (30 * 24 * 60 * 60) : (60 * 60),
         });
 
         return response;

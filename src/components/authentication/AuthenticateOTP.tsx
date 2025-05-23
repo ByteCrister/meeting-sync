@@ -8,7 +8,7 @@ import apiService from "@/utils/client/api/api-services";
 import { getFormattedTimeZone } from "@/utils/client/date-formatting/getFormattedTimeZone";
 
 type AuthenticateOTPPropTypes = {
-    userInfo: userSignUpType | userSignInType | undefined;
+    userInfo: (userSignUpType & { isRemember: boolean }) | userSignInType | undefined;
     setIsEmailChecked: Dispatch<SetStateAction<boolean>>;
     setCurrentAuthPage: Dispatch<SetStateAction<0 | 2 | 1>>;
     setPageState: Dispatch<SetStateAction<number>>

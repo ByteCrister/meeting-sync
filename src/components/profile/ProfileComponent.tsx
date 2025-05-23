@@ -44,8 +44,8 @@ export default function ProfileComponent() {
   const { user } = useAppSelector((state) => state.userStore);
   const dispatch = useAppDispatch();
 
-  const [isLoading, setIsLoading] =
-    useState<LoadingButtonStateType>(LoadingButtonState);
+  const [isLoading, setIsLoading] = useState<LoadingButtonStateType>(LoadingButtonState);
+  const [isImgUpdating, setIsImgUpdating] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -92,6 +92,8 @@ export default function ProfileComponent() {
     field: "title" | "timeZone" | "username" | "image" | "profession",
     value: string
   ) => {
+    const isImageField = field === "image";
+    if (isImageField) setIsImgUpdating(true);
     const responseData = await apiService.put(`/api/auth/status`, {
       field,
       value,
@@ -107,6 +109,7 @@ export default function ProfileComponent() {
         });
       }
     }
+    if (isImageField) setIsImgUpdating(false);
     if (field === "image") return responseData.success;
   };
 
@@ -128,6 +131,7 @@ export default function ProfileComponent() {
             handleImageClick={handleImageClick}
             handleFileChange={onFileChange}
             isLoading={isLoading.image}
+            isImgUpdating={isImgUpdating}
             fileInputRef={fileInputRef}
             handleRemoveImage={handleRemoveImage}
           />

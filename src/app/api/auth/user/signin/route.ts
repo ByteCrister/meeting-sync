@@ -40,7 +40,7 @@ export const POST = async (request: NextRequest) => {
             secure: false, // true for production with HTTPS
             sameSite: "lax",
             path: "/",
-            maxAge: 30 * 24 * 60 * 60,
+            maxAge: body.isRemember ? (30 * 24 * 60 * 60) : (60 * 60),
         });
 
         return response;

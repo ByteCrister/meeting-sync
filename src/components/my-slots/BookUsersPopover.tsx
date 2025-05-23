@@ -17,8 +17,8 @@ import { Input } from '../ui/input';
 const BookUsersPopover = ({ Slot }: { Slot: registerSlot }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState<boolean>(false);
-  const [isBlockLoading, setIsBlockLoading] = useState<boolean>(false);
-  const [isRemoveLoading, setIsRemoveLoading] = useState<boolean>(false);
+  const [isBlockLoading, setIsBlockLoading] = useState<{ [key: string]: boolean }>({});
+  const [isRemoveLoading, setIsRemoveLoading] = useState<{ [key: string]: boolean }>({});
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<'remove' | 'block' | null>(null);
   const [targetUser, setTargetUser] = useState<{ id: string; slotId: string } | null>(null);
@@ -67,12 +67,12 @@ const BookUsersPopover = ({ Slot }: { Slot: registerSlot }) => {
   };
 
   const handleUserBlock = async (userId: string, slotId: string) => {
-    setIsBlockLoading(true);
+    setIsBlockLoading(prev => ({ ...prev, [userId]: true }));
     const resData = await performPopBlockUser(userId, slotId);
     if (resData.success) {
       await handlerUserRemove(userId, slotId, true);
     }
-    setIsBlockLoading(false);
+    setIsBlockLoading(prev => { delete prev[userId]; return prev; });
   };
 
   const handlerUserRemove = async (
@@ -80,7 +80,7 @@ const BookUsersPopover = ({ Slot }: { Slot: registerSlot }) => {
     slotId: string,
     calledFromBlock = false
   ) => {
-    if (!calledFromBlock) setIsRemoveLoading(true);
+    if (!calledFromBlock) setIsRemoveLoading(prev => ({ ...prev, [userId]: true }));
     const resData = await performPopRemoveUser(userId, slotId);
     if (resData.success) {
       if (calledFromBlock) {
@@ -94,11 +94,11 @@ const BookUsersPopover = ({ Slot }: { Slot: registerSlot }) => {
         );
       }
     }
-    if (!calledFromBlock) setIsRemoveLoading(false);
+    if (!calledFromBlock) setIsRemoveLoading(prev => { delete prev[userId]; return prev; });
   };
 
   const handleUndoRemove = async (userId: string, slotId: string) => {
-    setIsRemoveLoading(true);
+    setIsRemoveLoading(prev => ({ ...prev, [userId]: true }));
     const resData = await performUndoPopUserRemove(userId, slotId);
     if (resData.success) {
       setUsers(prev =>
@@ -107,7 +107,7 @@ const BookUsersPopover = ({ Slot }: { Slot: registerSlot }) => {
         )
       );
     }
-    setIsRemoveLoading(false);
+    setIsRemoveLoading(prev => { delete prev[userId]; return prev; });
   };
 
   return (
@@ -167,7 +167,7 @@ const BookUsersPopover = ({ Slot }: { Slot: registerSlot }) => {
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      {isRemoveLoading ? (
+                      {isRemoveLoading[user._id] ? (
                         <LoaderBars />
                       ) : user.isRemoved ? (
                         <TooltipProvider>
@@ -189,7 +189,7 @@ const BookUsersPopover = ({ Slot }: { Slot: registerSlot }) => {
                       ) : (
                         <button
                           id="remove-user"
-                          disabled={isRemoveLoading}
+                          disabled={isRemoveLoading[user._id]}
                           className="text-xs px-2 py-1 rounded-md bg-red-100 hover:bg-red-200 text-red-600"
                           onClick={() => {
                             setConfirmAction('remove');
@@ -204,12 +204,12 @@ const BookUsersPopover = ({ Slot }: { Slot: registerSlot }) => {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            {isBlockLoading ? (
+                            {isBlockLoading[user._id] ? (
                               <LoaderBars />
                             ) : (
                               <button
                                 id="block-user"
-                                disabled={isBlockLoading}
+                                disabled={isBlockLoading[user._id]}
                                 className="text-xs px-2 py-1 rounded-md bg-yellow-100 hover:bg-yellow-200 text-yellow-600"
                                 onClick={() => {
                                   setConfirmAction('block');
