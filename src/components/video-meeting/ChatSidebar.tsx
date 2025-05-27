@@ -7,18 +7,23 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send, Trash2 } from "lucide-react";
 import { ChatSidebarProps } from "./types";
+import ShowToaster from "../global-ui/toastify-toaster/show-toaster";
 
-export function ChatSidebar({ messages, participants, onSendMessage, onDeleteMessage }: ChatSidebarProps) {
+export function ChatSidebar({ currentUserId, isChatAllowed, messages, participants, onSendMessage, onDeleteMessage }: ChatSidebarProps) {
     const [message, setMessage] = useState("");
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const handleSendMessage = () => {
-        if (message.trim()) {
-            onSendMessage(message.trim());
-            setMessage("");
-            if (scrollRef.current) {
-                scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        if (isChatAllowed) {
+            if (message.trim()) {
+                onSendMessage(message.trim());
+                setMessage("");
+                if (scrollRef.current) {
+                    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+                }
             }
+        } else {
+            ShowToaster('Chat not allowed.', 'warning');
         }
     };
 
@@ -46,15 +51,20 @@ export function ChatSidebar({ messages, participants, onSendMessage, onDeleteMes
                                     </div>
                                     <p className="text-sm mt-1">{message.message}</p>
                                 </div>
-                                <Button
-                                    id={`delete-button-${message._id}`}
-                                    variant="ghost"
-                                    size="icon"
-                                    className="opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900"
-                                    onClick={() => onDeleteMessage(message._id)}
-                                >
-                                    <Trash2 className="w-4 h-4 text-red-500" />
-                                </Button>
+                                {
+                                    currentUserId === message.userId
+                                    && (
+                                        <Button
+                                            id={`delete-button-${message._id}`}
+                                            variant="ghost"
+                                            size="icon"
+                                            className="opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900"
+                                            onClick={() => onDeleteMessage(message._id)}
+                                        >
+                                            <Trash2 className="w-4 h-4 text-red-500" />
+                                        </Button>
+                                    )
+                                }
                             </div>
                         </div>
                     );

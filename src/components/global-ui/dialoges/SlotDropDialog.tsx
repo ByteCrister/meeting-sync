@@ -63,8 +63,7 @@ const SlotDropDialog = () => {
                                     : 'bg-red-500 hover:bg-red-600 text-white'
                                 } px-4 py-2 rounded-md transition-colors text-sm font-medium font-poppins flex items-center gap-2 cursor-pointer`}
                         >
-                            {isLoading && <LoadingSpinner />}
-                            {!isLoading ? 'Drop Slot' : ''}
+                            {isLoading ? <LoadingSpinner border='border-white' /> : 'Drop Slot'}
                         </button>
                     </DialogFooter>
                 </div>

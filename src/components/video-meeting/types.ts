@@ -10,6 +10,7 @@ export interface VideoCallErrorBoundaryState {
 }
 
 export interface VideoControlsProps {
+    isHost: boolean;
     isMuted: boolean;
     isVideoOn: boolean;
     isScreenSharing: boolean;
@@ -30,6 +31,8 @@ export interface VideoParticipantProps {
 }
 
 export interface ChatSidebarProps {
+    currentUserId: string;
+    isChatAllowed: boolean;
     messages: ChatMessage[];
     participants: VideoCallParticipant[];
     onSendMessage: (message: string) => void;

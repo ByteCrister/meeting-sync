@@ -75,6 +75,8 @@ export enum VMSocketTriggerTypes {
     USER_JOINED = "user-joined",
     RECEIVE_OFFER = "receive-offer",
     RECEIVE_ANSWER = "receive-answer",
+    EXISTING_USERS = "existing-users",
+    USER_LEAVED = 'user-leaved'
 }
 
 export enum IVideoCallStatus {

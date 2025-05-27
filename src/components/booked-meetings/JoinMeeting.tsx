@@ -7,8 +7,10 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Video } from "lucide-react"
+import { useRouter } from "next/navigation";
 
 export default function JoinMeeting({ isJoinEnabled, meetingId }: { isJoinEnabled: boolean, meetingId: string }) {
+    const router = useRouter();
     return (
         <TooltipProvider>
             <Tooltip delayDuration={400}>
@@ -19,7 +21,7 @@ export default function JoinMeeting({ isJoinEnabled, meetingId }: { isJoinEnable
                             ? 'text-white bg-blue-600 hover:bg-blue-700'
                             : 'text-gray-400 bg-gray-100 cursor-not-allowed'
                             }`}
-                        onClick={() => window.open(`/video-meeting?roomId=${meetingId}`, '_blank')}
+                        onClick={() => router.push(`/video-meeting?roomId=${meetingId}`)}
                         disabled={!isJoinEnabled}
                     >
                         <Video className="w-4 h-4 mr-2" />

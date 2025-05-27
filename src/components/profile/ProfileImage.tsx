@@ -109,7 +109,7 @@ const ProfileImage = ({
                             onClick={() => fileInputRef.current?.click()}
                             className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-600"
                         >
-                            {isLoading ? <LoadingSpinner /> : isImgUpdating ? 'Changing...' : 'Change'}
+                            {isLoading ? <LoadingSpinner border='border-white' /> : isImgUpdating ? 'Changing...' : 'Change'}
                         </button>
                         <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
                             <AlertDialogTrigger asChild>

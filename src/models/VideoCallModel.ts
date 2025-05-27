@@ -1,5 +1,4 @@
 import { IVideoCallStatus } from '@/utils/constants';
-import { calculateAndUpdateEngagement } from '@/utils/server/calculateAndUpdateEngagement';
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IVideoCallSession {
@@ -144,11 +143,6 @@ const VideoCallSchema = new Schema<IVideoCall>(
         versionKey: false,
     }
 );
-
-VideoCallSchema.post("findOneAndUpdate", async function (doc) {
-    if (!doc) return;
-    await calculateAndUpdateEngagement(doc);
-});
 
 const VideoCallModel = mongoose.models.videoCalls || mongoose.model<IVideoCall>('videoCalls', VideoCallSchema);
 export default VideoCallModel; 

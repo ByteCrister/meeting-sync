@@ -8,22 +8,22 @@ interface VideoCallUpdateData {
     message?: string;
 }
 
-export const getVideoCallStatus = async (meetingId: string) => {
+export const apiGetVideoCallStatus = async (meetingId: string) => {
     const resData = await apiService.get(`/api/video-meeting-call`, { meetingId });
     return resData;
 }
 
-export const joinVideoCall = async (meetingId: string) => {
+export const apiJoinVideoCall = async (meetingId: string) => {
     const resData = await apiService.get('/api/video-meeting-call/join', { meetingId });
     return resData;
 };
 
-export const updateVideoCall = async (objectBody: VideoCallUpdateData) => {
+export const apiUpdateVideoCall = async (objectBody: VideoCallUpdateData) => {
     const resData = await apiService.put(`/api/video-meeting-call`, objectBody);
     return resData;
 };
 
-export const leaveVideoCall = async (meetingId: string) => {
+export const apiLeaveVideoCall = async (meetingId: string) => {
     const resData = await apiService.delete(`/api/video-meeting-call/join?meetingId=${meetingId}`);
     return resData;
 };

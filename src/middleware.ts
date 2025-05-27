@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from './utils/server/verifyToken';
 
 const PUBLIC_ROUTES = [
-    '/',
+    '/user-authentication',
 ];
 
 const PUBLIC_API_ROUTES = [
@@ -12,11 +12,14 @@ const PUBLIC_API_ROUTES = [
     '/api/auth/user/signin',
     '/api/auth/user/signup',
     '/api/auth/user/user-otp',
+    '/api/auth/user/validity',
 ];
 
 const ALWAYS_ALLOWED_AUTH_ROUTES = [
     '/api/auth/user/signup',
+    '/api/auth/user/validity'
 ];
+
 const API_PREFIX = '/api';
 
 function isAuthPage(pathname: string) {
@@ -82,7 +85,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // 4. Redirect authenticated users away from login page
-    if (!isAuthenticated && !isApi && !isPublicPage) {
+    if (isAuthenticated && !isApi && isPublicPage) {
         const redirectUrl = new URL('/user-authentication', request.url);
         redirectUrl.searchParams.set('redirect', pathname); // capture previous page
         return NextResponse.redirect(redirectUrl);

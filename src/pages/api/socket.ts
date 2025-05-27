@@ -5,6 +5,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { SocketTriggerTypes, VMSocketTriggerTypes } from "@/utils/constants";
 import {
     getUserIdBySocketId,
+    getUserSocketId,
     // getUserIdBySocketId,
     // getUserSocketId,
     registerUserSocket,
@@ -13,7 +14,9 @@ import {
 import { setIOInstance } from "@/utils/socket/setIOInstance";
 
 import '../../utils/cron/updateSlotStatus';
-import VideoCallModel, { IVideoCallParticipant, IVideoCallSession } from "@/models/VideoCallModel";
+import VideoCallModel, { IVideoCall, IVideoCallParticipant, IVideoCallSession } from "@/models/VideoCallModel";
+import getUsersInRoom from "@/utils/server/getUsersInRoom";
+import { calculateAndUpdateEngagement } from "@/utils/server/calculateAndUpdateEngagement";
 // import { removeParticipantFromAllCalls } from "@/utils/server/removeParticipantFromCall";
 
 // Disable body parser for socket handling
@@ -54,6 +57,7 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
         io.on("connection", (socket) => {
             console.log("->> Socket connected:", socket.id);
 
+            // ? Register a user to socket using userId
             socket.on(SocketTriggerTypes.REGISTER_USER, (data) => {
                 console.log("-------------------------- User registered: ", data.userId + ' -----------------------------');
                 registerUserSocket(data.userId, socket.id);
@@ -65,14 +69,19 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
                 removeUserSocket(socket.id);
 
                 try {
-                    const call = await VideoCallModel.findOne({ "participants.socketId": socket.id });
+                    const call: IVideoCall | null = await VideoCallModel.findOne({ "participants.socketId": socket.id });
 
                     if (call) {
+                        // ? Skipping time of host
                         if (userId && userId.toString() === call.hostId.toString()) {
                             console.log("Host disconnected — skip updating participant session.");
                             return;
                         }
-                        
+                        const roomId = call.meetingId.toString();
+                        if (roomId && userId) {
+                            socket.to(roomId).emit(VMSocketTriggerTypes.USER_LEAVED, { userId });
+                        }
+
                         const participantIndex = call.participants.findIndex((p: IVideoCallParticipant) => p.socketId === socket.id);
 
                         if (participantIndex !== -1) {
@@ -87,42 +96,75 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
                                     { _id: call._id },
                                     { $set: { [path]: new Date() } }
                                 );
+                                // Fetch the updated call document
+                                const updatedCall = await VideoCallModel.findById(call._id);
+                                if (updatedCall) {
+                                    await calculateAndUpdateEngagement({
+                                        ...updatedCall.toObject(),
+                                        endTime: updatedCall.endTime || new Date(),
+                                    });
+                                }
                                 console.log(`Updated leftAt for session of socket: ${socket.id}`);
                             } else {
                                 console.log(`No open session found for socket: ${socket.id}`);
                             }
                         }
-
-                        // await removeParticipantFromAllCalls(userId || "");
                     } else {
                         console.log(`No matching video call found for socket: ${socket.id}`);
                     }
+
                 } catch (err) {
                     console.error("Error updating participant session leftAt:", err);
                 }
             });
 
 
+            // * Video Meeting Socket Events
             socket.on(SocketTriggerTypes.LEAVE_ROOM, ({ roomId, userId }) => {
                 socket.leave(roomId);
-                socket.to(roomId).emit(SocketTriggerTypes.USER_LEAVED, { userId }); // <-- emit to all in the room
+                socket.emit(SocketTriggerTypes.USER_LEAVED, { userId }); // <-- emit to all in the room
             });
-            // * Video Meeting Socket Events
-            socket.on(VMSocketTriggerTypes.JOIN_ROOM, ({ roomId, userId }) => {
+
+            // ? Joining a user to socket using meetingId/roomId
+            socket.on(VMSocketTriggerTypes.JOIN_ROOM, async ({ roomId, userId }) => {
                 socket.join(roomId);
+
+                const usersInRoom = await getUsersInRoom(roomId);
+
+                // Emit list of existing users (excluding the new joiner) back to the new user
+                socket.to(roomId).emit(VMSocketTriggerTypes.EXISTING_USERS, {
+                    users: usersInRoom.filter((id) => id !== userId),
+                });
+
+                // Notify others in the room about the new user
                 socket.to(roomId).emit(VMSocketTriggerTypes.USER_JOINED, { newUserId: userId });
             });
 
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             socket.on(VMSocketTriggerTypes.OFFER, ({ roomId, newUserId, offer }) => {
-                socket.to(roomId).emit(VMSocketTriggerTypes.RECEIVE_OFFER, { fromUserId: newUserId, offer });
+                const targetSocketId = getUserSocketId(newUserId);
+                if (targetSocketId) {
+                    socket.to(targetSocketId).emit(VMSocketTriggerTypes.RECEIVE_OFFER, { fromUserId: socket.data.userId, offer });
+                }
+                // socket.to(roomId).emit(VMSocketTriggerTypes.RECEIVE_OFFER, { fromUserId: newUserId, offer });
             });
 
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             socket.on(VMSocketTriggerTypes.ANSWER, ({ roomId, fromUserId, answer }) => {
-                socket.to(roomId).emit(VMSocketTriggerTypes.RECEIVE_ANSWER, { fromUserId, answer });
+                const targetSocketId = getUserSocketId(fromUserId);
+                if (targetSocketId) {
+                    socket.to(targetSocketId).emit(VMSocketTriggerTypes.RECEIVE_ANSWER, { fromUserId, answer });
+                }
+                // socket.to(roomId).emit(VMSocketTriggerTypes.RECEIVE_ANSWER, { fromUserId, answer });
             });
 
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             socket.on(VMSocketTriggerTypes.ICE_CANDIDATE, ({ roomId, targetUserId, candidate }) => {
-                socket.to(roomId).emit(VMSocketTriggerTypes.RECEIVE_ICE_CANDIDATE, { fromUserId: targetUserId, candidate });
+                const targetSocketId = getUserSocketId(targetUserId);
+                if (targetSocketId) {
+                    socket.to(targetSocketId).emit(VMSocketTriggerTypes.RECEIVE_ICE_CANDIDATE, { fromUserId: targetUserId, candidate });
+                }
+                // socket.to(roomId).emit(VMSocketTriggerTypes.RECEIVE_ICE_CANDIDATE, { fromUserId: targetUserId, candidate });
             });
         });
     } else {

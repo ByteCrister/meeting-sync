@@ -167,7 +167,7 @@ export async function updateSlotStatuses() {
                     await handleCreateVideoCallDirectly(slot._id, slot.ownerId.toString());
                 }
 
-                if (newStatus === IRegisterStatus.Completed) {
+                if (IRegisterStatus.Expired || newStatus === IRegisterStatus.Completed) {
                     await handleDeleteVideoCallDirectly(slot._id);
                 }
             } else {

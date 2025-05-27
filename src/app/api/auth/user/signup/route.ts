@@ -43,7 +43,7 @@ export const POST = async (req: NextRequest) => {
         };
 
         // Generate JWT token
-        const token = jwt.sign(tokenPayload, process.env.JWT_SECRET as string, { expiresIn: '30d' });
+        const token = jwt.sign(tokenPayload, process.env.JWT_SECRET as string, { expiresIn: isRemember ? '30d' : '1h' });
 
         // Set response with token in cookies
         const response = NextResponse.json({ message: 'Successful Signed Up.', success: true }, { status: 200 });
@@ -52,7 +52,7 @@ export const POST = async (req: NextRequest) => {
             secure: false,// true for production with HTTPS
             sameSite: "lax",
             path: "/",
-            maxAge: isRemember ? (30 * 24 * 60 * 60) : (60 * 60),
+            maxAge: isRemember ? 30 * 24 * 60 * 60 : 60 * 60,
         });
 
         return response;
@@ -66,7 +66,7 @@ export const POST = async (req: NextRequest) => {
     }
 };
 
-// ? Delete request from  -> performLogOut() -> AlertLogout.tsx -> handleLogout()
+// ? Delete request for user logout
 export const DELETE = async () => {
     try {
         const cookieStore = cookies();

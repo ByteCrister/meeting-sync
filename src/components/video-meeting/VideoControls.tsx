@@ -2,19 +2,20 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { 
-    Mic, 
-    MicOff, 
-    Video, 
-    VideoOff, 
-    Share, 
-    MessageSquare, 
-    PhoneOff, 
+import {
+    Mic,
+    MicOff,
+    Video,
+    VideoOff,
+    Share,
+    MessageSquare,
+    PhoneOff,
     Settings
 } from "lucide-react";
 import { VideoControlsProps } from "./types";
 
 export function VideoControls({
+    isHost,
     isMuted,
     isVideoOn,
     isScreenSharing,
@@ -31,6 +32,7 @@ export function VideoControls({
         <div className="p-4 border-t border-gray-800">
             <div className="flex justify-center items-center space-x-4">
                 <Button
+                    id="toggle-mic"
                     variant="ghost"
                     size="icon"
                     onClick={onToggleMute}
@@ -42,6 +44,7 @@ export function VideoControls({
                     {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
                 </Button>
                 <Button
+                    id="toggle-video"
                     variant="ghost"
                     size="icon"
                     onClick={onToggleVideo}
@@ -53,6 +56,7 @@ export function VideoControls({
                     {isVideoOn ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
                 </Button>
                 <Button
+                    id="toggle-screenShare"
                     variant="ghost"
                     size="icon"
                     onClick={onToggleScreenShare}
@@ -64,6 +68,7 @@ export function VideoControls({
                     <Share className="h-6 w-6" />
                 </Button>
                 <Button
+                    id="toggle-message-sidebar"
                     variant="ghost"
                     size="icon"
                     onClick={onToggleChat}
@@ -74,18 +79,24 @@ export function VideoControls({
                 >
                     <MessageSquare className="h-6 w-6" />
                 </Button>
+
+                {/* Setting just for Host */}
+                {
+                    isHost && (<Button
+                        id="toggle-message-sidebar"
+                        variant="ghost"
+                        size="icon"
+                        onClick={onToggleSettings}
+                        className={cn(
+                            "rounded-full",
+                            showSettings && "bg-blue-500 hover:bg-blue-600"
+                        )}
+                    >
+                        <Settings className="h-6 w-6" />
+                    </Button>)
+                }
                 <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onToggleSettings}
-                    className={cn(
-                        "rounded-full",
-                        showSettings && "bg-blue-500 hover:bg-blue-600"
-                    )}
-                >
-                    <Settings className="h-6 w-6" />
-                </Button>
-                <Button
+                    id="end-video-call"
                     variant="ghost"
                     size="icon"
                     onClick={onEndCall}

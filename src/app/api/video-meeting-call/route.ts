@@ -15,6 +15,7 @@ export interface IParticipant {
     joinedAt: Date;
 }
 
+// * Status of the Video Meeting( getting all video and participant's validation )
 export async function GET(req: NextRequest) {
     try {
         const userId = await getUserIdFromRequest(req);
@@ -56,27 +57,22 @@ export async function GET(req: NextRequest) {
         }
 
         const slot = await SlotModel.findById(meetingId).lean() as ISlot | null;
+        if (!slot) {
+            return NextResponse.json({
+                success: true,
+                isError: true,
+                errorType: VideoCallErrorTypes.MEETING_NOT_FOUND,
+            });
+        }
         const isHost = slot?.ownerId?.toString() === userId.toString();
         const isValidParticipant = slot?.bookedUsers.some(id => id.toString() === userId.toString()) ? true : false;
 
-        if (!slot || !isHost || !isValidParticipant) {
+        if (!isHost && !isValidParticipant) {
             console.log(`USER_NOT_PARTICIPANT`);
             return NextResponse.json({
                 success: true,
                 isError: true,
                 errorType: VideoCallErrorTypes.USER_NOT_PARTICIPANT,
-            });
-        }
-
-        const alreadyJoined = meeting.participants.some(
-            (p) => p.userId.toString() === userId.toString()
-        );
-
-        if (alreadyJoined) {
-            return NextResponse.json({
-                success: true,
-                isError: true,
-                errorType: VideoCallErrorTypes.USER_ALREADY_JOINED,
             });
         }
 
@@ -156,7 +152,7 @@ export async function PUT(req: NextRequest) {
             }
 
             case VCallUpdateApiType.REMOVE_VIDEO_CHAT_MESSAGE: {
-                const { _id } = data;
+                const { messageId: _id } = data;
 
                 if (!_id) {
                     return NextResponse.json({ message: 'Message _id is required' }, { status: 400 });

@@ -49,8 +49,6 @@ const useVideoSocket = (roomId: string) => {
                 dispatch(addParticipant(data));
             });
             socket.on(SocketTriggerTypes.NEW_METING_CHAT_MESSAGE, (data) => {
-                console.log(`****New Message****`);
-                console.log(JSON.stringify(data, null, 2));
                 dispatch(addChatMessage(data));
             });
             socket.on(SocketTriggerTypes.DELETE_METING_CHAT_MESSAGE, ({ _id }) => {

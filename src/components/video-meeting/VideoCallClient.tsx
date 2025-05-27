@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { getVideoCallStatus, joinVideoCall, updateVideoCall, leaveVideoCall } from "@/utils/client/api/api-video-meeting-call";
+import { apiGetVideoCallStatus, apiJoinVideoCall, apiUpdateVideoCall, apiLeaveVideoCall } from "@/utils/client/api/api-video-meeting-call";
 import { VideoCallErrorTypes, VMSocketTriggerTypes, SocketTriggerTypes, VCallUpdateApiType } from "@/utils/constants";
 import { getSocket } from "@/utils/socket/initiateSocket";
 import { useSearchParams } from "next/navigation";
@@ -36,8 +36,8 @@ export default function VideoCallClient() {
     const currentUser = useAppSelector(state => state.userStore.user);
     const meetingState = useAppSelector((state) => state.videoMeeting);
 
-    const [isMuted, setIsMuted] = useState(false);
-    const [isVideoOn, setIsVideoOn] = useState(false);
+    const [isMuted, setIsMuted] = useState(false); // Audio is on by default
+    const [isVideoOn, setIsVideoOn] = useState(true); // Video is on by default
     const [isScreenSharing, setIsScreenSharing] = useState(false);
     const [showChat, setShowChat] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
@@ -100,7 +100,7 @@ export default function VideoCallClient() {
 
         try {
             setIsLoading(true);
-            const videoCallStatusData = await getVideoCallStatus(roomId);
+            const videoCallStatusData = await apiGetVideoCallStatus(roomId);
 
             if (videoCallStatusData.isError) {
                 setVideoCallStatus(videoCallStatusData.errorType);
@@ -108,7 +108,7 @@ export default function VideoCallClient() {
                 return;
             }
 
-            const joinStatusData = await joinVideoCall(roomId);
+            const joinStatusData = await apiJoinVideoCall(roomId);
             if (joinStatusData.success && joinStatusData?.meetingStatus === VideoCallStatus.WAITING) {
                 setIsLoading(false);
                 return;
@@ -128,11 +128,26 @@ export default function VideoCallClient() {
 
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             localStreamRef.current = stream;
+
             if (localVideo.current) localVideo.current.srcObject = stream;
 
             socket.emit(VMSocketTriggerTypes.JOIN_ROOM, { roomId, userId });
 
+            socket.on(VMSocketTriggerTypes.EXISTING_USERS, async ({ users }) => {
+                users.forEach(async (existingUserId: string) => {
+                    if (existingUserId === userId) return;
+                    const peer = createPeerConnection(existingUserId);
+                    peersRef.current[existingUserId] = peer;
+
+                    const offer = await peer.createOffer();
+                    await peer.setLocalDescription(offer);
+
+                    socket.emit(VMSocketTriggerTypes.OFFER, { roomId, newUserId: existingUserId, offer });
+                });
+            });
+
             const createPeerConnection = (targetUserId: string) => {
+                console.log(targetUserId);
                 const peer = new RTCPeerConnection({
                     iceServers: [
                         { urls: "stun:stun.l.google.com:19302" },
@@ -209,6 +224,23 @@ export default function VideoCallClient() {
                 await peer?.addIceCandidate(new RTCIceCandidate(candidate));
             });
 
+            socket.on(VMSocketTriggerTypes.USER_LEAVED, ({ userId: leftUserId }) => {
+                // Remove peer connection
+                if (peersRef.current[leftUserId]) {
+                    peersRef.current[leftUserId].close();
+                    delete peersRef.current[leftUserId];
+                }
+                // Remove remote stream
+                if (remoteStreamsRef.current[leftUserId]) {
+                    delete remoteStreamsRef.current[leftUserId];
+                }
+                setRemoteUsers((prev) => {
+                    const updated = { ...prev };
+                    delete updated[leftUserId];
+                    return updated;
+                });
+            });
+
             socket.on('disconnect', () => {
                 toast.error("Connection lost. Attempting to reconnect...");
                 attemptReconnect();
@@ -246,50 +278,69 @@ export default function VideoCallClient() {
     }, [meetingState.status]);
 
     const toggleMute = async () => {
-        if (localStreamRef.current) {
-            const audioTrack = localStreamRef.current.getAudioTracks()[0];
-            if (audioTrack) {
-                audioTrack.enabled = !audioTrack.enabled;
-                setIsMuted(!audioTrack.enabled);
-                if (userId && roomId) {
-                    const objectBody = {
-                        type: VCallUpdateApiType.PARTICIPANTS_DATA,
-                        meetingId: roomId,
-                        data: {
-                            userId,
-                            isMuted: !audioTrack.enabled,
-                            isVideoOn,
-                            isScreenSharing,
-                        }
-                    };
-                    await updateVideoCall(objectBody);
-                    dispatch(updateParticipant({ userId, isMuted: !audioTrack.enabled }));
+        if (!localStreamRef.current) return;
+
+        const audioTrack = localStreamRef.current.getAudioTracks()[0];
+
+        if (audioTrack) {
+            // Turn OFF: stop and remove audio track
+            audioTrack.stop();
+            localStreamRef.current.removeTrack(audioTrack);
+            setIsMuted(true);
+        } else {
+            // Turn ON: get new audio track and add it
+            const newStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const newAudioTrack = newStream.getAudioTracks()[0];
+            localStreamRef.current.addTrack(newAudioTrack);
+            setIsMuted(false);
+        }
+
+        if (userId && roomId) {
+            const objectBody = {
+                type: VCallUpdateApiType.PARTICIPANTS_DATA,
+                meetingId: roomId,
+                data: {
+                    userId,
+                    isMuted: !audioTrack, // true if we just added, false if we just removed
+                    isVideoOn,
+                    isScreenSharing,
                 }
-            }
+            };
+            await apiUpdateVideoCall(objectBody);
+            dispatch(updateParticipant({ userId, isMuted: !audioTrack }));
         }
     };
 
     const toggleVideo = async () => {
-        if (localStreamRef.current) {
-            const videoTrack = localStreamRef.current.getVideoTracks()[0];
-            if (videoTrack) {
-                videoTrack.enabled = !videoTrack.enabled;
-                setIsVideoOn(!videoTrack.enabled);
-                if (userId && roomId) {
-                    const objectBody = {
-                        type: VCallUpdateApiType.PARTICIPANTS_DATA,
-                        meetingId: roomId,
-                        data: {
-                            userId,
-                            isMuted,
-                            isVideoOn: !videoTrack.enabled,
-                            isScreenSharing,
-                        }
-                    };
-                    await updateVideoCall(objectBody);
-                    dispatch(updateParticipant({ userId, isVideoOn: !videoTrack.enabled }));
+        if (!localStreamRef.current) return;
+
+        const videoTrack = localStreamRef.current.getVideoTracks()[0];
+
+        if (videoTrack) {
+            // Turn OFF: stop and remove video track
+            videoTrack.stop();
+            localStreamRef.current.removeTrack(videoTrack);
+            setIsVideoOn(false);
+        } else {
+            // Turn ON: get new video track and add it
+            const newStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const newVideoTrack = newStream.getVideoTracks()[0];
+            localStreamRef.current.addTrack(newVideoTrack);
+            setIsVideoOn(true);
+        }
+        if (userId && roomId) {
+            const objectBody = {
+                type: VCallUpdateApiType.PARTICIPANTS_DATA,
+                meetingId: roomId,
+                data: {
+                    userId,
+                    isMuted,
+                    isVideoOn: !isVideoOn,
+                    isScreenSharing,
                 }
-            }
+            };
+            await apiUpdateVideoCall(objectBody);
+            dispatch(updateParticipant({ userId, isVideoOn: !isVideoOn }));
         }
     };
 
@@ -327,7 +378,7 @@ export default function VideoCallClient() {
                             isScreenSharing: true,
                         }
                     };
-                    await updateVideoCall(objectBody);
+                    await apiUpdateVideoCall(objectBody);
 
                     dispatch(updateParticipant({ userId, isScreenSharing: true }));
                 }
@@ -363,7 +414,7 @@ export default function VideoCallClient() {
                             isScreenSharing: false,
                         }
                     };
-                    await updateVideoCall(objectBody);
+                    await apiUpdateVideoCall(objectBody);
                     dispatch(updateParticipant({ userId, isScreenSharing: false }));
                 }
             }
@@ -380,7 +431,7 @@ export default function VideoCallClient() {
                 meetingId: roomId,
                 data: { message }
             }
-            await updateVideoCall(objectBody);
+            await apiUpdateVideoCall(objectBody);
         }
     };
 
@@ -391,13 +442,13 @@ export default function VideoCallClient() {
                 meetingId: roomId,
                 data: { messageId }
             }
-            await updateVideoCall(objectBody);
+            await apiUpdateVideoCall(objectBody);
         }
     };
 
     const handleEndCall = async () => {
         if (roomId) {
-            const resData = await leaveVideoCall(roomId);
+            const resData = await apiLeaveVideoCall(roomId);
             if (resData.success) {
                 dispatch(endMeeting(new Date().toISOString()));
                 socketRef.current?.emit(SocketTriggerTypes.LEAVE_ROOM, { roomId, userId });
@@ -467,6 +518,7 @@ export default function VideoCallClient() {
                     </div>
 
                     <VideoControls
+                        isHost={meetingState.hostId === userId}
                         isMuted={isMuted}
                         isVideoOn={isVideoOn}
                         isScreenSharing={isScreenSharing}
@@ -484,6 +536,8 @@ export default function VideoCallClient() {
                 {/* Chat Sidebar */}
                 {showChat && (
                     <ChatSidebar
+                        currentUserId={userId ?? ""}
+                        isChatAllowed={meetingState.settings.allowChat}
                         messages={meetingState.chatMessages}
                         participants={meetingState.participants}
                         onSendMessage={handleSendChatMessage}
@@ -491,8 +545,8 @@ export default function VideoCallClient() {
                     />
                 )}
 
-                {/* Settings Sidebar */}
-                {showSettings && (
+                {/* Settings Sidebar Just fo the Meeting Creator */}
+                {(meetingState.hostId === userId) && showSettings && (
                     <SettingsSidebar
                         settings={meetingState.settings}
                         onUpdateSettings={async (settings) => {
@@ -504,7 +558,7 @@ export default function VideoCallClient() {
                                     data: settings
                                 };
 
-                                await updateVideoCall(objectBody);
+                                await apiUpdateVideoCall(objectBody);
                             }
                         }}
                     />

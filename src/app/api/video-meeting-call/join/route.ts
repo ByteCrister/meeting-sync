@@ -11,6 +11,7 @@ import UserModel from '@/models/UserModel';
 import getNotificationExpiryDate from '@/utils/server/getNotificationExpiryDate';
 import { getUserSocketId } from '@/utils/socket/socketUserMap';
 import { triggerRoomSocketEvent } from '@/utils/socket/triggerRoomSocketEvent';
+import { calculateAndUpdateEngagement } from '@/utils/server/calculateAndUpdateEngagement';
 
 // ? Joining to a video meeting
 export async function GET(req: NextRequest) {
@@ -217,7 +218,7 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ message: 'Missing meetingId or unauthorized' }, { status: 400 });
         }
 
-        const videoCall = await VideoCallModel.findOne({ meetingId });
+        const videoCall: IVideoCall | null = await VideoCallModel.findOne({ meetingId });
 
         if (!videoCall) {
             return NextResponse.json({ message: 'Meeting not found' }, { status: 404 });
@@ -230,7 +231,7 @@ export async function DELETE(req: NextRequest) {
 
         // Find the participant
         const participant = videoCall.participants.find(
-            (p: IVideoCallParticipant) => String(p.userId) === String(userId)
+            (p) => String(p.userId) === String(userId)
         );
 
         if (!participant || !participant.sessions || participant.sessions.length === 0) {
@@ -248,7 +249,11 @@ export async function DELETE(req: NextRequest) {
 
         latestSession.leftAt = new Date();
 
-        await videoCall.save();
+        const updatedVideoCall = await videoCall.save();
+        await calculateAndUpdateEngagement({
+            ...updatedVideoCall.toObject(),
+            endTime: videoCall.endTime || new Date(),
+        });
 
         return NextResponse.json({ success: true, message: 'Left the call successfully' }, { status: 200 });
 
