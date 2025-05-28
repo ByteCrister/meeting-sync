@@ -1,4 +1,4 @@
-// src/pages/api/socket/socket.ts
+// src/pages/api/socket.ts
 
 import { Server as ServerIO } from "socket.io";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -6,8 +6,6 @@ import { SocketTriggerTypes, VMSocketTriggerTypes } from "@/utils/constants";
 import {
     getUserIdBySocketId,
     getUserSocketId,
-    // getUserIdBySocketId,
-    // getUserSocketId,
     registerUserSocket,
     removeUserSocket,
 } from "@/utils/socket/socketUserMap";
@@ -17,7 +15,6 @@ import '../../utils/cron/updateSlotStatus';
 import VideoCallModel, { IVideoCall, IVideoCallParticipant, IVideoCallSession } from "@/models/VideoCallModel";
 import getUsersInRoom from "@/utils/server/getUsersInRoom";
 import { calculateAndUpdateEngagement } from "@/utils/server/calculateAndUpdateEngagement";
-// import { removeParticipantFromAllCalls } from "@/utils/server/removeParticipantFromCall";
 
 // Disable body parser for socket handling
 export const config = {
@@ -29,6 +26,7 @@ let socketServerInitialized = false;
 
 const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
     // Access the extended http.Server which includes io
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const httpServer = (res.socket as unknown as { server: any }).server;
 
@@ -61,6 +59,7 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
             socket.on(SocketTriggerTypes.REGISTER_USER, (data) => {
                 console.log("-------------------------- User registered: ", data.userId + ' -----------------------------');
                 registerUserSocket(data.userId, socket.id);
+                socket.data.userId = data.userId;
             });
 
             socket.on("disconnect", async () => {
@@ -122,7 +121,7 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
             // * Video Meeting Socket Events
             socket.on(SocketTriggerTypes.LEAVE_ROOM, ({ roomId, userId }) => {
                 socket.leave(roomId);
-                socket.emit(SocketTriggerTypes.USER_LEAVED, { userId }); // <-- emit to all in the room
+                socket.to(roomId).emit(SocketTriggerTypes.USER_LEAVED, { userId }); // <-- emit to all in the room
             });
 
             // ? Joining a user to socket using meetingId/roomId
@@ -144,7 +143,10 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
             socket.on(VMSocketTriggerTypes.OFFER, ({ roomId, newUserId, offer }) => {
                 const targetSocketId = getUserSocketId(newUserId);
                 if (targetSocketId) {
-                    socket.to(targetSocketId).emit(VMSocketTriggerTypes.RECEIVE_OFFER, { fromUserId: socket.data.userId, offer });
+                    socket.to(targetSocketId).emit(VMSocketTriggerTypes.RECEIVE_OFFER, {
+                        fromUserId: socket.data.userId,
+                        offer
+                    });
                 }
                 // socket.to(roomId).emit(VMSocketTriggerTypes.RECEIVE_OFFER, { fromUserId: newUserId, offer });
             });
@@ -153,7 +155,10 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
             socket.on(VMSocketTriggerTypes.ANSWER, ({ roomId, fromUserId, answer }) => {
                 const targetSocketId = getUserSocketId(fromUserId);
                 if (targetSocketId) {
-                    socket.to(targetSocketId).emit(VMSocketTriggerTypes.RECEIVE_ANSWER, { fromUserId, answer });
+                    socket.to(targetSocketId).emit(VMSocketTriggerTypes.RECEIVE_ANSWER, {
+                        fromUserId: socket.data.userId,
+                        answer
+                    });
                 }
                 // socket.to(roomId).emit(VMSocketTriggerTypes.RECEIVE_ANSWER, { fromUserId, answer });
             });
@@ -162,7 +167,10 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
             socket.on(VMSocketTriggerTypes.ICE_CANDIDATE, ({ roomId, targetUserId, candidate }) => {
                 const targetSocketId = getUserSocketId(targetUserId);
                 if (targetSocketId) {
-                    socket.to(targetSocketId).emit(VMSocketTriggerTypes.RECEIVE_ICE_CANDIDATE, { fromUserId: targetUserId, candidate });
+                    socket.to(targetSocketId).emit(VMSocketTriggerTypes.RECEIVE_ICE_CANDIDATE, {
+                        fromUserId: socket.data.userId,
+                        candidate
+                    });
                 }
                 // socket.to(roomId).emit(VMSocketTriggerTypes.RECEIVE_ICE_CANDIDATE, { fromUserId: targetUserId, candidate });
             });

@@ -1,16 +1,14 @@
 "use client";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { apiGetVideoCallStatus, apiJoinVideoCall, apiUpdateVideoCall, apiLeaveVideoCall } from "@/utils/client/api/api-video-meeting-call";
-import { VideoCallErrorTypes, VMSocketTriggerTypes, SocketTriggerTypes, VCallUpdateApiType } from "@/utils/constants";
-import { getSocket } from "@/utils/socket/initiateSocket";
+import { apiUpdateVideoCall, apiLeaveVideoCall } from "@/utils/client/api/api-video-meeting-call";
+import { VideoCallErrorTypes, SocketTriggerTypes, VCallUpdateApiType } from "@/utils/constants";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import MeetingNotStarted from "../errors/MeetingNotStarted";
 import FullPageError from "../errors/FullPageError";
 import useVideoSocket from "@/hooks/useVideoSocket";
 import {
-    setMeetingDetails,
     VideoCallStatus,
     updateParticipant,
     endMeeting,
@@ -24,6 +22,16 @@ import { VideoControls } from "./VideoControls";
 import { ChatSidebar } from "./ChatSidebar";
 import { SettingsSidebar } from "./SettingsSidebar";
 import { useRouter } from "next/navigation";
+import LoadingUi from "../global-ui/ui-component/LoadingUi";
+
+// Define a mapping from video call error types to their messages.
+const errorMessages = {
+    [VideoCallErrorTypes.USER_NOT_FOUND]: "User not found. Please try to signin again.",
+    [VideoCallErrorTypes.MEETING_NOT_FOUND]: "Meeting is not valid. Meeting may have been removed or the Room ID is incorrect.",
+    [VideoCallErrorTypes.MEETING_ENDED]: "The meeting has ended.",
+    [VideoCallErrorTypes.USER_NOT_PARTICIPANT]: "You did not book this meeting.",
+    [VideoCallErrorTypes.USER_ALREADY_JOINED]: "You have already joined this meeting.",
+};
 
 
 export default function VideoCallClient() {
@@ -41,232 +49,26 @@ export default function VideoCallClient() {
     const [isScreenSharing, setIsScreenSharing] = useState(false);
     const [showChat, setShowChat] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [networkQuality, setNetworkQuality] = useState<'good' | 'poor'>('good');
-    const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
     const router = useRouter();
 
-    const localVideo = useRef<HTMLVideoElement>(null);
-    const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
-    const localStreamRef = useRef<MediaStream | null>(null);
-    const peersRef = useRef<{ [userId: string]: RTCPeerConnection }>({});
-    const remoteStreamsRef = useRef<{ [userId: string]: MediaStream }>({});
-    const [remoteUsers, setRemoteUsers] = useState<{ [userId: string]: MediaStream }>({});
-    const [videoCallStatus, setVideoCallStatus] = useState<VideoCallErrorTypes | null>(null);
-    const screenShareStreamRef = useRef<MediaStream | null>(null);
-
-    useVideoSocket(roomId || "");
-
-    // Network quality monitoring
-    const checkNetworkQuality = useCallback(() => {
-        if (!socketRef.current) return;
-
-        const socket = socketRef.current;
-        const pingStart = Date.now();
-
-        socket.emit('ping', () => {
-            const pingTime = Date.now() - pingStart;
-            setNetworkQuality(pingTime < 100 ? 'good' : 'poor');
-        });
-    }, []);
-
-    useEffect(() => {
-        const interval = setInterval(checkNetworkQuality, 5000);
-        return () => clearInterval(interval);
-    }, [checkNetworkQuality]);
-
-    // Reconnection logic
-    const attemptReconnect = useCallback(async () => {
-        if (reconnectAttempts >= 3) {
-            toast.error("Failed to reconnect after multiple attempts");
-            return;
-        }
-
-        try {
-            setReconnectAttempts(prev => prev + 1);
-            await startVideoCall();
-            setReconnectAttempts(0);
-            toast.success("Successfully reconnected");
-        } catch (error) {
-            console.error("Reconnection failed:", error);
-            setTimeout(attemptReconnect, 5000);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [reconnectAttempts]);
-
-    const startVideoCall = async () => {
-        if (!roomId || !userId) return;
-
-        try {
-            setIsLoading(true);
-            const videoCallStatusData = await apiGetVideoCallStatus(roomId);
-
-            if (videoCallStatusData.isError) {
-                setVideoCallStatus(videoCallStatusData.errorType);
-                setIsLoading(false);
-                return;
-            }
-
-            const joinStatusData = await apiJoinVideoCall(roomId);
-            if (joinStatusData.success && joinStatusData?.meetingStatus === VideoCallStatus.WAITING) {
-                setIsLoading(false);
-                return;
-            } else if (joinStatusData.success && joinStatusData?.meeting) {
-                dispatch(setMeetingDetails(joinStatusData.meeting));
-            } else if (!joinStatusData.success) {
-                setVideoCallStatus(VideoCallErrorTypes.MEETING_NOT_FOUND);
-                setIsLoading(false);
-                return;
-            }
-
-            if (!socketRef.current) {
-                socketRef.current = getSocket();
-            }
-            const socket = getSocket();
-            socketRef.current = socket;
-
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            localStreamRef.current = stream;
-
-            if (localVideo.current) localVideo.current.srcObject = stream;
-
-            socket.emit(VMSocketTriggerTypes.JOIN_ROOM, { roomId, userId });
-
-            socket.on(VMSocketTriggerTypes.EXISTING_USERS, async ({ users }) => {
-                users.forEach(async (existingUserId: string) => {
-                    if (existingUserId === userId) return;
-                    const peer = createPeerConnection(existingUserId);
-                    peersRef.current[existingUserId] = peer;
-
-                    const offer = await peer.createOffer();
-                    await peer.setLocalDescription(offer);
-
-                    socket.emit(VMSocketTriggerTypes.OFFER, { roomId, newUserId: existingUserId, offer });
-                });
-            });
-
-            const createPeerConnection = (targetUserId: string) => {
-                console.log(targetUserId);
-                const peer = new RTCPeerConnection({
-                    iceServers: [
-                        { urls: "stun:stun.l.google.com:19302" },
-                        { urls: "stun:stun1.l.google.com:19302" },
-                        { urls: "stun:stun2.l.google.com:19302" }
-                    ]
-                });
-
-                peer.onicecandidate = (e) => {
-                    if (e.candidate) {
-                        socket.emit(VMSocketTriggerTypes.ICE_CANDIDATE, {
-                            roomId,
-                            targetUserId,
-                            candidate: e.candidate
-                        });
-                    }
-                };
-
-                peer.onconnectionstatechange = () => {
-                    if (peer.connectionState === 'disconnected' || peer.connectionState === 'failed') {
-                        attemptReconnect();
-                    }
-                };
-
-                peer.ontrack = (e) => {
-                    if (!remoteStreamsRef.current[targetUserId]) {
-                        remoteStreamsRef.current[targetUserId] = new MediaStream();
-                    }
-                    remoteStreamsRef.current[targetUserId].addTrack(e.track);
-                    setRemoteUsers((prev) => ({
-                        ...prev,
-                        [targetUserId]: remoteStreamsRef.current[targetUserId]
-                    }));
-                };
-
-                if (localStreamRef.current) {
-                    localStreamRef.current.getTracks().forEach((track) => {
-                        peer.addTrack(track, localStreamRef.current!);
-                    });
-                }
-
-                return peer;
-            };
-
-            socket.on(VMSocketTriggerTypes.USER_JOINED, async ({ newUserId }) => {
-                if (newUserId === userId) return;
-                const peer = createPeerConnection(newUserId);
-                peersRef.current[newUserId] = peer;
-
-                const offer = await peer.createOffer();
-                await peer.setLocalDescription(offer);
-
-                socket.emit(VMSocketTriggerTypes.OFFER, { roomId, newUserId, offer });
-            });
-
-            socket.on(VMSocketTriggerTypes.RECEIVE_OFFER, async ({ fromUserId, offer }) => {
-                const peer = createPeerConnection(fromUserId);
-                peersRef.current[fromUserId] = peer;
-
-                await peer.setRemoteDescription(new RTCSessionDescription(offer));
-                const answer = await peer.createAnswer();
-                await peer.setLocalDescription(answer);
-
-                socket.emit(VMSocketTriggerTypes.ANSWER, { roomId, fromUserId, answer });
-            });
-
-            socket.on(VMSocketTriggerTypes.RECEIVE_ANSWER, async ({ fromUserId, answer }) => {
-                const peer = peersRef.current[fromUserId];
-                await peer?.setRemoteDescription(new RTCSessionDescription(answer));
-            });
-
-            socket.on(VMSocketTriggerTypes.RECEIVE_ICE_CANDIDATE, async ({ fromUserId, candidate }) => {
-                const peer = peersRef.current[fromUserId];
-                await peer?.addIceCandidate(new RTCIceCandidate(candidate));
-            });
-
-            socket.on(VMSocketTriggerTypes.USER_LEAVED, ({ userId: leftUserId }) => {
-                // Remove peer connection
-                if (peersRef.current[leftUserId]) {
-                    peersRef.current[leftUserId].close();
-                    delete peersRef.current[leftUserId];
-                }
-                // Remove remote stream
-                if (remoteStreamsRef.current[leftUserId]) {
-                    delete remoteStreamsRef.current[leftUserId];
-                }
-                setRemoteUsers((prev) => {
-                    const updated = { ...prev };
-                    delete updated[leftUserId];
-                    return updated;
-                });
-            });
-
-            socket.on('disconnect', () => {
-                toast.error("Connection lost. Attempting to reconnect...");
-                attemptReconnect();
-            });
-
-            setIsLoading(false);
-        } catch (error) {
-            console.error("Error starting video call:", error);
-            setVideoCallStatus(VideoCallErrorTypes.MEETING_NOT_FOUND);
-            setIsLoading(false);
-        }
-    };
+    const {
+        isLoading,
+        socketRef,
+        videoCallStatus,
+        networkQuality,
+        localVideo,
+        localStreamRef,
+        remoteUsers,
+        peersRef,
+        screenShareStreamRef,
+        startVideoCall
+    } = useVideoSocket(roomId || "");
 
     useEffect(() => {
         startVideoCall();
-
-        return () => {
-            socketRef.current?.disconnect();
-            localStreamRef.current?.getTracks().forEach((t) => t.stop());
-            screenShareStreamRef.current?.getTracks().forEach((t) => t.stop());
-            Object.values(peersRef.current).forEach((peer) => peer.close());
-            peersRef.current = {};
-            remoteStreamsRef.current = {};
-        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [roomId, userId]);
+    }, []);
 
     useEffect(() => {
         if (
@@ -459,21 +261,20 @@ export default function VideoCallClient() {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
-                    <p>Connecting to meeting...</p>
-                </div>
-            </div>
+            <LoadingUi />
         );
     }
 
-    if (videoCallStatus === VideoCallErrorTypes.USER_NOT_FOUND) return <FullPageError message="User not found. Please try to signin again." />
-    if (videoCallStatus === VideoCallErrorTypes.MEETING_NOT_FOUND) return <FullPageError message="Meeting is not valid. Meeting maybe removed or Room ID is incorrect." />
-    if (videoCallStatus === VideoCallErrorTypes.MEETING_ENDED) return <FullPageError message="The meeting is ended." />
-    if (videoCallStatus === VideoCallErrorTypes.USER_NOT_PARTICIPANT) return <FullPageError message="You did not booked this meeting." />
-    if (videoCallStatus === VideoCallErrorTypes.USER_ALREADY_JOINED) return <FullPageError message="You are already joined in this meeting." />
-    if (meetingState.status === VideoCallStatus.WAITING) return <MeetingNotStarted />
+
+    // Check if the current videoCallStatus has a corresponding error message.
+    if (videoCallStatus && Object.prototype.hasOwnProperty.call(errorMessages, videoCallStatus)) {
+        return <FullPageError message={errorMessages[videoCallStatus as keyof typeof errorMessages]} />;
+    }
+
+    // Handle other states like a waiting meeting.
+    if (meetingState.status === VideoCallStatus.WAITING) {
+        return <MeetingNotStarted />;
+    }
 
     return (
         <VideoCallErrorBoundary>

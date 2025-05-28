@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { IVideoCall } from "@/models/VideoCallModel"; 
+import { IVideoCall } from "@/models/VideoCallModel";
 
 export async function calculateAndUpdateEngagement(call: IVideoCall) {
   if (!call.endTime || !call.startTime) return;
@@ -9,8 +9,9 @@ export async function calculateAndUpdateEngagement(call: IVideoCall) {
 
   let totalEngagement = 0;
   let countedParticipants = 0;
+  const filteredParticipants = call.participants.filter((p) => p.userId.toString() !== call.hostId.toString());
 
-  for (const p of call.participants) {
+  for (const p of filteredParticipants) {
     if (!Array.isArray(p.sessions) || p.sessions.length === 0) continue;
 
     let totalParticipantTime = 0;
