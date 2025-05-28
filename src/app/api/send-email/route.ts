@@ -97,20 +97,38 @@ export async function POST(req: NextRequest) {
 };
 
 // ? HTML code for sending email of update date adn time
-const HTMLUpdatedTimeZone = (title: string, updatedMeetingDate: string, updatedDurationFrom: string, updatedDurationTo: string) => {
-    return `
-    <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
-      <h2 style="color: #4CAF50;">MeetingSync – Schedule Update</h2>
-      <p>Hello,</p>
-      <p>The schedule for the meeting titled <strong>"${title}"</strong> has been updated by the host.</p>
-      <p><strong>New Schedule:</strong></p>
-      <ul>
+const HTMLUpdatedTimeZone = (
+  title: string,
+  updatedMeetingDate: string,
+  updatedDurationFrom: string,
+  updatedDurationTo: string
+) => {
+  return `
+  <div style="max-width: 600px; margin: auto; padding: 24px; font-family: Arial, sans-serif; background-color: #f8f9fa; border-radius: 10px; border: 1px solid #e0e0e0; color: #333;">
+    <h2 style="text-align: center; color: #00796b; margin-bottom: 16px;">📅 MeetingSync – Schedule Update</h2>
+    
+    <p style="font-size: 16px;">Hey there,</p>
+    
+    <p style="font-size: 16px;">
+      The schedule for the meeting titled <strong style="color: #000;">"${title}"</strong> has been updated.
+    </p>
+    
+    <div style="margin: 24px 0; padding: 16px; background-color: #ffffff; border-radius: 8px; border: 1px solid #d0d0d0;">
+      <p style="font-size: 16px; font-weight: bold; color: #444; margin-bottom: 8px;">🕒 New Schedule:</p>
+      <ul style="list-style: none; padding: 0; font-size: 15px; color: #555;">
         <li><strong>Date:</strong> ${new Date(updatedMeetingDate).toLocaleDateString()}</li>
         <li><strong>Start Time:</strong> ${updatedDurationFrom}</li>
         <li><strong>End Time:</strong> ${updatedDurationTo}</li>
       </ul>
-      <p>Please make sure to update your calendar accordingly.</p>
-      <p>Thank you,<br><strong>MeetingSync Team</strong></p>
     </div>
-  `;
+
+    <p style="font-size: 15px;">
+      Kindly update your calendar to reflect the new schedule.
+    </p>
+
+    <p style="font-size: 14px; color: #777; margin-top: 32px;">
+      Thank you,<br>
+      <strong style="color: #00796b;">– The MeetingSync Team</strong>
+    </p>
+  </div>`;
 };

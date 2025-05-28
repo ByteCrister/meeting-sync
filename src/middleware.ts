@@ -13,11 +13,12 @@ const PUBLIC_API_ROUTES = [
     '/api/auth/user/signup',
     '/api/auth/user/user-otp',
     '/api/auth/user/validity',
+    '/api/auth/user/location',
 ];
 
 const ALWAYS_ALLOWED_AUTH_ROUTES = [
     '/api/auth/user/signup',
-    '/api/auth/user/validity'
+    '/api/auth/user/validity',
 ];
 
 const API_PREFIX = '/api';

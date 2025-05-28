@@ -2,10 +2,12 @@
 
 import { useTimer } from "react-timer-hook";
 import { userSignInType, userSignUpType } from "@/types/client-types";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
 import ShowToaster from "../global-ui/toastify-toaster/show-toaster";
 import apiService from "@/utils/client/api/api-services";
 import { getFormattedTimeZone } from "@/utils/client/date-formatting/getFormattedTimeZone";
+import GetOtpBoxes from "./auth-component/GetOtpBoxes";
+import getDeviceInfo from "@/utils/client/others/getDeviceInfo";
 
 type AuthenticateOTPPropTypes = {
     userInfo: (userSignUpType & { isRemember: boolean }) | userSignInType | undefined;
@@ -22,11 +24,14 @@ const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setP
     const [isOTPSend, setIsOTPSend] = useState<boolean>(false);
 
     // Set the expiry time (3 minutes from now)
-    const time = new Date();
-    time.setSeconds(time.getSeconds() + 180);
+    const expiryTime = useMemo(() => {
+        const time = new Date();
+        time.setSeconds(time.getSeconds() + 180);
+        return time;
+    }, []); // only on mount
 
     const { seconds, minutes, restart } = useTimer({
-        expiryTimestamp: time,
+        expiryTimestamp: expiryTime,
         onExpire: () => {
             setIsOtpExpired(true);
             ShowToaster("OTP expired. Please request a new one.", 'error');
@@ -35,8 +40,14 @@ const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setP
 
     const handleGenerateOtp = async () => {
         setIsOTPSend(true);
-        const URI = `/api/auth/user/user-otp?email=${userInfo?.email}`;
-        const responseData = await apiService.get(URI)
+
+        const devicesInfo = getDeviceInfo();
+
+        const URI = `/api/auth/user/user-otp`;
+        const responseData = await apiService.get(URI, {
+            email: encodeURIComponent(JSON.stringify(userInfo?.email)), 
+            devicesInfo: encodeURIComponent(JSON.stringify(devicesInfo))
+        });
         if (responseData.success) {
             setOtp(responseData.data);
             ShowToaster("OTP is sent to your email.", "success");
@@ -103,29 +114,6 @@ const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setP
         }
     };
 
-    // * Render OTP input boxes
-    const GetOtpBoxes = () => {
-        return (
-            <div className="flex gap-2 justify-center">
-                {Array.from({ length: 6 }).map((_, index) => (
-                    <input
-                        key={index}
-                        type="text"
-                        id={`input-id-${index}`}
-                        name={`input-name-${index}`}
-                        value={enteredOtp[index]}
-                        maxLength={1}
-                        autoFocus={currOtpBox === index}
-                        onChange={(e) => handleOtpChange(e.target.value, index)}
-                        onKeyDown={(e) => handleKeyDown(e, index)}
-                        disabled={isOtpExpired} // Disable input if OTP is expired
-                        className="bg-slate-300 font-bold outline-gray-500 text-slate-700 text-xl text-center rounded w-10 h-10"
-                    />
-                ))}
-            </div>
-        );
-    };
-
     // * OTP verification logic
     const verifyOtp = async () => {
         const enteredOptStr = enteredOtp.join("");
@@ -145,25 +133,35 @@ const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setP
     };
 
     return (
-        <section className="w-full h-screen flex flex-col gap-3 justify-center items-center">
-            <h1 className="text-lg font-semibold text-slate-600 font-poppins text-center">
-                Enter the OTP that has been sent to your Email.
+        <section className="w-full h-52 flex flex-col gap-3.5 justify-center items-center backdrop-blur-md shadow-2xl p-6 rounded">
+            <h1 className="text-2xl font-semibold text-gray-800 text-center">
+                Enter the OTP sent to your email.
             </h1>
-            <GetOtpBoxes />
-            <div className="text-center text-slate-600 font-poppins mt-4">
-                <p>{minutes}:{seconds < 10 ? `0${seconds}` : seconds}</p>
+            <GetOtpBoxes
+                enteredOtp={enteredOtp}
+                currOtpBox={currOtpBox}
+                handleOtpChange={handleOtpChange}
+                handleKeyDown={handleKeyDown}
+                isOtpExpired={isOtpExpired}
+            />
+            <div className="text-center text-gray-800 mt-4">
+                {isOTPSend ? (
+                    <p>{minutes}:{seconds < 10 ? `0${seconds}` : seconds}</p>
+                ) : (
+                    <p>Sending OTP...</p>
+                )}
             </div>
             {
                 !isOtpExpired ? <button
                     onClick={() => verifyOtp()}
                     disabled={isOtpExpired}
-                    className="px-2 py-1 bg-slate-600 font-semibold font-poppins text-white rounded hover:bg-slate-300 hover:text-slate-950 transition duration-300 ease-in-out cursor-pointer"
+                    className="px-2 py-1 bg-slate-600 font-semibold font-poppins text-white rounded hover:bg-slate-400 transition duration-300 ease-in-out cursor-pointer"
                 >
                     Verify OTP
                 </button>
                     : <button
                         onClick={() => handleGenerateOtp()}
-                        className="px-2 py-1 bg-slate-600 font-semibold font-poppins text-white rounded hover:bg-slate-300 hover:text-slate-950 transition duration-300 ease-in-out cursor-pointer"
+                        className="px-2 py-1 bg-slate-600 font-semibold font-poppins text-white rounded hover:bg-slate-400 transition duration-300 ease-in-out cursor-pointer"
                     >
                         Resend OTP
                     </button>
