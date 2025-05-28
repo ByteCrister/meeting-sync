@@ -37,7 +37,7 @@ const useNotificationSocket = () => {
             await initializeServerSocket();
 
             if (!socketRef.current) {
-                socketRef.current = getSocket();
+                socketRef.current = getSocket("chat"); // * uses single socket for both notification and chat messaging
             }
 
             const socket = socketRef.current;
@@ -122,6 +122,7 @@ const useNotificationSocket = () => {
                 });
 
                 socket.on(SocketTriggerTypes.SEND_NEW_CHAT_MESSAGE, (data) => {
+                    console.log(`New Message: ${data.notificationData}`);
                     if (activeChatRef.current?._id === data.notificationData.user_id) {
                         dispatch(addNewMessage(data.notificationData));
                     }
@@ -138,6 +139,7 @@ const useNotificationSocket = () => {
                 });
 
                 socket.on(SocketTriggerTypes.INCREASE_UNSEEN_MESSAGE_COUNT, () => {
+                    console.log(`Increase Notification count`);
                     dispatch(setCountOfUnseenMessage(countOfUnseenMessages + 1));
                 });
             }
@@ -161,12 +163,11 @@ const useNotificationSocket = () => {
                 socketRef.current.disconnect();
                 console.log("Socket cleanup: disconnected");
             }
-            listenersAttachedRef.current = false; // VERY IMPORTANT
+            listenersAttachedRef.current = false;
             socketRef.current = null; // optional, ensures fresh init on next mount
         };
 
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dispatch, user?._id, countOfUnseenMessages]);
+    }, [dispatch, user?._id, countOfUnseenMessages, user?.disabledNotificationUsers]);
 
 };
 

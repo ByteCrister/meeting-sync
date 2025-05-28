@@ -7,6 +7,7 @@ import { triggerSocketEvent } from "../socket/triggerSocketEvent";
 import { IVideoCallStatus, SocketTriggerTypes } from "../constants";
 import getNotificationExpiryDate from "./getNotificationExpiryDate";
 import { parse } from 'date-fns';
+import mongoose from "mongoose";
 
 
 // Function to detect time format and parse
@@ -28,6 +29,7 @@ const parseTime = (timeString: string, referenceDate: Date): Date => {
 
 export async function handleCreateVideoCallDirectly(meetingId: string, userId: string) {
   await ConnectDB();
+  // console.log(`Creating Video Call for meeting ${meetingId} by user ${userId}`);
 
   const user = await UserModel.findById(userId).select("image");
   if (!user) throw new Error("User not found");
@@ -39,6 +41,12 @@ export async function handleCreateVideoCallDirectly(meetingId: string, userId: s
   const meetingDate = new Date(slot.meetingDate);
   const startTime = parseTime(slot.durationFrom, meetingDate);
   const endTime = parseTime(slot.durationTo, meetingDate);
+
+  // Handle cross-midnight meetings
+  if (endTime <= startTime) {
+    endTime.setDate(endTime.getDate() + 1);
+  }
+
 
   const newCall = await VideoCallModel.create({
     meetingId,
@@ -69,14 +77,14 @@ export async function handleCreateVideoCallDirectly(meetingId: string, userId: s
     expiresAt: getNotificationExpiryDate(30),
   };
 
-  await Promise.all(slot.bookedUsers.map(async (bookedUserId: string) => {
+  await Promise.all(slot.bookedUsers.map(async (bookedUserId: mongoose.Types.ObjectId) => {
     const notificationDoc = new NotificationsModel({ ...sendNewNotification, receiver: bookedUserId });
     const savedNotification = await notificationDoc.save();
 
     await UserModel.findByIdAndUpdate(bookedUserId, { $inc: { countOfNotifications: 1 } });
 
     triggerSocketEvent({
-      userId: bookedUserId,
+      userId: String(bookedUserId),
       type: SocketTriggerTypes.MEETING_STARTED,
       notificationData: {
         // ? New notification body

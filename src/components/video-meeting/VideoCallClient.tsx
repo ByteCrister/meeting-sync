@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { apiUpdateVideoCall, apiLeaveVideoCall } from "@/utils/client/api/api-video-meeting-call";
 import { VideoCallErrorTypes, SocketTriggerTypes, VCallUpdateApiType } from "@/utils/constants";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import MeetingNotStarted from "../errors/MeetingNotStarted";
 import FullPageError from "../errors/FullPageError";
 import useVideoSocket from "@/hooks/useVideoSocket";
@@ -67,19 +67,29 @@ export default function VideoCallClient() {
 
     useEffect(() => {
         startVideoCall();
+        console.log(remoteUsers);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
-        if (
-            meetingState.status === VideoCallStatus.ACTIVE ||
-            meetingState.status === VideoCallStatus.ENDED
-        ) {
-            console.log("Meeting status changed:", meetingState.status);
-        }
+        console.log(`Current Meeting Status: ${meetingState.status}`);
     }, [meetingState.status]);
 
-    const toggleMute = async () => {
+    const renderedRemoteUsers = useMemo(() => {
+        return Object.entries(remoteUsers).map(([id, stream]) => {
+            const participant = meetingState.participants.find((p) => p.userId === id);
+            if (!participant) return null;
+            return (
+                <VideoParticipant
+                    key={id}
+                    stream={stream}
+                    participant={participant}
+                />
+            );
+        });
+    }, [remoteUsers, meetingState.participants]);
+
+    const toggleMute = useCallback(async () => {
         if (!localStreamRef.current) return;
 
         const audioTrack = localStreamRef.current.getAudioTracks()[0];
@@ -111,9 +121,10 @@ export default function VideoCallClient() {
             await apiUpdateVideoCall(objectBody);
             dispatch(updateParticipant({ userId, isMuted: !audioTrack }));
         }
-    };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isScreenSharing, isVideoOn, localStreamRef, roomId, userId]);
 
-    const toggleVideo = async () => {
+    const toggleVideo = useCallback(async () => {
         if (!localStreamRef.current) return;
 
         const videoTrack = localStreamRef.current.getVideoTracks()[0];
@@ -144,9 +155,10 @@ export default function VideoCallClient() {
             await apiUpdateVideoCall(objectBody);
             dispatch(updateParticipant({ userId, isVideoOn: !isVideoOn }));
         }
-    };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isMuted, isScreenSharing, isVideoOn, localStreamRef, roomId, userId]);
 
-    const toggleScreenShare = async () => {
+    const toggleScreenShare = useCallback(async () => {
         try {
             if (!isScreenSharing) {
                 const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
@@ -224,7 +236,8 @@ export default function VideoCallClient() {
             console.error("Error toggling screen share:", error);
             toast.error("Failed to toggle screen sharing");
         }
-    };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleSendChatMessage = async (message: string) => {
         if (socketRef.current && roomId) {
@@ -265,7 +278,9 @@ export default function VideoCallClient() {
         );
     }
 
-
+    if (!roomId) {
+        return <FullPageError message="Room ID is missing from the URL." />;
+    }
     // Check if the current videoCallStatus has a corresponding error message.
     if (videoCallStatus && Object.prototype.hasOwnProperty.call(errorMessages, videoCallStatus)) {
         return <FullPageError message={errorMessages[videoCallStatus as keyof typeof errorMessages]} />;
@@ -304,17 +319,7 @@ export default function VideoCallClient() {
                             )}
 
                             {/* Remote Videos */}
-                            {Object.entries(remoteUsers).map(([id, stream]) => {
-                                const participant = meetingState.participants.find((p: VideoCallParticipant) => p.userId === id);
-                                if (!participant) return null;
-                                return (
-                                    <VideoParticipant
-                                        key={id}
-                                        stream={stream}
-                                        participant={participant}
-                                    />
-                                );
-                            })}
+                            {renderedRemoteUsers}
                         </div>
                     </div>
 
@@ -367,4 +372,4 @@ export default function VideoCallClient() {
             </div>
         </VideoCallErrorBoundary>
     );
-}
+};

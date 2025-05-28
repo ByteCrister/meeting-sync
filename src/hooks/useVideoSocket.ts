@@ -23,6 +23,7 @@ const useVideoSocket = (roomId: string) => {
     const userId = useAppSelector((state) => state.userStore.user?._id);
     const socketRef = useRef<ReturnType<typeof initiateSocket> | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const hasJoinedRef = useRef(false);
 
     const [videoCallStatus, setVideoStatus] = useState<VideoCallErrorTypes | null>(null);
 
@@ -40,22 +41,23 @@ const useVideoSocket = (roomId: string) => {
 
     // Reconnection logic
     const attemptReconnect = useCallback(async () => {
-        if (reconnectAttempts >= 3) {
-            toast.error("Failed to reconnect after multiple attempts");
+        if (reconnectAttempts >= 5) {
+            toast.error("Failed to reconnect after several attempts");
             return;
         }
 
         try {
-            setReconnectAttempts(prev => prev + 1);
             await startVideoCall();
-            setReconnectAttempts(0);
-            toast.success("Successfully reconnected");
-        } catch (error) {
-            console.error("Reconnection failed:", error);
-            setTimeout(attemptReconnect, 5000);
+            setReconnectAttempts(0); // Reset on success
+            toast.success("Reconnected");
+        } catch {
+            const nextAttempt = reconnectAttempts + 1;
+            setReconnectAttempts(nextAttempt);
+            setTimeout(attemptReconnect, 2000 * nextAttempt); // exponential backoff
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [reconnectAttempts]);
+
 
     // Network quality monitoring
     const checkNetworkQuality = useCallback(() => {
@@ -95,91 +97,60 @@ const useVideoSocket = (roomId: string) => {
             }
 
             if (!socketRef.current) {
-                socketRef.current = getSocket();
+                socketRef.current = getSocket('video'); // * Uses video socket
+                socketRef.current.connect();
             }
             const socket = socketRef.current;
+
+            setupVideoSocket();
 
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             localStreamRef.current = stream;
 
             if (localVideo.current) localVideo.current.srcObject = stream;
 
-            if (socket.hasListeners(VMSocketTriggerTypes.EXISTING_USERS)) return;
+            if (socket.listeners(VMSocketTriggerTypes.EXISTING_USERS).length) return;
 
-            const createPeerConnection = (targetUserId: string) => {
-                const peer = new RTCPeerConnection({
-                    iceServers: [
-                        { urls: "stun:stun.l.google.com:19302" },
-                        { urls: "stun:stun1.l.google.com:19302" },
-                        { urls: "stun:stun2.l.google.com:19302" }
-                    ]
-                });
 
-                peer.onicecandidate = (e) => {
-                    if (e.candidate) {
-                        socket.emit(VMSocketTriggerTypes.ICE_CANDIDATE, {
-                            roomId,
-                            targetUserId,
-                            candidate: e.candidate
+            socket.on(VMSocketTriggerTypes.EXISTING_USERS, (data) => {
+                const existingUsers = data?.existingUsers ?? [];
+
+                existingUsers.forEach((existingUserId: string) => {
+                    if (existingUserId === userId) return;
+
+                    const peer = createPeerConnection(existingUserId, socket);
+                    peersRef.current[existingUserId] = peer;
+
+                    // This user (the new joiner) should initiate the offer
+                    peer.createOffer()
+                        .then(async (offer) => {
+                            await peer.setLocalDescription(offer);
+                            return offer;
+                        })
+                        .then((offer) => {
+                            socket.emit(VMSocketTriggerTypes.OFFER, {
+                                roomId,
+                                targetUserId: existingUserId,
+                                offer,
+                            });
                         });
-                    }
-                };
 
-                peer.onconnectionstatechange = () => {
-                    if (peer.connectionState === 'disconnected' || peer.connectionState === 'failed') {
-                        attemptReconnect();
-                    }
-                };
+                    // ✅ Create empty stream immediately for remote user
+                    const emptyRemoteStream = new MediaStream();
+                    remoteStreamsRef.current[existingUserId] = emptyRemoteStream;
 
-                peer.ontrack = (e) => {
-                    const remoteStream = remoteStreamsRef.current[targetUserId] ?? new MediaStream();
-                    remoteStreamsRef.current[targetUserId] = remoteStream;
-
-                    remoteStream.addTrack(e.track);
-
-                    // Update only when both video and audio are present
-                    if (remoteStream.getTracks().length >= 2) {
-                        setRemoteUsers((prev) => ({
-                            ...prev,
-                            [targetUserId]: remoteStream,
-                        }));
-                    }
-                };
-
-
-                if (localStreamRef.current) {
-                    localStreamRef.current.getTracks().forEach((track) => {
-                        peer.addTrack(track, localStreamRef.current!);
-                    });
-                }
-
-                return peer;
-            };
-
-            socket.emit(VMSocketTriggerTypes.JOIN_ROOM, { roomId, userId });
+                    setRemoteUsers((prev) => ({
+                        ...prev,
+                        [existingUserId]: emptyRemoteStream,
+                    }));
+                });
+            });
 
             // On EXISTING_USERS: **Joining user** creates offers to existing participants
-            socket.on(VMSocketTriggerTypes.EXISTING_USERS, async ({ users }) => {
-                const updates: { [id: string]: MediaStream } = {};
-
-                for (const existingUserId of users) {
-                    if (existingUserId === userId) continue;
-
-                    if (!peersRef.current[existingUserId]) {
-                        const peer = createPeerConnection(existingUserId);
-                        peersRef.current[existingUserId] = peer;
-
-                        const offer = await peer.createOffer();
-                        await peer.setLocalDescription(offer);
-
-                        socket.emit(VMSocketTriggerTypes.OFFER, { roomId, newUserId: existingUserId, offer });
-
-                        updates[existingUserId] = new MediaStream();
-                    }
-                }
-
-                setRemoteUsers(prev => ({ ...prev, ...updates }));
-            });
+            if (!hasJoinedRef.current) {
+                socket.emit(VMSocketTriggerTypes.JOIN_ROOM, { roomId, userId });
+                hasJoinedRef.current = true;
+            }
 
             // On USER_JOINED: **Existing users do NOT create offers**,
             // only create peer connection and wait for offer from new user.
@@ -188,7 +159,7 @@ const useVideoSocket = (roomId: string) => {
 
                 // Only create peer connection, DO NOT create offer
                 if (!peersRef.current[newUserId]) {
-                    const peer = createPeerConnection(newUserId);
+                    const peer = createPeerConnection(newUserId, socket);
                     peersRef.current[newUserId] = peer;
 
                     setRemoteUsers(prev => ({
@@ -202,7 +173,7 @@ const useVideoSocket = (roomId: string) => {
                 let peer = peersRef.current[fromUserId];
 
                 if (!peer) {
-                    peer = createPeerConnection(fromUserId);
+                    peer = createPeerConnection(fromUserId, socket);
                     peersRef.current[fromUserId] = peer;
                 }
 
@@ -249,20 +220,6 @@ const useVideoSocket = (roomId: string) => {
             setIsLoading(false);
         }
     };
-
-    useEffect(() => {
-        const interval = setInterval(checkNetworkQuality, 5000);
-        return () => clearInterval(interval);
-    }, [checkNetworkQuality]);
-
-    useEffect(() => {
-        if (!userId || !roomId) return;
-
-        setupVideoSocket();
-        return () => endCall();
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [userId, roomId]);
 
     // Set up video call state managements
     const setupVideoSocket = async () => {
@@ -326,6 +283,66 @@ const useVideoSocket = (roomId: string) => {
         });
     };
 
+    const createPeerConnection = useCallback((targetUserId: string, socket: ReturnType<typeof initiateSocket>) => {
+        const peer = new RTCPeerConnection({
+            iceServers: [
+                { urls: "stun:stun.l.google.com:19302" },
+                { urls: "stun:stun1.l.google.com:19302" },
+                { urls: "stun:stun2.l.google.com:19302" }
+            ]
+        });
+
+        peer.oniceconnectionstatechange = () => {
+            if (peer.iceConnectionState === 'failed') {
+                console.warn(`ICE connection failed for ${targetUserId}`);
+            }
+        };
+
+        peer.onicecandidate = (e) => {
+            if (e.candidate) {
+                socket.emit(VMSocketTriggerTypes.ICE_CANDIDATE, {
+                    roomId,
+                    targetUserId,
+                    candidate: e.candidate
+                });
+            }
+        };
+
+        peer.onconnectionstatechange = () => {
+            if (peer.connectionState === 'disconnected' || peer.connectionState === 'failed') {
+                attemptReconnect();
+            }
+        };
+
+        peer.ontrack = (e) => {
+            let stream = remoteStreamsRef.current[targetUserId];
+
+            if (!stream) {
+                stream = new MediaStream();
+                remoteStreamsRef.current[targetUserId] = stream;
+            }
+
+            // Only add if not already present
+            if (!stream.getTracks().some(t => t.id === e.track.id)) {
+                stream.addTrack(e.track);
+            }
+
+            setRemoteUsers((prev) => ({
+                ...prev,
+                [targetUserId]: stream,
+            }));
+        };
+
+
+        if (localStreamRef.current) {
+            localStreamRef.current.getTracks().forEach((track) => {
+                peer.addTrack(track, localStreamRef.current!);
+            });
+        }
+
+        return peer;
+    }, [attemptReconnect, roomId]);
+
     // cleanup connections, stop tracks, etc.
     const endCall = () => {
         const socket = socketRef.current;
@@ -348,6 +365,32 @@ const useVideoSocket = (roomId: string) => {
         }
         socketRef.current = null;
     };
+
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            checkNetworkQuality(); // wrapped in useCallback so safe here
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [checkNetworkQuality]);
+
+
+    useEffect(() => {
+        if (!userId || !roomId) return;
+
+        return () => {
+            endCall();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userId, roomId]);
+
+    useEffect(() => {
+        if (socketRef.current) {
+            endCall(); // also cleanup on unmount
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
 
     return {
         isLoading,

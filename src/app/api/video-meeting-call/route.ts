@@ -39,6 +39,15 @@ export async function GET(req: NextRequest) {
             });
         }
 
+        const slot = await SlotModel.findById(meetingId).lean() as ISlot | null;
+        if (!slot) {
+            return NextResponse.json({
+                success: true,
+                isError: true,
+                errorType: VideoCallErrorTypes.MEETING_NOT_FOUND,
+            });
+        }
+
         const meeting = await VideoCallModel.findOne({ meetingId }).lean() as IVideoCall | null;
         if (!meeting) {
             return NextResponse.json({
@@ -56,14 +65,6 @@ export async function GET(req: NextRequest) {
             });
         }
 
-        const slot = await SlotModel.findById(meetingId).lean() as ISlot | null;
-        if (!slot) {
-            return NextResponse.json({
-                success: true,
-                isError: true,
-                errorType: VideoCallErrorTypes.MEETING_NOT_FOUND,
-            });
-        }
         const isHost = slot?.ownerId?.toString() === userId.toString();
         const isValidParticipant = slot?.bookedUsers.some(id => id.toString() === userId.toString()) ? true : false;
 

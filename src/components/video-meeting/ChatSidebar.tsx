@@ -40,7 +40,7 @@ export function ChatSidebar({ currentUserId, isChatAllowed, messages, participan
                             <div className="flex items-start space-x-2">
                                 <Avatar className="h-8 w-8">
                                     <AvatarImage src={participant?.image} />
-                                    <AvatarFallback>{participant?.username?.[0]}</AvatarFallback>
+                                    <AvatarFallback>{participant?.username}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1">
                                     <div className="flex items-center space-x-2">

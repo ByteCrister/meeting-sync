@@ -161,6 +161,7 @@ const TimePicker = () => {
         if (!selectedDate) return;
 
         const selectedSlotsOfThisDate = MeetingSlots
+        .filter(slot => slot._id !== slotDialog.slotField._id)
             .filter(slot => {
                 const a = new Date(slot.meetingDate!);
                 const b = new Date(selectedDate);
@@ -174,7 +175,7 @@ const TimePicker = () => {
             console.log(selectedSlotsOfThisDate);
         setBusyTimes(selectedSlotsOfThisDate);
 
-    }, [MeetingSlots, slotDialog.slotField.meetingDate]);
+    }, [MeetingSlots, slotDialog.slotField._id, slotDialog.slotField.meetingDate]);
 
 
     return (

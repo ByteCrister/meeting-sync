@@ -131,6 +131,20 @@ export async function updateSlotStatuses() {
             }
 
             if (slot.status !== newStatus) {
+                if (newStatus === IRegisterStatus.Ongoing) {
+                    // console.log(`Slot ${slot._id}: nowUTC=${nowUTC.toISO()}, start=${start.toISO()}, end=${end.toISO()}`);
+                    // console.log(`Calculated newStatus: ${newStatus}, Current status: ${slot.status}`);
+
+                    try {
+                        const newCall = await handleCreateVideoCallDirectly(slot._id, slot.ownerId.toString());
+                        console.log("Video call created:", newCall._id);
+                    } catch (err) {
+                        console.error("Failed to create video call:", (err as Error).message);
+                    }
+                } else if ((newStatus === IRegisterStatus.Expired || newStatus === IRegisterStatus.Completed)) {
+                    await handleDeleteVideoCallDirectly(slot._id);
+                }
+
                 slot.status = newStatus;
                 await slot.save();
                 console.log(`Slot ${slot._id} updated to ${newStatus}`);
@@ -159,13 +173,8 @@ export async function updateSlotStatuses() {
                             image: user?.image,
                         },
                     });
-
-                    await handleCreateVideoCallDirectly(slot._id, slot.ownerId.toString());
                 }
 
-                if (IRegisterStatus.Expired || newStatus === IRegisterStatus.Completed) {
-                    await handleDeleteVideoCallDirectly(slot._id);
-                }
             } else {
                 await slot.save(); // Still persist reminder timestamp if changed
             }
@@ -180,7 +189,6 @@ export async function updateSlotStatuses() {
 // Run this every minute
 let isRunning = false;
 
-// Ensure the DB connection is established before starting the cron job
 async function startCronJob() {
     if (globalThis.slotStatusCronStarted) {
         console.log("Cron job already started. Skipping initialization.");

@@ -51,13 +51,12 @@ const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setP
         if (responseData.success) {
             setOtp(responseData.data);
             ShowToaster("OTP is sent to your email.", "success");
+            // Restart the timer
+            const newTime = new Date();
+            newTime.setSeconds(newTime.getSeconds() + 180);
+            restart(newTime);
         }
 
-        // Reset timer
-        // Restart the timer
-        const newTime = new Date();
-        newTime.setSeconds(newTime.getSeconds() + 180);
-        restart(newTime);
         setIsOtpExpired(false);
     };
 

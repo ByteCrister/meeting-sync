@@ -66,7 +66,7 @@ export function AlertDeleteBookedSlot() {
                 onClick={handleBookedSlotDelete}
                 className="bg-red-500 hover:bg-red-700 text-white font-semibold rounded cursor-pointer"
               >
-                Delete
+                Cancel
               </AlertDialogAction>
             </>
           )}
