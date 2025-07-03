@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from './utils/server/verifyToken';
 
 const PUBLIC_ROUTES = [
@@ -14,7 +14,15 @@ const PUBLIC_API_ROUTES = [
     '/api/auth/user/user-otp',
     '/api/auth/user/validity',
     '/api/auth/user/location',
-    // '/api/reset'
+
+    '/api/auth/callback/google',
+    '/api/auth/callback/credentials',
+    '/api/auth/signin/google',
+    '/api/auth/providers',
+    '/api/auth/set-cookie',
+    '/api/auth/error',
+    '/api/auth/csrf',
+    '/api/auth/user/validity',
 ];
 
 const ALWAYS_ALLOWED_AUTH_ROUTES = [
@@ -55,12 +63,13 @@ export async function middleware(request: NextRequest) {
         }
     }
 
+    // Skip all /api/auth/* routes, since they're public
+    if (pathname.startsWith('/api/auth/')) {
+        return NextResponse.next();
+    }
+
     // 1. Block authenticated users from hitting auth-related public APIs
-    if (isAuthenticated
-        && isApi
-        && isPublicApiRoute
-        && !ALWAYS_ALLOWED_AUTH_ROUTES.includes(pathname)
-    ) {
+    if (isAuthenticated && isApi && isPublicApiRoute && !ALWAYS_ALLOWED_AUTH_ROUTES.includes(pathname)) {
         return new NextResponse(
             JSON.stringify({ message: 'Already authenticated. Access denied.' }),
             {
@@ -97,7 +106,6 @@ export async function middleware(request: NextRequest) {
         const redirectTarget = request.nextUrl.searchParams.get('redirect') || '/';
         return NextResponse.redirect(new URL(redirectTarget, request.url));
     }
-
 
     return NextResponse.next();
 }

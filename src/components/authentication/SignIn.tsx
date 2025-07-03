@@ -1,7 +1,8 @@
 "use client";
 
-import { JSX, useState } from "react";
-import { useFormik } from 'formik';
+import { JSX, useEffect, useState } from "react";
+import { signIn } from "next-auth/react";
+import { useFormik } from "formik";
 import { Open_Sans } from "next/font/google";
 import { signInValidation } from "@/utils/client/others/auth-validation";
 import ShowToaster from "../global-ui/toastify-toaster/show-toaster";
@@ -9,22 +10,35 @@ import apiService from "@/utils/client/api/api-services";
 import LoadingSpinner from "../global-ui/ui-component/LoadingSpinner";
 import { IoEyeOffSharp, IoEyeSharp } from "react-icons/io5";
 import { Checkbox } from "../ui/checkbox";
+import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 
 const openSans = Open_Sans({
-    weight: '400',
-    subsets: ['latin'],
+    weight: "400",
+    subsets: ["latin"],
 });
 
 const SignIn = () => {
     const [isPasswordShow, setIsPasswordShow] = useState<boolean>(false);
-    const [isButtonLoading, setIsButtonLoading] = useState<boolean>(false);
+    const [isButtonLoading, setIsButtonLoading] = useState<boolean>(false)
+    const [isGoogleBtnLoading, setIsGoogleBtnLoading] = useState<boolean>(false);
     const [isRememberMeChecked, setIsRememberMeChecked] = useState(false);
 
+    const searchParams = useSearchParams();
+    const error = searchParams?.get("error");
+
+    useEffect(() => {
+        if (error === "EmailNotRegistered") {
+            ShowToaster("This Google email is not registered!", "error");
+        } else if (error === "MissingEmail") {
+            ShowToaster("Google did not return an email.", "error");
+        }
+    }, [error]);
 
     const formik = useFormik({
         initialValues: {
-            email: '',
-            password: ''
+            email: "",
+            password: "",
         },
         validationSchema: signInValidation,
         onSubmit: async (values) => {
@@ -35,7 +49,7 @@ const SignIn = () => {
                 if (resData.success) {
                     ShowToaster("Successfully signed in.", "success");
                     setTimeout(() => {
-                        window.location.href = '/';
+                        window.location.href = "/";
                     }, 2000);
                 }
             }
@@ -43,52 +57,104 @@ const SignIn = () => {
         },
     });
 
-    const getValidationString = (field: keyof typeof formik.initialValues): JSX.Element => {
+    const handleGoogleLogin = async () => {
+        try {
+            setIsGoogleBtnLoading(true);
+            const result = await signIn("google", {
+                redirect: false,
+                callbackUrl: "/", // <-- important
+            });
+
+            if (result?.error === "EmailNotRegistered") {
+                ShowToaster("This email is not registered.", "error");
+                setIsGoogleBtnLoading(false);
+                return;
+            }
+
+            if (result?.ok && result?.url) {
+                ShowToaster("Signed in successfully!", "success");
+                setTimeout(() => {
+                    window.location.href = result.url!;
+                }, 1000);
+            } else {
+                ShowToaster("Unexpected error during sign-in.", "error");
+            }
+        } catch (err) {
+            console.error("Google login error", err);
+            ShowToaster("Google login failed. Try again.", "error");
+        } finally {
+            setIsGoogleBtnLoading(false);
+        }
+    };
+
+
+    const getValidationString = (
+        field: keyof typeof formik.initialValues
+    ): JSX.Element => {
         return formik.touched[field] && formik.errors[field] ? (
             <span className="text-red-500 font-semibold text-sm">
-                <sup>*</sup>{formik.errors[field]}
+                <sup>*</sup>
+                {formik.errors[field]}
             </span>
         ) : (
             <label htmlFor={field} className="text-slate-500 font-medium text-sm">
                 <b className="capitalize">
-                    <sup>*</sup>{field.replace('_', " ")}
+                    <sup>*</sup>
+                    {field.replace("_", " ")}
                 </b>
             </label>
         );
     };
 
     return (
-        <form onSubmit={formik.handleSubmit} className="flex flex-col items-center gap-4 w-full">
+        <form
+            onSubmit={formik.handleSubmit}
+            className="flex flex-col items-center gap-4 w-full"
+        >
             <div className="w-full">
-                {getValidationString('email')}
+                {getValidationString("email")}
                 <input
-                    type='email'
+                    type="email"
                     name="email"
                     id="email"
                     required
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
                     value={formik.values.email}
-                    placeholder='Email'
+                    placeholder="Email"
                     className={`w-full bg-white/95 backdrop-blur-sm rounded-xl px-4 py-3.5 outline-none border border-gray-100 focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-300 ${openSans.className} font-medium text-gray-700 placeholder:text-gray-400 shadow-sm`}
                 ></input>
             </div>
 
             <section className="w-full">
-                {getValidationString('password')}
-                <div className={`flex justify-between bg-white/95 backdrop-blur-sm rounded-xl px-4 py-3.5 outline-none border border-gray-100 focus-within:border-gray-400 focus-within:ring-2 focus-within:ring-gray-100 transition-all duration-300 ${openSans.className} font-medium text-gray-700 shadow-sm`}>
+                {getValidationString("password")}
+                <div
+                    className={`flex justify-between bg-white/95 backdrop-blur-sm rounded-xl px-4 py-3.5 outline-none border border-gray-100 focus-within:border-gray-400 focus-within:ring-2 focus-within:ring-gray-100 transition-all duration-300 ${openSans.className} font-medium text-gray-700 shadow-sm`}
+                >
                     <input
-                        type={isPasswordShow ? 'text' : 'password'}
+                        type={isPasswordShow ? "text" : "password"}
                         name="password"
                         id="password"
                         required
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
-                        placeholder='Password'
+                        placeholder="Password"
                         value={formik.values.password}
-                        className={`w-full bg-transparent outline-none placeholder:text-gray-400`} />
-                    <button type="button" onClick={(e) => { e.preventDefault(); setIsPasswordShow(prev => !prev); }} className="text-gray-500 hover:text-gray-600 transition-colors duration-200">
-                        {isPasswordShow ? <IoEyeSharp className="text-xl" /> : <IoEyeOffSharp className="text-xl" />}
+                        className={`w-full bg-transparent outline-none placeholder:text-gray-400`}
+                    />
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            setIsPasswordShow((prev) => !prev);
+                        }}
+                        className="text-gray-500 hover:text-gray-600 transition-colors duration-200"
+                    >
+                        {isPasswordShow ? (
+                            <IoEyeSharp className="text-xl" />
+                        ) : (
+                            <IoEyeOffSharp className="text-xl" />
+                        )}
                     </button>
                 </div>
             </section>
@@ -107,11 +173,48 @@ const SignIn = () => {
                     Remember Me
                 </label>
             </div>
-            <button type='submit' className='w-full bg-gradient-to-r from-gray-800 to-gray-600 px-4 py-3.5 font-semibold rounded-xl text-white hover:from-gray-700 hover:to-gray-500 transform hover:scale-[1.02] transition-all duration-300 ease-in-out shadow-lg hover:shadow-xl'>
-                {isButtonLoading ? <LoadingSpinner border="border-white" /> : <span>Sign In</span>}
+            <button
+                type="submit"
+                className="w-full bg-gradient-to-r from-gray-800 to-gray-600 px-4 py-3.5 font-semibold rounded-xl text-white hover:from-gray-700 hover:to-gray-500 transform hover:scale-[1.02] transition-all duration-300 ease-in-out shadow-lg hover:shadow-xl"
+            >
+                {isButtonLoading ? (
+                    <LoadingSpinner border="border-white" />
+                ) : (
+                    <span>Sign In</span>
+                )}
             </button>
+            {/* Separator */}
+            <div className="flex items-center gap-4">
+                <hr className="flex-grow border-t border-gray-300" />
+                <span className="text-sm text-gray-500">or</span>
+                <hr className="flex-grow border-t border-gray-300" />
+            </div>
+
+            {/* Google Sign-In Button */}
+            {
+                isGoogleBtnLoading ? (
+                    <div className="flex items-center justify-center gap-3 bg-white border border-gray-300 py-2 px-4 rounded shadow-sm hover:bg-gray-100">
+                        <LoadingSpinner border="border-black" />
+                    </div>) :
+                    <button
+                        type="button"
+                        onClick={() => { setIsGoogleBtnLoading(true); handleGoogleLogin() }}
+                        className="flex items-center justify-center gap-3 bg-white border border-gray-300 py-2 px-4 rounded shadow-sm hover:bg-gray-100"
+                    >
+                        <Image
+                            src="https://www.svgrepo.com/show/475656/google-color.svg"
+                            alt="Google"
+                            width={20}
+                            height={20}
+                        />
+                        <span className="text-sm font-medium text-gray-700">
+                            Sign in with Google
+                        </span>
+                    </button>
+
+            }
         </form>
-    )
-}
+    );
+};
 
 export default SignIn;
