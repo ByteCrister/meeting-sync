@@ -1,6 +1,6 @@
 "use client";
 
-import { Dispatch, JSX, SetStateAction, useState } from "react";
+import { JSX, useState } from "react";
 import { useFormik } from "formik";
 import { IoEyeSharp } from "react-icons/io5";
 import { IoEyeOffSharp } from "react-icons/io5";
@@ -18,8 +18,8 @@ const openSans = Open_Sans({
 
 // Prop Types
 type SignUpProps = {
-    setPageState: Dispatch<SetStateAction<number>>;
-    setUserInfo: Dispatch<SetStateAction<(userSignUpType & { isRemember: boolean }) | userSignInType | undefined>>;
+    setPageState: (state: number) => void;
+    setUserInfo: (info: (userSignUpType & { isRemember: boolean }) | userSignInType | undefined) => void;
 };
 const SignUp = ({ setPageState, setUserInfo }: SignUpProps) => {
     const [isPasswordShow, setIsPasswordShow] = useState(false);

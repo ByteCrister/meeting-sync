@@ -9,6 +9,8 @@ import ForgotPassword from "./ForgotPassword";
 import SignIn from "./SignIn";
 import AuthenticateOTP from "./AuthenticateOTP";
 import "@/styles/animations.css";
+import { useSessionSecureStorage } from "@/hooks/useSessionSecureStorage";
+import { Session } from "@/utils/constants";
 
 const buttonStyle =
     "font-medium px-4 py-2.5 rounded-xl transition-all duration-300 text-sm md:text-base";
@@ -21,11 +23,20 @@ const getPageVariants = (direction: "left" | "right") => ({
 });
 
 const DefaultAuthPage = () => {
-    const [pageState, setPageState] = useState<number>(0);
     const [currentAuthPage, setCurrentAuthPage] = useState<0 | 1 | 2>(0);
     const [previousAuthPage, setPreviousAuthPage] = useState<0 | 1 | 2>(0);
-    const [userInfo, setUserInfo] = useState<userSignUpType | userSignInType>();
     const [isEmailChecked, setIsEmailChecked] = useState<boolean>(false);
+
+    const [pageState, setPage,] = useSessionSecureStorage<number>(Session.AUTH_PAGE_STATE, 0);
+
+    const setPageState = (state: number) => {
+        setPage(state);
+    };
+
+    const [userInfo, setInfo,] = useSessionSecureStorage<userSignUpType | userSignInType | undefined>(Session.USER_INFO, undefined);
+    const setUserInfo = (info: userSignUpType | userSignInType | undefined) => {
+        setInfo(info);
+    };
 
     const handleButtonClick = (page: 0 | 1 | 2) => {
         setPreviousAuthPage(currentAuthPage);
@@ -33,8 +44,7 @@ const DefaultAuthPage = () => {
     };
 
     // Determine Direction for Transition
-    const direction =
-        previousAuthPage < currentAuthPage ? "left" : "right";
+    const direction = previousAuthPage < currentAuthPage ? "left" : "right";
 
     const currentPage = {
         0: <SignIn />,
@@ -62,6 +72,7 @@ const DefaultAuthPage = () => {
             ))}
         </div>
     );
+
 
     return pageState === 0 ? (
         <section className="relative w-full md:w-full max-w-md flex justify-center items-center p-8 rounded-2xl shadow-2xl bg-gradient-to-br backdrop-blur-lg">

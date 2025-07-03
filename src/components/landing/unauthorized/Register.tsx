@@ -3,6 +3,7 @@
 import Logo from '@/components/layout/Logo';
 import { useEffect, useState } from 'react';
 import FormModal from './FormModal';
+import { useSessionSecureStorage } from '@/hooks/useSessionSecureStorage';
 
 const advantages = [
   "Schedule Meetings with Ease",
@@ -17,8 +18,7 @@ export default function Register() {
   const [displayText, setDisplayText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [typingSpeed, setTypingSpeed] = useState(150);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [isModalOpen, setIsModalOpen] = useSessionSecureStorage<boolean>('isModalOpen', false, true);
 
   useEffect(() => {
     const handleTyping = () => {
@@ -70,7 +70,7 @@ export default function Register() {
             <p className="text-xl text-gray-600 mb-8 leading-relaxed">
               Connect, collaborate, and coordinate with your team effortlessly. MeetSync makes scheduling meetings simple and efficient.
             </p>
-             <button
+            <button
               onClick={() => setIsModalOpen(true)}
               className="inline-block px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-lg font-semibold hover:shadow-xl hover:scale-105 transform transition-all duration-300"
             >

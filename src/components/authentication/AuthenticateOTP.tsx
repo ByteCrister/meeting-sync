@@ -2,70 +2,78 @@
 
 import { useTimer } from "react-timer-hook";
 import { userSignInType, userSignUpType } from "@/types/client-types";
-import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import ShowToaster from "../global-ui/toastify-toaster/show-toaster";
 import apiService from "@/utils/client/api/api-services";
 import { getFormattedTimeZone } from "@/utils/client/date-formatting/getFormattedTimeZone";
 import GetOtpBoxes from "./auth-component/GetOtpBoxes";
 import getDeviceInfo from "@/utils/client/others/getDeviceInfo";
+import { useSessionSecureStorage } from "@/hooks/useSessionSecureStorage";
+import secureSessionStorage from "@/utils/client/storage/secureSessionStorage";
+import { Session } from "@/utils/constants";
 
 type AuthenticateOTPPropTypes = {
     userInfo: (userSignUpType & { isRemember: boolean }) | userSignInType | undefined;
     setIsEmailChecked: Dispatch<SetStateAction<boolean>>;
     setCurrentAuthPage: Dispatch<SetStateAction<0 | 2 | 1>>;
-    setPageState: Dispatch<SetStateAction<number>>
+    setPageState: (state: number) => void
 };
 
 const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setPageState }: AuthenticateOTPPropTypes) => {
-    const [otp, setOtp] = useState<string>("");
-    const [enteredOtp, setEnteredOtp] = useState<string[]>(Array(6).fill(""));
+    // const [otp, setOtp] = useState<string>("");
+    const [otp, setOtp, removeOtp] = useSessionSecureStorage<string>(Session.OTP, "", true);
+    const [enteredOtp, setEnteredOtp, removeEnteredOtp] = useSessionSecureStorage<string[]>(Session.ENTERED_OTP, Array(6).fill(""), true);
     const [currOtpBox, setCurrOtpBox] = useState<number>(0);
-    const [isOtpExpired, setIsOtpExpired] = useState<boolean>(false);
-    const [isOTPSend, setIsOTPSend] = useState<boolean>(false);
-
-    // Set the expiry time (3 minutes from now)
-    const expiryTime = useMemo(() => {
-        const time = new Date();
-        time.setSeconds(time.getSeconds() + 180);
-        return time;
-    }, []); // only on mount
+    const [isOtpExpired, setIsOtpExpired, removeIsOtpExpired] = useSessionSecureStorage<boolean>(Session.IS_OTP_EXPIRED, false, true);
+    const [isOTPSending, setIsOtpSending, removeIsOTPSend] = useSessionSecureStorage<boolean>(Session.IS_OTP_SEND, false, true);
+    const [otpExpiryTime, setOtpExpiryTime, removeSetOtpExpiryTime] = useSessionSecureStorage<number | null>(Session.OTP_EXPIRY_TIME, null, true);
 
     const { seconds, minutes, restart } = useTimer({
-        expiryTimestamp: expiryTime,
+        autoStart: false,
+        expiryTimestamp: new Date(), // dummy initial value
         onExpire: () => {
             setIsOtpExpired(true);
             ShowToaster("OTP expired. Please request a new one.", 'error');
         }
     });
 
+
     const handleGenerateOtp = async () => {
-        setIsOTPSend(true);
 
+        setIsOtpSending(true);
         const devicesInfo = getDeviceInfo();
-
+        
         const URI = `/api/auth/user/user-otp`;
         const responseData = await apiService.get(URI, {
-            email: encodeURIComponent(JSON.stringify(userInfo?.email)), 
+            email: encodeURIComponent(JSON.stringify(userInfo?.email)),
             devicesInfo: encodeURIComponent(JSON.stringify(devicesInfo))
         });
         if (responseData.success) {
             setOtp(responseData.data);
             ShowToaster("OTP is sent to your email.", "success");
-            // Restart the timer
+
             const newTime = new Date();
             newTime.setSeconds(newTime.getSeconds() + 180);
             restart(newTime);
-        }
 
-        setIsOtpExpired(false);
+            setOtpExpiryTime(newTime.getTime());
+            setIsOtpExpired(false);
+        }
+        setIsOtpSending(false);
+
     };
 
     useEffect(() => {
-        if (!userInfo?.email || isOTPSend) return; // Prevent duplicate requests
-        setIsOTPSend(true);
-        handleGenerateOtp();
+        if (!userInfo?.email) return;
+
+        // Only send if not already sent AND no timer running
+        if (!isOTPSending && !otpExpiryTime) {
+            setIsOtpSending(true);
+            handleGenerateOtp();
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [userInfo]); // Only trigger when userInfo changes
+    }, [userInfo, isOTPSending, otpExpiryTime]);
+
 
 
 
@@ -77,8 +85,20 @@ const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setP
             setTimeout(() => {
                 window.location.href = '/';
             }, 2000);
-
+            // !remove OTP sessions
+            handleRemoveOtpSessions();
         }
+    };
+
+    // * Function to remove OTP sessions
+    const handleRemoveOtpSessions = () => {
+        removeOtp();
+        removeEnteredOtp();
+        removeIsOtpExpired();
+        removeIsOTPSend();
+        removeSetOtpExpiryTime();
+        secureSessionStorage.removeItem(Session.AUTH_PAGE_STATE);
+        secureSessionStorage.removeItem(Session.USER_INFO);
     };
 
 
@@ -118,7 +138,7 @@ const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setP
         const enteredOptStr = enteredOtp.join("");
         if (otp.trim().length !== 0 && enteredOptStr === otp) {
             ShowToaster("OTP verified successfully!", "success");
-            if (userInfo && "username" in userInfo) {
+            if (userInfo && "full_name" in userInfo) {
                 signUpApi();
             } else {
                 setIsEmailChecked(true);
@@ -144,21 +164,21 @@ const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setP
                 isOtpExpired={isOtpExpired}
             />
             <div className="text-center text-gray-800 mt-4">
-                {isOTPSend ? (
-                    <p>{minutes}:{seconds < 10 ? `0${seconds}` : seconds}</p>
-                ) : (
+                {isOTPSending ? (
                     <p>Sending OTP...</p>
+                ) : (
+                    <p>{minutes}:{seconds < 10 ? `0${seconds}` : seconds}</p>
                 )}
             </div>
             {
-                !isOtpExpired ? <button
-                    onClick={() => verifyOtp()}
+               !isOTPSending && !isOtpExpired ? <button
+                    onClick={() => { setIsOtpSending(false); verifyOtp(); }}
                     disabled={isOtpExpired}
                     className="px-2 py-1 bg-slate-600 font-semibold font-poppins text-white rounded hover:bg-slate-400 transition duration-300 ease-in-out cursor-pointer"
                 >
                     Verify OTP
                 </button>
-                    : <button
+                    : !isOTPSending && <button
                         onClick={() => handleGenerateOtp()}
                         className="px-2 py-1 bg-slate-600 font-semibold font-poppins text-white rounded hover:bg-slate-400 transition duration-300 ease-in-out cursor-pointer"
                     >

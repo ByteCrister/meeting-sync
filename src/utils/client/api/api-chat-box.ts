@@ -1,6 +1,7 @@
 import { chatBoxUserChatType, chatBoxUserType } from "@/types/client-types";
 import { ApiChatBoxMessageType } from "@/utils/constants";
 import apiService from "./api-services";
+import axios, { AxiosError } from "axios";
 
 // ? get chat messages
 // ! when the chatbox is opened
@@ -24,11 +25,22 @@ export const getLastParticipants = async (
     type: ApiChatBoxMessageType.GET_ACTIVE_USER,
     selectedFriendId?: string):
     Promise<{ data: chatBoxUserType, count: number }> => {
-    const resData = await apiService.get(`/api/chatbox/message`, { selectedFriendId, type });
-    if (!resData.success) {
+    try {
+        const res = await axios.get(`/api/chatbox/message`, {
+            params:
+                { selectedFriendId, type }
+        });
+
+        if (!res.data.success) {
+        }
+        return res.data;
+
+    } catch (error: unknown) {
+        if (error instanceof AxiosError) {
+            console.log("Error fetching active chatbox user:", error.response?.data || error.message);
+        }
         return { data: { _id: "", username: "", image: "" }, count: 0 };
     }
-    return resData;
 };
 
 // ? get chatbox user list

@@ -14,6 +14,7 @@ const PUBLIC_API_ROUTES = [
     '/api/auth/user/user-otp',
     '/api/auth/user/validity',
     '/api/auth/user/location',
+    // '/api/reset'
 ];
 
 const ALWAYS_ALLOWED_AUTH_ROUTES = [

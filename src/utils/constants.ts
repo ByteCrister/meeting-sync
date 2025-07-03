@@ -105,3 +105,15 @@ export enum VCallUpdateApiType {
     REMOVE_VIDEO_CHAT_MESSAGE = "REMOVE_VIDEO_CHAT_MESSAGE",
     HOST_SETTING = "HOST_SETTING",
 }
+
+
+
+export enum Session {
+    AUTH_PAGE_STATE = "authPageState",
+    USER_INFO = "userInfo",
+    OTP = "otp",
+    ENTERED_OTP = "enteredOtp",
+    IS_OTP_EXPIRED = "isOtpExpired",
+    IS_OTP_SEND = "isOTPSend",
+    OTP_EXPIRY_TIME = "otpExpiryTime",
+}

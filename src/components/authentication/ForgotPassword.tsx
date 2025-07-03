@@ -1,6 +1,6 @@
 "use client";
 
-import { Dispatch, JSX, SetStateAction, useState } from "react";
+import { JSX, useState } from "react";
 import { useFormik } from "formik";
 import { IoEyeSharp } from "react-icons/io5";
 import { IoEyeOffSharp } from "react-icons/io5";
@@ -13,6 +13,7 @@ import {
 import apiService from "@/utils/client/api/api-services";
 import ShowToaster from "../global-ui/toastify-toaster/show-toaster";
 import LoadingSpinner from "../global-ui/ui-component/LoadingSpinner";
+import { Session } from "@/utils/constants";
 
 const openSans = Open_Sans({
     weight: "400",
@@ -21,10 +22,8 @@ const openSans = Open_Sans({
 
 // Prop Types
 type ForgotPasswordPropTypes = {
-    setPageState: Dispatch<SetStateAction<number>>;
-    setUserInfo: Dispatch<
-        SetStateAction<userSignUpType | userSignInType | undefined>
-    >;
+    setPageState: (state: number) => void;
+    setUserInfo: (info: userSignUpType | userSignInType | undefined) => void;
     isEmailChecked: boolean;
     userInfo: userSignUpType | userSignInType | undefined;
 };
@@ -94,6 +93,12 @@ const ForgotPassword = ({
             }, 2000);
         }
         setIsButtonLoading(true);
+        sessionStorage.removeItem(Session.AUTH_PAGE_STATE);
+        sessionStorage.removeItem(Session.USER_INFO);
+        sessionStorage.removeItem(Session.ENTERED_OTP);
+        sessionStorage.removeItem(Session.IS_OTP_EXPIRED);
+        sessionStorage.removeItem(Session.IS_OTP_SEND);
+        sessionStorage.removeItem(Session.OTP_EXPIRY_TIME);
     };
 
     const getValidationString = (

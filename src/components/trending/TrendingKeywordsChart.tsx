@@ -55,17 +55,16 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
                     <div className="flex items-center gap-2 mt-1">
                         <Badge
                             variant="secondary"
-                            className={`${
-                                payload[0].payload.trend === "up"
+                            className={`${payload[0].payload.trend === "up"
                                     ? "bg-emerald-100 text-emerald-700"
                                     : payload[0].payload.trend === "down"
-                                    ? "bg-red-100 text-red-700"
-                                    : "bg-gray-100 text-gray-700"
-                            }`}
+                                        ? "bg-red-100 text-red-700"
+                                        : "bg-gray-100 text-gray-700"
+                                }`}
                         >
-                            {payload[0].payload.trend === "up" ? "↑ Trending Up" : 
-                             payload[0].payload.trend === "down" ? "↓ Trending Down" : 
-                             "→ Stable"}
+                            {payload[0].payload.trend === "up" ? "↑ Trending Up" :
+                                payload[0].payload.trend === "down" ? "↓ Trending Down" :
+                                    "→ Stable"}
                         </Badge>
                     </div>
                 </div>
@@ -129,6 +128,20 @@ export default function TrendingKeywordsChart() {
         );
     }
 
+    if (data.length === 0) {
+        return (
+            <Card className="w-full bg-gradient-to-br from-white to-gray-50">
+                <CardHeader>
+                    <CardTitle>No Trending Keywords</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p>No data available to display trending keywords.</p>
+                </CardContent>
+            </Card>
+        );
+    }
+
+
     const topKeywords = data.slice(0, 10);
     const trendingUp = data.filter((k) => k.trend === "up").slice(0, 3);
 
@@ -136,7 +149,7 @@ export default function TrendingKeywordsChart() {
         <Card className="w-full hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-gray-50">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                <Image src='/images/word.png' width={30} height={30} alt="world-image" />
+                    <Image src='/images/word.png' width={30} height={30} alt="world-image" />
                     <span className="text-gray-700 text-xl">Trending Keywords</span>
                 </CardTitle>
             </CardHeader>
