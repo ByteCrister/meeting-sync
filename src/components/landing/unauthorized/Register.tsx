@@ -11,6 +11,9 @@ import 'aos/dist/aos.css';
 import { FaCalendarCheck, FaUsers, FaSyncAlt, FaShieldAlt } from "react-icons/fa";
 // import Image from "next/image";
 import { useRouter } from "next/navigation";
+import {
+  FaArrowUp,
+} from "react-icons/fa";
 
 const advantages = [
   "Schedule Meetings with Ease",
@@ -192,6 +195,9 @@ export default function Register() {
     AOS.init({ duration: 800, once: true });
   }, []);
 
+  const scrollToTop = () =>
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
   return (
     <>
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 font-sans">
@@ -310,106 +316,105 @@ export default function Register() {
           {/* ****** */}
 
           <div className="font-sans text-gray-900 bg-gradient-to-b from-gray-50 to-gray-100">
-  {/* Roadmap Bar */}
-  <section className="mt-24 px-4 sm:px-6">
-    <h2 className="text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent" data-aos="fade-down">
-      Your Meeting Journey
-    </h2>
+            {/* Roadmap Bar */}
+            <section className="mt-24 px-4 sm:px-6">
+              <h2 className="text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent" data-aos="fade-down">
+                Your Meeting Journey
+              </h2>
 
-    <div className="relative">
-      {!prefersReduced && (
-        <motion.div
-          className="absolute inset-x-0 top-1/2 h-1 bg-gradient-to-r from-indigo-400 to-purple-400"
-          initial={{ scaleX: 0 }}
-          whileInView={{ scaleX: 1 }}
-          transition={{ duration: 1, ease: "easeInOut" }}
-          style={{ transformOrigin: "left center" }}
-        />
-      )}
+              <div className="relative">
+                {!prefersReduced && (
+                  <motion.div
+                    className="absolute inset-x-0 top-1/2 h-1 bg-gradient-to-r from-indigo-400 to-purple-400"
+                    initial={{ scaleX: 0 }}
+                    whileInView={{ scaleX: 1 }}
+                    transition={{ duration: 1, ease: "easeInOut" }}
+                    style={{ transformOrigin: "left center" }}
+                  />
+                )}
 
-      <div className="flex flex-wrap justify-center gap-6 relative z-10">
-        {roadmap.map(({ id, title, icon: Icon }, i) => (
-          <motion.button
-            key={id}
-            onClick={() => {
-              router.replace(`#${id}`);
-              document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-            }}
-            className="flex flex-col items-center w-36 md:w-44 focus:outline-none rounded-lg transition-all duration-300 hover:scale-105"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 + i * 0.2 }}
-            whileHover={!prefersReduced ? { scale: 1.1 } : {}}
-          >
-            <div className="w-20 h-20 bg-white rounded-full shadow-xl flex items-center justify-center mb-3 border-2 border-indigo-300">
-              <Icon className="w-10 h-10 text-indigo-600" />
-            </div>
-            <span className="text-sm sm:text-base font-medium text-gray-800 text-center">{title}</span>
-          </motion.button>
-        ))}
-      </div>
-    </div>
-  </section>
+                <div className="flex flex-wrap justify-center gap-6 relative z-10">
+                  {roadmap.map(({ id, title, icon: Icon }, i) => (
+                    <motion.button
+                      key={id}
+                      onClick={() => {
+                        router.replace(`#${id}`);
+                        document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      className="flex flex-col items-center w-36 md:w-44 focus:outline-none rounded-lg transition-all duration-300 hover:scale-105"
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 + i * 0.2 }}
+                      whileHover={!prefersReduced ? { scale: 1.1 } : {}}
+                    >
+                      <div className="w-20 h-20 bg-white rounded-full shadow-xl flex items-center justify-center mb-3 border-2 border-indigo-300">
+                        <Icon className="w-10 h-10 text-indigo-600" />
+                      </div>
+                      <span className="text-sm sm:text-base font-medium text-gray-800 text-center">{title}</span>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            </section>
 
-  {/* Feature Sections */}
-  {roadmap.map((feat) => (
-    <motion.section
-      key={feat.id}
-      id={feat.id}
-      ref={(el) => {
-        sectionRefs.current[feat.id] = el as HTMLDivElement | null;
-      }}
-      className={`py-24 sm:py-32 px-4 sm:px-6`}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount: 0.3 }}
-      variants={sectionVariant}
-    >
-      <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-        {/* Icon Preview */}
-        <div className="space-y-8 text-center lg:text-left">
-          <div className="w-48 h-48 mx-auto lg:mx-0 flex items-center justify-center bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl shadow-inner border-2 border-indigo-200">
-            <feat.icon className="text-indigo-500 w-20 h-20" />
-          </div>
-          <p className="text-xl text-gray-700">{feat.desc || 'Enhance productivity with this powerful feature.'}</p>
-        </div>
+            {/* Feature Sections */}
+            {roadmap.map((feat) => (
+              <motion.section
+                key={feat.id}
+                id={feat.id}
+                ref={(el) => {
+                  sectionRefs.current[feat.id] = el as HTMLDivElement | null;
+                }}
+                className={`py-16 sm:py-32 px-4 sm:px-6`}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
+                variants={sectionVariant}
+              >
+                <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                  {/* Icon Preview */}
+                  <div className="space-y-8 text-center lg:text-left">
+                    <div className="w-48 h-48 mx-auto lg:mx-0 flex items-center justify-center bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl shadow-inner border-2 border-indigo-200">
+                      <feat.icon className="text-indigo-500 w-20 h-20" />
+                    </div>
+                    <p className="text-xl text-gray-700">{feat.desc || 'Enhance productivity with this powerful feature.'}</p>
+                  </div>
 
-        {/* Right: Content */}
-        <div>
-          <h3 className="text-3xl sm:text-4xl font-bold mb-6 text-gray-800">{feat.title}</h3>
+                  {/* Right: Content */}
+                  <div>
+                    <h3 className="text-3xl sm:text-4xl font-bold mb-6 text-gray-800">{feat.title}</h3>
 
-          <ul className="list-disc list-inside space-y-2 text-lg text-gray-700 mb-8">
-            {feat.bullets.map((b, idx) => (
-              <li key={idx}>{b}</li>
+                    <ul className="list-disc list-inside space-y-2 text-lg text-gray-700 mb-8">
+                      {feat.bullets.map((b, idx) => (
+                        <li key={idx}>{b}</li>
+                      ))}
+                    </ul>
+
+                    <div className="mb-8 text-left">
+                      <h4 className="text-xl font-semibold mb-2 text-gray-800">How it works:</h4>
+                      <ol className="list-decimal list-inside text-gray-700 space-y-1">
+                        {feat.walkthrough?.map((step, i) => (
+                          <li key={i}>{step}</li>
+                        ))}
+                      </ol>
+                    </div>
+
+                    <motion.button
+                      onClick={() => setIsModalOpen(true)}
+                      className="inline-block px-8 py-4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                      initial={{ opacity: 0, y: 40 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      whileHover={{ scale: 1.07 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                      viewport={{ once: true, amount: 0.3 }}
+                    >
+                      Explore Feature
+                    </motion.button>
+                  </div>
+                </div>
+              </motion.section>
             ))}
-          </ul>
-
-          <div className="mb-8 text-left">
-            <h4 className="text-xl font-semibold mb-2 text-gray-800">How it works:</h4>
-            <ol className="list-decimal list-inside text-gray-700 space-y-1">
-              {feat.walkthrough?.map((step, i) => (
-                <li key={i}>{step}</li>
-              ))}
-            </ol>
           </div>
-
-          <motion.button
-            onClick={() => setIsModalOpen(true)}
-            className="inline-block px-8 py-4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.07 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            viewport={{ once: true, amount: 0.3 }}
-          >
-            Explore Feature
-          </motion.button>
-        </div>
-      </div>
-    </motion.section>
-  ))}
-</div>
-
 
         </main>
 
@@ -419,6 +424,18 @@ export default function Register() {
             <Logo />
             <p className="text-gray-500">© 2025 MeetSync. All rights reserved.</p>
           </div>
+
+          {/* Back to Top Button */}
+          <motion.button
+            onClick={scrollToTop}
+            className="fixed bottom-6 right-6 bg-gradient-to-tr from-primary to-secondary text-slate-700 p-3 rounded-full shadow-md hover:bg-white hover:text-primary border border-transparent hover:border-primary transition-colors"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 300 }}
+            aria-label="Back to top"
+          >
+            <FaArrowUp className="w-4 h-4" />
+          </motion.button>
         </footer>
       </div>
 
