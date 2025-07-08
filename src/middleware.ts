@@ -53,63 +53,60 @@ export async function middleware(request: NextRequest) {
     const isPublicApiRoute = isPublicApi(pathname);
     const isPublicPage = isAuthPage(pathname);
 
+    // 1. Verify token
     let isAuthenticated = false;
     const token = request.cookies.get(process.env.NEXT_TOKEN!)?.value || '';
-
     if (token) {
         try {
             const payload = await verifyToken(token);
             isAuthenticated = !!payload;
-        } catch (err) {
-            console.warn('[Middleware] Invalid token:', err);
+        } catch {
             isAuthenticated = false;
         }
     }
 
-    // Skip all /api/auth/* routes, since they're public
+    // 2. Always allow our own /api/auth/* handlers
     if (pathname.startsWith('/api/auth/')) {
         return NextResponse.next();
     }
 
-    // 1. Block authenticated users from hitting auth-related public APIs
-    if (isAuthenticated && isApi && isPublicApiRoute && !ALWAYS_ALLOWED_AUTH_ROUTES.includes(pathname)) {
-        return new NextResponse(
-            JSON.stringify({ message: 'Already authenticated. Access denied.' }),
-            {
-                status: 403,
-                headers: { 'Content-Type': 'application/json' },
-            }
+    // 3. Block authenticated users from hitting public auth APIs
+    if (
+        isAuthenticated &&
+        isApi &&
+        isPublicApiRoute &&
+        !ALWAYS_ALLOWED_AUTH_ROUTES.includes(pathname)
+    ) {
+        return NextResponse.json(
+            { message: 'Already authenticated. Access denied.' },
+            { status: 403 }
         );
     }
 
-    // 2. Block unauthenticated users from protected APIs
+    // 4. Block unauthenticated users from protected APIs
     if (!isAuthenticated && isApi && !isPublicApiRoute) {
-        return new NextResponse(
-            JSON.stringify({ message: 'Unauthorized access to API route' }),
-            {
-                status: 401,
-                headers: { 'Content-Type': 'application/json' },
-            }
+        return NextResponse.json(
+            { message: 'Unauthorized access to API route' },
+            { status: 401 }
         );
     }
 
-    // 3. Block unauthenticated users from protected pages
+    // 5. Block unauthenticated users from protected *pages*
     if (!isAuthenticated && !isApi && !isPublicPage) {
-        return NextResponse.redirect(new URL('/user-authentication', request.url));
+        return NextResponse.redirect(
+            new URL('/user-authentication', request.url)
+        );
     }
 
-    // 4. Redirect authenticated users away from login page
+    // 6. Redirect authenticated users away from our PUBLIC_ROUTES
     if (isAuthenticated && !isApi && isPublicPage) {
-        const redirectUrl = new URL('/user-authentication', request.url);
-        redirectUrl.searchParams.set('redirect', pathname); // capture previous page
-        return NextResponse.redirect(redirectUrl);
+        // If we were sent here with a ?redirect=… param, go back there.
+        // Otherwise, send to home (/).
+        const target = request.nextUrl.searchParams.get('redirect') || '/';
+        return NextResponse.redirect(new URL(target, request.url));
     }
 
-    if (isAuthenticated && pathname === '/user-authentication') {
-        const redirectTarget = request.nextUrl.searchParams.get('redirect') || '/';
-        return NextResponse.redirect(new URL(redirectTarget, request.url));
-    }
-
+    // 7. Allow everything else
     return NextResponse.next();
 }
 

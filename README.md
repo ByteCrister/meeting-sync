@@ -1,36 +1,148 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📅 Meeting Sync
 
-## Getting Started
+A modern, scalable, and interactive meeting scheduling web application built with **Next.js**, **TypeScript**, **Tailwind CSS**, and **MongoDB**.
 
-First, run the development server:
+## 🚀 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### 1. 🌐 Landing Page
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Fully responsive, modern design.
+- Clean layout showcasing features.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. 🔐 User Authentication
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Sign up / Sign in using **credentials** or **Google OAuth**.
+- Forgot password functionality.
 
-## Learn More
+### 3. 🧭 Dashboard
 
-To learn more about Next.js, take a look at the following resources:
+#### i) 🧱 Global Components
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Sidebar**: Fully responsive.
+- **Search bar**: Centered, optimized search using **Redis caching**, **MongoDB aggregate**, **Fuse.js**.
+- **Notifications**: Dynamic and contextual URLs.
+- **Messaging**: Real-time chat with friends using **Socket.IO**, with features like:
+  - Online status
+  - Seen/unseen messages
+  - New message alerts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+#### ii) 👤 Profile Page
 
-## Deploy on Vercel
+- View and edit personal info: username, profile image.
+- View user meeting activity, followers/following count.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+#### iii) 📢 Meeting Feed Page
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Paginated infinite scroll.
+- Real-time meeting updates.
+- Book any available meeting slot.
+
+#### iv) 👥 Followers Page
+
+- View/search followers.
+- Add/remove functionality.
+- Paginated results.
+
+#### v) 🔗 Following Page
+
+- Same as Followers Page functionality.
+
+#### vi) 🕒 My Slots Page
+
+- Create new meeting slots.
+- Check for overlapping meetings.
+- Time zone conversion handled.
+- View/edit slots in card view with details like:
+  - Booking status
+  - Blocked users
+  - Edit/delete/book features
+- Fuse-based search and sort
+- Paginated UI
+
+#### vii) 🔥 Popular Page
+
+- Search/sort based on engagement/trending.
+- View detailed info of top meetings.
+- Paginated result set.
+- Shows:
+  - Trending keywords
+  - Trending meeting categories
+  - Best days to schedule meetings
+
+#### viii) 📖 Booked Meetings Page
+
+- Fuse-based search and sort (e.g., oldest to newest).
+- See real-time status and full details.
+- Cancel and join meetings.
+
+#### ix) 🎥 Video Meeting Page
+
+- Validates room ID, user, and parameters.
+- Features:
+  - Mute/unmute audio & video
+  - Live group chat
+  - Session-based engagement tracking
+
+## 🧠 AI & Analytics Functions
+
+### 1. `analyzeBestTimes(slots)` 📊
+
+Finds the best day/time for scheduling meetings based on engagement and duration.
+
+### 2. `parseTime(timeStr)` ⏰
+
+Parses time strings (e.g., "10:30 AM") into JS `Date` objects.
+
+### 3. `extractTopKeywords(slots)` 🔑
+
+Extracts key phrases from meeting titles/descriptions using **TF-IDF**.
+
+### 4. `clusterMeetings(slots)` 🧠
+
+Groups similar meetings using **K-Means clustering** and TF-IDF vectors.
+
+### 5. `calculateAndUpdateEngagement(call)` 📞
+
+Calculates engagement rate of participants in a video call session.
+
+### 6. `updateTrendScoreForSlot(slotId)` 🚀
+
+Calculates a decayed trend score based on age and engagement.
+
+## 🛠 Project Architecture
+
+- Modular, reusable code.
+- Structured folder organization (can be improved).
+- Custom hooks:
+  - `useSearch`
+  - `useNotificationSocket`
+  - `useVideoSocket`
+  - `useChatSocket`
+  - `useVideoChat`
+
+## 📈 What Can Be Improved?
+
+- Better folder structure.
+- Use caching for more API responses (not just search).
+- Use full-page hooks for improved modularity.
+- Better production-level error handling & security.
+
+## 🔮 Future Plans
+
+> These lessons will be applied to future projects for cleaner architecture and enterprise readiness.
+
+---
+
+**Tech Stack**
+
+- 📦 Framework: [Next.js](https://nextjs.org/)
+- 🔤 Language: TypeScript
+- 🎨 Styling: Tailwind CSS
+- 💾 Database: MongoDB
+- 🧠 AI: TF-IDF, KMeans, Clustering
+- ⚡ Real-time: Socket.IO
+- ⚙️ Optimization: Redis Cache, Fuse.js
+
+---
+
+Built with ❤️ by Shakib
