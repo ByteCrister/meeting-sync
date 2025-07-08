@@ -13,18 +13,6 @@ import { updateUserInfo } from "@/lib/features/users/userSlice";
 import ShowToaster from "../global-ui/toastify-toaster/show-toaster";
 import { APISendUpdatedTimeZoneEmail } from "@/utils/client/api/api-send-email";
 
-// interface ProfileData {
-//   username: string;
-//   title: string;
-//   timeZone: string;
-//   image: string;
-//   profession: string;
-//   followers: number;
-//   following: number;
-//   bookedSlots: number;
-//   registeredSlots: number;
-// }
-
 type LoadingButtonStateType = {
   username: boolean;
   title: boolean;
@@ -139,6 +127,15 @@ export default function ProfileComponent() {
           {/* Editable Fields & Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
+              {/* Non-editable Email */}
+              <div className="relative bg-white rounded-xl shadow p-4">
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  Email
+                </label>
+                <p className="text-lg text-gray-800">
+                  {user.email}
+                </p>
+              </div>
               <EditableField
                 label="Name"
                 field={"username"}
