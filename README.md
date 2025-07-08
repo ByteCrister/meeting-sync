@@ -1,148 +1,168 @@
 # 📅 Meeting Sync
 
-A modern, scalable, and interactive meeting scheduling web application built with **Next.js**, **TypeScript**, **Tailwind CSS**, and **MongoDB**.
+**Meeting Sync** is a modern and intelligent meeting scheduling platform designed to optimize productivity by helping users book, manage, and participate in virtual meetings efficiently.
 
-## 🚀 Features
+> Built with Next.js, TypeScript, Tailwind CSS, MongoDB, and enhanced by Redis, Fuse.js, and Socket.IO for real-time and intelligent experiences.
 
-### 1. 🌐 Landing Page
+---
 
-- Fully responsive, modern design.
-- Clean layout showcasing features.
+## 🔧 Tech Stack
 
-### 2. 🔐 User Authentication
+- **Frontend Framework:** [Next.js](https://nextjs.org/)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **Database:** MongoDB
+- **Caching:** Redis
+- **Search Engine:** Fuse.js
+- **Real-Time Communication:** Socket.IO
+- **Authentication:** NextAuth (Google + Credentials)
+- **AI Logic:** TF-IDF, Clustering, Time Analysis
 
-- Sign up / Sign in using **credentials** or **Google OAuth**.
-- Forgot password functionality.
+---
 
-### 3. 🧭 Dashboard
+## 🚀 Key Features
 
-#### i) 🧱 Global Components
+### 🌐 Landing Page
+- A fully responsive landing page.
+- Clean, modern UI with interactive sections.
+- Highlights features, roadmap, and CTAs.
 
-- **Sidebar**: Fully responsive.
-- **Search bar**: Centered, optimized search using **Redis caching**, **MongoDB aggregate**, **Fuse.js**.
-- **Notifications**: Dynamic and contextual URLs.
-- **Messaging**: Real-time chat with friends using **Socket.IO**, with features like:
-  - Online status
-  - Seen/unseen messages
-  - New message alerts
+### 🔐 Authentication System
+- Sign up/in via credentials or Google.
+- Secure password reset with tokenized links.
+- JWT-based session management.
 
-#### ii) 👤 Profile Page
+### 🧭 Unified Dashboard
 
-- View and edit personal info: username, profile image.
-- View user meeting activity, followers/following count.
+#### 🔲 Global Layout
+- **Sidebar** with active page highlights.
+- **Central Search Bar** powered by Fuse.js + Redis cache.
+- **Notification System** with real-time updates and deep linking.
+- **Messaging System**:
+  - Real-time 1:1 chat.
+  - Message seen/unseen tracking.
+  - Online presence detection.
 
-#### iii) 📢 Meeting Feed Page
+#### 👤 Profile Page
+- View your:
+  - Personal info (editable)
+  - Meeting history
+  - Follower and following stats
+- Edit username, profile photo, bio
 
-- Paginated infinite scroll.
-- Real-time meeting updates.
-- Book any available meeting slot.
+#### 📰 Meeting Feed
+- Infinite scroll through upcoming and trending meeting slots.
+- Optimized API for on-scroll loading.
+- Real-time data reflection: status updates, bookings, etc.
+- Book any valid slot instantly.
 
-#### iv) 👥 Followers Page
+#### 👥 Followers/Following Pages
+- View and search connections.
+- Add, remove, and re-follow users.
+- Pagination + fuzzy search for large lists.
 
-- View/search followers.
-- Add/remove functionality.
-- Paginated results.
+#### 🗓️ My Slots
+- **Create Slot:**
+  - Time overlap validation
+  - Timezone handling
+- **Manage Slots:**
+  - View/edit/delete slots
+  - Block/unblock users from booking
+  - View who booked your slot
+  - Real-time slot status
+- **Search & Sort:**
+  - Fuse.js integration
+  - Sort by date, engagement, etc.
+- Paginated & card-based UI
 
-#### v) 🔗 Following Page
+#### 📈 Popular Page
+- View:
+  - 🔥 Trending keywords
+  - 📂 Trending categories
+  - 📅 Best days to meet (AI generated)
+- Search & sort by engagement, recency
+- Detailed insights per slot
+- Paginated layout
 
-- Same as Followers Page functionality.
+#### 📚 Booked Meetings
+- See all booked slots
+- Real-time status updates
+- Sort by newest/oldest
+- Cancel bookings
+- Join meeting at start time
 
-#### vi) 🕒 My Slots Page
-
-- Create new meeting slots.
-- Check for overlapping meetings.
-- Time zone conversion handled.
-- View/edit slots in card view with details like:
-  - Booking status
-  - Blocked users
-  - Edit/delete/book features
-- Fuse-based search and sort
-- Paginated UI
-
-#### vii) 🔥 Popular Page
-
-- Search/sort based on engagement/trending.
-- View detailed info of top meetings.
-- Paginated result set.
-- Shows:
-  - Trending keywords
-  - Trending meeting categories
-  - Best days to schedule meetings
-
-#### viii) 📖 Booked Meetings Page
-
-- Fuse-based search and sort (e.g., oldest to newest).
-- See real-time status and full details.
-- Cancel and join meetings.
-
-#### ix) 🎥 Video Meeting Page
-
-- Validates room ID, user, and parameters.
+#### 🎥 Video Meeting Room
+- Validate room ID, user, and permissions
 - Features:
-  - Mute/unmute audio & video
-  - Live group chat
-  - Session-based engagement tracking
-
-## 🧠 AI & Analytics Functions
-
-### 1. `analyzeBestTimes(slots)` 📊
-
-Finds the best day/time for scheduling meetings based on engagement and duration.
-
-### 2. `parseTime(timeStr)` ⏰
-
-Parses time strings (e.g., "10:30 AM") into JS `Date` objects.
-
-### 3. `extractTopKeywords(slots)` 🔑
-
-Extracts key phrases from meeting titles/descriptions using **TF-IDF**.
-
-### 4. `clusterMeetings(slots)` 🧠
-
-Groups similar meetings using **K-Means clustering** and TF-IDF vectors.
-
-### 5. `calculateAndUpdateEngagement(call)` 📞
-
-Calculates engagement rate of participants in a video call session.
-
-### 6. `updateTrendScoreForSlot(slotId)` 🚀
-
-Calculates a decayed trend score based on age and engagement.
-
-## 🛠 Project Architecture
-
-- Modular, reusable code.
-- Structured folder organization (can be improved).
-- Custom hooks:
-  - `useSearch`
-  - `useNotificationSocket`
-  - `useVideoSocket`
-  - `useChatSocket`
-  - `useVideoChat`
-
-## 📈 What Can Be Improved?
-
-- Better folder structure.
-- Use caching for more API responses (not just search).
-- Use full-page hooks for improved modularity.
-- Better production-level error handling & security.
-
-## 🔮 Future Plans
-
-> These lessons will be applied to future projects for cleaner architecture and enterprise readiness.
+  - Mute/unmute audio/video
+  - Group chat panel
+  - User list with live presence
+  - Real-time sync via Socket.IO
 
 ---
 
-**Tech Stack**
+## 🧠 AI/Logic Modules
 
-- 📦 Framework: [Next.js](https://nextjs.org/)
-- 🔤 Language: TypeScript
-- 🎨 Styling: Tailwind CSS
-- 💾 Database: MongoDB
-- 🧠 AI: TF-IDF, KMeans, Clustering
-- ⚡ Real-time: Socket.IO
-- ⚙️ Optimization: Redis Cache, Fuse.js
+### 🔍 Keyword Extraction
+`extractTopKeywords(slots)`
+- TF-IDF based scoring to extract high-impact words from title/description/tags
+
+### 🧠 Clustering
+`clusterMeetings(slots)`
+- Groups similar meetings using k-means + TF-IDF vectors
+- Helps in topic-based categorization
+
+### 📅 Best Time Analysis
+`analyzeBestTimes(slots)`
+- Parses meeting durations
+- Calculates average engagement by weekday
+- Identifies most productive meeting days
+
+### 🎯 Engagement Scoring
+`calculateAndUpdateEngagement(call)`
+- Tracks how long each participant stays in call
+- Calculates average engagement
+- Updates engagement score in DB
+
+### 📊 Trend Decay System
+`updateTrendScoreForSlot(slotId)`
+- Calculates a decay factor (half-life: 7 days)
+- Applies score decay to old but engaged slots
 
 ---
 
-Built with ❤️ by Shakib
+## 🏗 Architecture & Code Patterns
+
+### ✅ Followed:
+- Modular and scalable file structure
+- Reusable hooks (`useSearch`, `useSocket`, `useChat`, `useVideoCall`)
+- Clear separation of concerns between UI, logic, and state
+- Feature-based file organization
+
+### ❌ Could Improve:
+- Better full-page hook integration
+- More caching across APIs (not just search)
+- Production-level error handling and security
+- Optimized lazy loading and SSR
+
+---
+
+## 📌 Lessons Learned / Future Improvements
+
+- 🧱 Refactor folder structure for maintainability
+- 💡 Extend use of caching and state memoization
+- 🔐 Focus on better validation, security and edge-case handling
+- 💬 Improve socket retry logic and disconnection handling
+
+---
+
+## 📄 License
+
+MIT License
+
+---
+
+## 👨‍💻 Author
+
+Developed with ❤️ by **Shakib**  
+[LinkedIn](https://www.linkedin.com/in/sadiqul-islam-shakib-9a539628a/) • [GitHub](https://github.com/ByteCrister)
