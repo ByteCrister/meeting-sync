@@ -1,7 +1,7 @@
 // src/app/api/auth/set-cookie/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../[...nextauth]/route";
+import { authOptions } from "@/utils/server/authOptions";
 
 export async function GET() {
     const session = await getServerSession(authOptions);
