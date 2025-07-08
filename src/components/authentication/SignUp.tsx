@@ -186,7 +186,7 @@ const SignUp = ({ setPageState, setUserInfo }: SignUpProps) => {
                     id="rememberMe"
                     checked={isRememberMeChecked}
                     onCheckedChange={(checked) => setIsRememberMeChecked(!!checked)}
-                    className="data-[state=checked]:bg-gray-600 data-[state=checked]:border-gray-600 text-white"
+                    className="h-4 w-4 border border-slate-300 transition-colors data-[state=checked]:bg-gray-600 data-[state=checked]:border-gray-600 text-white"
                 />
                 <label
                     htmlFor="rememberMe"

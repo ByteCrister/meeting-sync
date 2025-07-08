@@ -80,7 +80,19 @@ export default {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
-			}
+			},
+			keyframes: {
+				gradient: {
+					"0%, 100%": { "background-position": "0% 50%" },
+					"50%": { "background-position": "100% 50%" },
+				},
+			},
+			animation: {
+				"gradient-x": "gradient 5s ease infinite",
+			},
+			boxShadow: {
+				neon: "0 0 8px rgba(255,0,128,0.6), 0 0 16px rgba(255,0,128,0.4)",
+			},
 		}
 	},
 	plugins: [tailwindcssAnimate],

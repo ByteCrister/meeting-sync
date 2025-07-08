@@ -11,7 +11,7 @@ import LoadingSpinner from "../global-ui/ui-component/LoadingSpinner";
 import { IoEyeOffSharp, IoEyeSharp } from "react-icons/io5";
 import { Checkbox } from "../ui/checkbox";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const openSans = Open_Sans({
     weight: "400",
@@ -19,6 +19,7 @@ const openSans = Open_Sans({
 });
 
 const SignIn = () => {
+    const router = useRouter();
     const [isPasswordShow, setIsPasswordShow] = useState<boolean>(false);
     const [isButtonLoading, setIsButtonLoading] = useState<boolean>(false)
     const [isGoogleBtnLoading, setIsGoogleBtnLoading] = useState<boolean>(false);
@@ -28,12 +29,11 @@ const SignIn = () => {
     const error = searchParams?.get("error");
 
     useEffect(() => {
-        if (error === "EmailNotRegistered") {
-            ShowToaster("This Google email is not registered!", "error");
-        } else if (error === "MissingEmail") {
-            ShowToaster("Google did not return an email.", "error");
+        if (error) {
+            router.replace(`/user-authentication/error?error=${error}`);
         }
-    }, [error]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const formik = useFormik({
         initialValues: {
@@ -60,28 +60,60 @@ const SignIn = () => {
     const handleGoogleLogin = async () => {
         try {
             setIsGoogleBtnLoading(true);
+
             const result = await signIn("google", {
-                redirect: false,
-                callbackUrl: "/", // <-- important
+                callbackUrl: "/api/auth/custom-google-callback",
+                redirect: true,
             });
 
-            if (result?.error === "EmailNotRegistered") {
-                ShowToaster("This email is not registered.", "error");
-                setIsGoogleBtnLoading(false);
+            if (!result) {
+                ShowToaster("No response from Google. Try again.", "error");
                 return;
             }
 
-            if (result?.ok && result?.url) {
+            if (result.error) {
+                switch (result.error) {
+                    case "OAuthCallback":
+                        ShowToaster("Network timeout. Check your internet and try again.", "error");
+                        break;
+                    case "EmailNotRegistered":
+                        ShowToaster("Your Google email is not registered.", "error");
+                        break;
+                    case "MissingEmail":
+                        ShowToaster("Google did not provide an email. Try another account.", "error");
+                        break;
+                    case "Configuration":
+                        ShowToaster("OAuth is misconfigured. Devs are fixing it.", "error");
+                        break;
+                    case "AccessDenied":
+                        ShowToaster("Access was denied. Please accept the permissions.", "error");
+                        break;
+                    default:
+                        ShowToaster("Something went wrong during sign-in. Try again.", "error");
+                        break;
+                }
+                return;
+            }
+
+            if (result.ok && result.url) {
                 ShowToaster("Signed in successfully!", "success");
-                setTimeout(() => {
-                    window.location.href = result.url!;
-                }, 1000);
+                window.location.href = result.url;
             } else {
-                ShowToaster("Unexpected error during sign-in.", "error");
+                console.error("Google login unknown issue:", result);
+                ShowToaster("Unexpected issue. Try again or use a different network.", "error");
             }
         } catch (err) {
-            console.error("Google login error", err);
-            ShowToaster("Google login failed. Try again.", "error");
+            const error = err as Error;
+            // now you can safely access error.message
+            console.error("Login error:", error.message);
+
+            if (error.message?.includes("ENOTFOUND")) {
+                ShowToaster("Internet seems down. Try reconnecting.", "error");
+            } else if (error.message?.includes("popup_closed_by_user")) {
+                ShowToaster("Login popup closed too early. Try again.", "error");
+            } else {
+                ShowToaster("Something broke. Refresh and try again.", "error");
+            }
         } finally {
             setIsGoogleBtnLoading(false);
         }
@@ -164,7 +196,7 @@ const SignIn = () => {
                     id="rememberMe"
                     checked={isRememberMeChecked}
                     onCheckedChange={(checked) => setIsRememberMeChecked(!!checked)}
-                    className="data-[state=checked]:bg-gray-600 data-[state=checked]:border-gray-600 text-white"
+                    className="h-4 w-4 border border-slate-300 transition-colors data-[state=checked]:bg-gray-600 data-[state=checked]:border-gray-600 text-white"
                 />
                 <label
                     htmlFor="rememberMe"
@@ -193,7 +225,7 @@ const SignIn = () => {
             {/* Google Sign-In Button */}
             {
                 isGoogleBtnLoading ? (
-                    <div className="flex items-center justify-center gap-3 bg-white border border-gray-300 py-2 px-4 rounded shadow-sm hover:bg-gray-100">
+                    <div className="h-10 w-40  flex items-center justify-center gap-3 bg-white border border-gray-300 py-2 px-4 rounded shadow-sm hover:bg-gray-100">
                         <LoadingSpinner border="border-black" />
                     </div>) :
                     <button

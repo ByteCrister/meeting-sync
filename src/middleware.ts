@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from './utils/server/verifyToken';
 
 const PUBLIC_ROUTES = [
+    '/user-authentication/error',
     '/user-authentication',
+    '/meeting-sync'
 ];
 
 const PUBLIC_API_ROUTES = [
@@ -15,6 +17,7 @@ const PUBLIC_API_ROUTES = [
     '/api/auth/user/validity',
     '/api/auth/user/location',
 
+    '/api/auth/custom-google-callback',
     '/api/auth/callback/google',
     '/api/auth/callback/credentials',
     '/api/auth/signin/google',
