@@ -132,7 +132,7 @@ const Hero = ({ displayText, setIsModalOpen }: { displayText: string, setIsModal
     const prefersReduced = useReducedMotion();
     const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
     return (
-        <main className="container mx-auto px-4 py-16">
+        <main className="container mx-auto px-4 py-16 pt-24">
             <div className="max-w-4xl mx-auto text-center">
                 <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent font-display min-h-[120px] md:min-h-[160px]">
                     {displayText}
