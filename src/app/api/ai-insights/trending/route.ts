@@ -9,9 +9,19 @@ export async function GET() {
   try {
     await ConnectDB();
 
-    const rawSlots = await SlotModel
-      .find({}, { title: 1, description: 1, tags: 1, category: 1, _id: 0 })
-      .lean();
+    const rawSlots = await SlotModel.find(
+      {
+        status: "completed",           
+        trendScore: { $gt: 0 },    
+      },
+      {
+        title: 1,
+        description: 1,
+        tags: 1,
+        category: 1,
+        _id: 0,
+      }
+    ).lean();
 
     const slots: PartialSlot[] = rawSlots as unknown as PartialSlot[];
 

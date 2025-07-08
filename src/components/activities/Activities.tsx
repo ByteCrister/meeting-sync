@@ -72,11 +72,11 @@ export default function Activities() {
   const [Activities, setActivities] = useState<{
     upcomingMeetings: ActivityType[],
     recentActivities: ActivityType[],
-    availableSlots: ActivityType[],
+    bookedSlots: ActivityType[],
   }>({
     upcomingMeetings: [],
     recentActivities: [],
-    availableSlots: [],
+    bookedSlots: [],
   });
 
   useEffect(() => {
@@ -85,7 +85,7 @@ export default function Activities() {
         ...prev,
         upcomingMeetings: activities?.filter((a) => a.type === 'upcoming') || [],
         recentActivities: activities?.filter((a) => a.type === 'recent') || [],
-        availableSlots: activities?.filter((a) => a.type === 'available') || [],
+        bookedSlots: activities?.filter((a) => a.type === 'booked') || [],
       }));
     }
   }, [activities])
@@ -96,7 +96,7 @@ export default function Activities() {
       {/* use Activities Object */}
       <ActivitySection title="Upcoming Meetings" activities={Activities.upcomingMeetings} />
       <ActivitySection title="Recent Activities" activities={Activities.recentActivities} />
-      <ActivitySection title="Available Slots" activities={Activities.availableSlots} />
+      <ActivitySection title="Latest Booked Slots" activities={Activities.bookedSlots} />
     </div>
   );
 }

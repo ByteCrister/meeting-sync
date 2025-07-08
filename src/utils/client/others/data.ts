@@ -1,4 +1,4 @@
-import { ActivityType, Notification, registerSlot, RegisterSlotStatus } from "@/types/client-types";
+import { Notification, registerSlot, RegisterSlotStatus } from "@/types/client-types";
 import { NotificationType } from "@/utils/constants";
 
 export const FollowersData = [
@@ -336,28 +336,28 @@ export const dummyNotifications: Notification[] = Array.from({ length: 30 }, (_,
 // };
 
 
-export const sampleActivities: ActivityType[] = [
-    // 🔮 Upcoming
-    { id: '1', title: 'Team Standup Meeting', time: '10:00 AM', type: 'upcoming' },
-    { id: '2', title: 'Client Call', time: '2:30 PM', type: 'upcoming' },
-    { id: '3', title: 'Project Review', time: '4:00 PM', type: 'upcoming' },
-    { id: '8', title: 'One-on-One with Manager', time: '11:30 AM', type: 'upcoming' },
-    { id: '9', title: 'UX Workshop', time: '1:00 PM', type: 'upcoming' },
-    { id: '10', title: 'Sprint Planning', time: '6:00 PM', type: 'upcoming' },
+// export const sampleActivities: ActivityType[] = [
+//     // 🔮 Upcoming
+//     { id: '1', title: 'Team Standup Meeting', time: '10:00 AM', type: 'upcoming' },
+//     { id: '2', title: 'Client Call', time: '2:30 PM', type: 'upcoming' },
+//     { id: '3', title: 'Project Review', time: '4:00 PM', type: 'upcoming' },
+//     { id: '8', title: 'One-on-One with Manager', time: '11:30 AM', type: 'upcoming' },
+//     { id: '9', title: 'UX Workshop', time: '1:00 PM', type: 'upcoming' },
+//     { id: '10', title: 'Sprint Planning', time: '6:00 PM', type: 'upcoming' },
 
-    // 🕓 Recent
-    { id: '4', title: 'Completed: Weekly Sync', time: '9:00 AM', type: 'recent' },
-    { id: '5', title: 'Completed: Design Review', time: '11:00 AM', type: 'recent' },
-    { id: '11', title: 'Completed: Team Retro', time: '3:30 PM', type: 'recent' },
-    { id: '12', title: 'Completed: Code Pairing', time: '12:00 PM', type: 'recent' },
-    { id: '13', title: 'Completed: System Demo', time: '5:15 PM', type: 'recent' },
+//     // 🕓 Recent
+//     { id: '4', title: 'Completed: Weekly Sync', time: '9:00 AM', type: 'recent' },
+//     { id: '5', title: 'Completed: Design Review', time: '11:00 AM', type: 'recent' },
+//     { id: '11', title: 'Completed: Team Retro', time: '3:30 PM', type: 'recent' },
+//     { id: '12', title: 'Completed: Code Pairing', time: '12:00 PM', type: 'recent' },
+//     { id: '13', title: 'Completed: System Demo', time: '5:15 PM', type: 'recent' },
 
-    // ✅ Available Slots
-    { id: '6', title: 'Available: 30 min slot', time: '3:00 PM', type: 'available' },
-    { id: '7', title: 'Available: 1 hour slot', time: '5:00 PM', type: 'available' },
-    { id: '14', title: 'Available: 15 min slot', time: '8:30 AM', type: 'available' },
-    { id: '15', title: 'Available: 45 min slot', time: '7:00 PM', type: 'available' },
-];
+//     // ✅ Available Slots
+//     { id: '6', title: 'Available: 30 min slot', time: '3:00 PM', type: 'available' },
+//     { id: '7', title: 'Available: 1 hour slot', time: '5:00 PM', type: 'available' },
+//     { id: '14', title: 'Available: 15 min slot', time: '8:30 AM', type: 'available' },
+//     { id: '15', title: 'Available: 45 min slot', time: '7:00 PM', type: 'available' },
+// ];
 
 
 // export const dummyOfBookedSlotsData: BookedSlotsTypes[] = [

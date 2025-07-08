@@ -27,7 +27,7 @@ export const emailAuthentication = async (To: string, subject: string, html: str
     }
 };
 
-// ! For testing/dev 
+// ! For testing/dev
 // export const emailAuthentication = async (To: string, subject: string, html: string) => {
 //     try {
 //         const testAccount = await nodemailer.createTestAccount();

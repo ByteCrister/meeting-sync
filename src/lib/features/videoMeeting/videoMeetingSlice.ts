@@ -22,6 +22,8 @@ export interface VideoCallParticipant {
   isVideoOn: boolean;
   isScreenSharing?: boolean;
   sessions: VideoCallSession[];
+  stream?: MediaStream,
+  isActive: boolean; 
 }
 
 export interface WaitingParticipant {
@@ -75,7 +77,22 @@ const videoMeetingSlice = createSlice({
       Object.assign(state, action.payload);
     },
     addParticipant(state, action: PayloadAction<VideoCallParticipant>) {
-      state.participants.push(action.payload);
+      const alreadyExists = state.participants.some(
+        (p) => p.userId === action.payload.userId
+      );
+
+      console.log('Adding participant:', action.payload.userId, 'Already exists:', alreadyExists);
+
+      if (!alreadyExists) {
+        state.participants.push(action.payload);
+      } else {
+        // Optional: update socketId or stream if needed
+        const index = state.participants.findIndex(p => p.userId === action.payload.userId);
+        state.participants[index] = {
+          ...state.participants[index],
+          ...action.payload,
+        };
+      }
     },
     updateParticipant(state, action: PayloadAction<Partial<VideoCallParticipant> & { userId: string }>) {
       const index = state.participants.findIndex(p => p.userId === action.payload.userId);

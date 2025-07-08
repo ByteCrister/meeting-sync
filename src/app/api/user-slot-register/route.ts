@@ -3,11 +3,13 @@ import NotificationsModel, { INotificationType } from '@/models/NotificationsMod
 import SlotModel, { ISlot } from '@/models/SlotModel';
 import UserModel, { IUserFollowInfo } from '@/models/UserModel';
 import { RegisterSlotStatus } from '@/types/client-types';
-import { SocketTriggerTypes } from '@/utils/constants';
+import { IVideoCallStatus, SocketTriggerTypes } from '@/utils/constants';
 import { getUserIdFromRequest } from '@/utils/server/getUserFromToken';
 import { NextRequest, NextResponse } from 'next/server';
 import { triggerSocketEvent } from '@/utils/socket/triggerSocketEvent';
 import getNotificationExpiryDate from '@/utils/server/getNotificationExpiryDate';
+import VideoCallModel from '@/models/VideoCallModel';
+import { triggerRoomSocketEvent } from '@/utils/socket/triggerRoomSocketEvent';
 
 export async function GET(req: NextRequest) {
     try {
@@ -223,6 +225,26 @@ export async function DELETE(req: NextRequest) {
 
         if (slot.ownerId.toString() !== userId) {
             return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+        }
+
+        // * Check if there is any active video call associated with this slot
+        const activeVideoCall = await VideoCallModel.findOne({
+            meetingId: slotId,
+            status: IVideoCallStatus.ACTIVE, // or whatever value means ongoing
+        });
+
+        if (activeVideoCall) {
+            const videoCallId = activeVideoCall._id;
+
+            // Delete the video call
+            await VideoCallModel.deleteOne({ _id: videoCallId });
+
+            // Notify all participants via socket
+            triggerRoomSocketEvent({ roomId: slotId, type: SocketTriggerTypes.RUNNING_VIDEO_MEETING_CANCELLED, data: { userId } });
+
+            console.log(
+                `Deleted associated active video meeting [${videoCallId}] for slotId [${slotId}]`
+            );
         }
 
         // * Delete slot

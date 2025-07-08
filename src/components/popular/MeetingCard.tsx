@@ -7,7 +7,7 @@ import { formateSlotMeetingDate } from '../my-slots/SlotCard';
 
 export const MeetingCard = ({ meeting }: { meeting: PopularMeeting }) => {
   return (
-    <div className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 p-6 space-y-5 flex flex-col h-full">
+    <div className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 p-6 space-y-5 flex flex-col h-full max-w-sm w-full">
       {/* Category Pill */}
       <span className="inline-block bg-gradient-to-r from-purple-100 to-purple-200 text-purple-700 px-4 py-1 text-xs font-semibold rounded-full shadow-sm max-w-max">
         {meeting.category}
@@ -54,12 +54,12 @@ export const MeetingCard = ({ meeting }: { meeting: PopularMeeting }) => {
       <div className="space-y-1">
         <div className="flex justify-between text-sm text-gray-500">
           <span>Engagement Rate</span>
-          <span className="font-medium text-gray-700">{meeting.engagementRate * 100}%</span>
+          <span className="font-medium text-gray-700">{meeting.engagementRate}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div
             className="bg-blue-500 h-2 rounded-full"
-            style={{ width: `${meeting.engagementRate * 100}%` }}
+            style={{ width: `${meeting.engagementRate}%` }}
           />
         </div>
       </div>

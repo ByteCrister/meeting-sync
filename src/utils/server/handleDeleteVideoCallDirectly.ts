@@ -13,7 +13,10 @@ export async function handleDeleteVideoCallDirectly(meetingId: string) {
   await ConnectDB();
 
   const videoCallDoc = await VideoCallModel.findOne({ meetingId: new mongoose.Types.ObjectId(meetingId) });
-  if (!videoCallDoc) throw new Error("Meeting not found");
+  if (!videoCallDoc) {
+    console.log(`Can't find any videoDoc for meeting id: ${meetingId}`);
+    return;
+  };
 
   // Filter out host participants in memory if you want
   videoCallDoc.participants = videoCallDoc.participants.filter(

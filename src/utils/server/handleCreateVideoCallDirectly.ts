@@ -11,7 +11,7 @@ import mongoose from "mongoose";
 
 
 // Function to detect time format and parse
-const parseTime = (timeString: string, referenceDate: Date): Date => {
+export const parseTime = (timeString: string, referenceDate: Date): Date => {
   // Try parsing time in 24-hour format first (e.g., "14:30")
   const time24 = parse(timeString, 'HH:mm', referenceDate);
   if (!isNaN(time24.getTime())) {

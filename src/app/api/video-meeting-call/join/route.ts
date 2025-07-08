@@ -11,7 +11,6 @@ import UserModel from '@/models/UserModel';
 import getNotificationExpiryDate from '@/utils/server/getNotificationExpiryDate';
 import { getUserSocketId } from '@/utils/socket/socketUserMap';
 import { triggerRoomSocketEvent } from '@/utils/socket/triggerRoomSocketEvent';
-import { calculateAndUpdateEngagement } from '@/utils/server/calculateAndUpdateEngagement';
 
 // ? Joining to a video meeting
 export async function GET(req: NextRequest) {
@@ -60,11 +59,13 @@ export async function GET(req: NextRequest) {
                     isVideoOn: false,
                     isScreenSharing: false,
                     sessions: [{ joinedAt: new Date() }],
+                    isActive: true, // Mark host as active
                 });
             } else {
                 const participantIndex = videoCall.participants.findIndex((p: IVideoCallParticipant) => String(p.userId) === String(userId));
                 videoCall.participants[participantIndex].socketId = getUserSocketId(userId) || "";
                 videoCall.participants[participantIndex].sessions.push({ joinedAt: new Date() });
+                videoCall.participants[participantIndex].isActive =  true;
             }
 
             //* Activate meeting if not already and join all waiting participants to the meeting
@@ -136,7 +137,7 @@ export async function GET(req: NextRequest) {
                 (p: IVideoCallParticipant) => String(p.userId) === String(userId)
             );
 
-            // If meeting is ACTIVE and user is not in participants
+            // If meeting is ACTIVE and user is not in participants, joining the meeting
             if (participantIndex === -1) {
                 videoCall.participants.push({
                     userId,
@@ -145,11 +146,13 @@ export async function GET(req: NextRequest) {
                     isVideoOn: false,
                     isScreenSharing: false,
                     sessions: [{ joinedAt: new Date() }],
+                    isActive: true, // Mark participant as active
                 });
             } else {
                 // Already a participant — update join time and clear leftAt
                 videoCall.participants[participantIndex].socketId = getUserSocketId(userId) || "";
                 videoCall.participants[participantIndex].sessions.push({ joinedAt: new Date() });
+                videoCall.participants[participantIndex].isActive = true; // Ensure participant is marked as active
 
             }
             triggerRoomSocketEvent({
@@ -238,6 +241,8 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ message: 'Participant not found or no sessions' }, { status: 404 });
         }
 
+        participant.isActive = false; // Mark participant as inactive
+
         // Find the last session with no leftAt
         const latestSession = [...participant.sessions].reverse().find(
             (session) => !session.leftAt
@@ -249,11 +254,8 @@ export async function DELETE(req: NextRequest) {
 
         latestSession.leftAt = new Date();
 
-        const updatedVideoCall = await videoCall.save();
-        await calculateAndUpdateEngagement({
-            ...updatedVideoCall.toObject(),
-            endTime: videoCall.endTime || new Date(),
-        });
+        await videoCall.save();
+
 
         return NextResponse.json({ success: true, message: 'Left the call successfully' }, { status: 200 });
 

@@ -9,6 +9,7 @@ import { FilterOptions } from "./FilterOptions";
 import apiService from "@/utils/client/api/api-services";
 import { PopularMeeting, RegisterSlotStatus } from "@/types/client-types";
 import usePopularSearch from "@/hooks/usePopularSearch";
+import PaginateButtons from "../global-ui/ui-component/PaginateButtons";
 
 const formattedData: PopularMeeting[] = [
   {
@@ -95,6 +96,8 @@ export const PopularPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("category");
   const [categories, setCategories] = useState<string[]>(["category"]);
   const popularSearch = usePopularSearch(Store, setStore);
+  const maxItems = 10;
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -171,7 +174,7 @@ export const PopularPage = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-center">
           {isLoading ? (
             Array.from({ length: 6 }).map((_, index) => (
               <MeetingCardSkeleton key={index} />
@@ -207,6 +210,19 @@ export const PopularPage = () => {
           )}
         </div>
       </div>
+
+      {
+        filteredMeetings.length > 4 && (
+          <PaginateButtons
+            currentPage={currentPage}
+            maxItems={maxItems}
+            totalItems={filteredMeetings.length}
+            handlePaginatePage={(newPage: number) => {
+              setCurrentPage(newPage)
+            }}
+          />
+        )
+      }
     </div>
   );
 };

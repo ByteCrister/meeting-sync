@@ -9,9 +9,21 @@ export async function GET() {
     try {
         await ConnectDB();
 
-        const rawSlots = await SlotModel.find({}, { meetingDate: 1, engagementRate: 1, durationFrom: 1, durationTo: 1, _id: 0 }).lean();
-        const slots: TimeDataSlot[] = rawSlots as unknown as TimeDataSlot[];
+        const rawSlots = await SlotModel.find(
+            {
+                status: "completed",
+                trendScore: { $gt: 0 }
+            },
+            {
+                meetingDate: 1,
+                engagementRate: 1,
+                durationFrom: 1,
+                durationTo: 1,
+                _id: 0
+            }
+        ).lean();
 
+        const slots: TimeDataSlot[] = rawSlots as unknown as TimeDataSlot[];
         const result = await analyzeBestTimes(slots);
 
         return NextResponse.json({ success: true, data: result }, { status: 200 });
@@ -23,3 +35,4 @@ export async function GET() {
         );
     }
 }
+

@@ -51,22 +51,47 @@ const convertTo12Hour = (time: string): string => {
 };
 
 
-const isTimeRangeAvailable = (from: string, to: string, busyTimes: BusyTime[]) => {
-    if(busyTimes.length === 0) return true;
-    const start = new Date(`1970-01-01T${convertTo24Hour(from)}`).getTime();
-    const end = new Date(`1970-01-01T${convertTo24Hour(to)}`).getTime();
+const isTimeRangeAvailable = (from: string, to: string, busyTimes: BusyTime[]): boolean => {
+    if (busyTimes.length === 0) return true;
 
-    // Total available time in ms
+    const from24 = convertTo24Hour(from);
+    const to24 = convertTo24Hour(to);
+
+    if (!from24 || !to24) {
+        console.warn("Invalid from/to time provided:", from, to);
+        return false;
+    }
+
+    const start = new Date(`1970-01-01T${from24}`).getTime();
+    let end = new Date(`1970-01-01T${to24}`).getTime();
+
+    // Handle cross-midnight time
+    if (end <= start) {
+        end += 24 * 60 * 60 * 1000; // Add 24 hours to end time
+    }
+
     const selectedDuration = end - start;
-
-    // Accumulate total overlap duration
     let overlapDuration = 0;
 
     for (const { from: busyFrom, to: busyTo } of busyTimes) {
-        const busyStart = new Date(`1970-01-01T${convertTo24Hour(busyFrom)}`).getTime();
-        const busyEnd = new Date(`1970-01-01T${convertTo24Hour(busyTo)}`).getTime();
+        const busyFrom24 = convertTo24Hour(busyFrom);
+        const busyTo24 = convertTo24Hour(busyTo);
 
-        // Calculate overlapping interval
+        if (!busyFrom24 || !busyTo24) {
+            console.warn("Invalid busy time slot:", busyFrom, busyTo);
+            continue;
+        }
+
+        const busyStart = new Date(`1970-01-01T${busyFrom24}`).getTime();
+        let busyEnd = new Date(`1970-01-01T${busyTo24}`).getTime();
+
+        // Handle cross-midnight busy time
+        if (busyEnd <= busyStart) {
+            busyEnd += 24 * 60 * 60 * 1000;
+        }
+
+        // console.log(`Checking overlap: Selected [${from} - ${to}] vs Busy [${busyFrom} - ${busyTo}]`);
+
         const overlapStart = Math.max(start, busyStart);
         const overlapEnd = Math.min(end, busyEnd);
 
@@ -75,7 +100,7 @@ const isTimeRangeAvailable = (from: string, to: string, busyTimes: BusyTime[]) =
         }
     }
 
-    // If overlap covers the whole selected time, it's not available
+    // console.log(`Selected Duration: ${selectedDuration} ms, Overlap Duration: ${overlapDuration} ms`);
     return overlapDuration < selectedDuration;
 };
 
@@ -161,7 +186,7 @@ const TimePicker = () => {
         if (!selectedDate) return;
 
         const selectedSlotsOfThisDate = MeetingSlots
-        .filter(slot => slot._id !== slotDialog.slotField._id)
+            .filter(slot => slot._id !== slotDialog.slotField._id)
             .filter(slot => {
                 const a = new Date(slot.meetingDate!);
                 const b = new Date(selectedDate);
@@ -172,7 +197,7 @@ const TimePicker = () => {
                 );
             }).map(slot => ({ from: slot.durationFrom, to: slot.durationTo }));
 
-            console.log(selectedSlotsOfThisDate);
+        // console.log("Selected Slots of This Date:", selectedSlotsOfThisDate);
         setBusyTimes(selectedSlotsOfThisDate);
 
     }, [MeetingSlots, slotDialog.slotField._id, slotDialog.slotField.meetingDate]);

@@ -7,14 +7,6 @@ import { triggerRoomSocketEvent } from "@/utils/socket/triggerRoomSocketEvent";
 import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
-export interface IParticipant {
-    userId: mongoose.Types.ObjectId | string;
-    socketId: string;
-    isMuted: boolean;
-    isVideoOn: boolean;
-    joinedAt: Date;
-}
-
 // * Status of the Video Meeting( getting all video and participant's validation )
 export async function GET(req: NextRequest) {
     try {
@@ -77,6 +69,19 @@ export async function GET(req: NextRequest) {
             });
         }
 
+        // Check if the meeting has already started and user is already joined somewhere
+        const existingParticipant = meeting.participants.find(
+            (p) => p.userId.toString() === userId.toString()
+        );
+
+        if (existingParticipant?.isActive) {
+            return NextResponse.json({
+                success: true,
+                isError: true,
+                errorType: VideoCallErrorTypes.USER_ALREADY_JOINED,
+            });
+        }
+
         // All checks passed
         return NextResponse.json({
             success: true,
@@ -130,12 +135,18 @@ export async function PUT(req: NextRequest) {
                 if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
                 const { message } = data;
+
+                if (!message || typeof message !== "string" || !message.trim()) {
+                    return NextResponse.json({ message: "Message is required and must be non-empty." }, { status: 400 });
+                }
+
                 const msgObject = {
                     _id: new mongoose.Types.ObjectId(),
                     userId: new mongoose.Types.ObjectId(userId),
-                    message,
+                    message: message.trim(),
                     timestamp: new Date(),
                 };
+
                 await VideoCallModel.updateOne(
                     { meetingId },
                     {

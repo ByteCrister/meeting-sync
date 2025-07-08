@@ -136,7 +136,7 @@ export interface ActivityType {
     id: string;
     title: string;
     time: string;
-    type: 'upcoming' | 'recent' | 'available';
+    type: 'upcoming' | 'recent' | 'booked';
 }
 
 // ? User Form Types

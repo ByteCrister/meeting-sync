@@ -1,14 +1,12 @@
 export const dynamic = "force-dynamic";
-
 import { Metadata } from "next";
 export const metadata: Metadata = {
-    title: "Video-Meeting",
+  title: "Video-Meeting",
 };
 
-import VideoCallClient from "@/components/video-meeting/VideoCallClient";
-
+import VideoCallMeeting from "@/components/video-meeting/VideoCallMeeting";
 const Page = () => {
-    return <VideoCallClient />;
+  return <VideoCallMeeting />
 };
 
 export default Page;

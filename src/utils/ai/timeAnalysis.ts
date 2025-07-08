@@ -1,4 +1,3 @@
-// * src>utils>ai>timeAnalysis.ts
 "use server"
 
 import { TimeDataSlot } from "@/app/api/ai-insights/best-time/route";
@@ -8,7 +7,6 @@ const parseTime = (timeStr: string) => {
         throw new Error(`Invalid time string: ${timeStr}`);
     }
 
-    // Assuming time format is something like "03:00 PM"
     const [time, modifier] = timeStr.split(" ");
     if (!time || !modifier) {
         throw new Error(`Invalid time format: ${timeStr}`);
@@ -20,7 +18,7 @@ const parseTime = (timeStr: string) => {
     if (modifier === "PM" && hours !== 12) hours += 12;
     if (modifier === "AM" && hours === 12) hours = 0;
 
-    return new Date(1970, 0, 1, hours, minutes);  // Use a dummy date, only time matters
+    return new Date(1970, 0, 1, hours, minutes);  // Dummy date, time only
 };
 
 export const analyzeBestTimes = async (slots: TimeDataSlot[]) => {
@@ -34,13 +32,25 @@ export const analyzeBestTimes = async (slots: TimeDataSlot[]) => {
             days[day] = { engagementRates: [], durations: [], date };
         }
 
+        const rate = Number(slot.engagementRate);
+        if (isNaN(rate) || rate < 0 || rate > 100) {
+            console.warn(`Invalid engagementRate: ${slot.engagementRate} for slot on ${day}`);
+            return; // skip invalid engagementRate
+        }
+
         if (slot.durationFrom && slot.durationTo) {
             try {
                 const startTime = parseTime(slot.durationFrom);
-                const endTime = parseTime(slot.durationTo);
-                const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);  // Convert ms to minutes
+                let endTime = parseTime(slot.durationTo);
 
-                days[day].engagementRates.push(slot.engagementRate);
+                // Fix for overnight meetings crossing midnight:
+                if (endTime <= startTime) {
+                    endTime = new Date(endTime.getTime() + 24 * 60 * 60 * 1000); // add 24 hours
+                }
+
+                const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);  // Minutes
+
+                days[day].engagementRates.push(rate);
                 days[day].durations.push(duration || 0);
             } catch (error) {
                 console.error("Error parsing time:", error);
@@ -53,8 +63,12 @@ export const analyzeBestTimes = async (slots: TimeDataSlot[]) => {
     return Object.entries(days).map(([day, { engagementRates, durations, date }]) => ({
         day,
         date,
-        avgEngagement: engagementRates.reduce((a, b) => a + b, 0) / engagementRates.length,
+        avgEngagement: engagementRates.length > 0
+            ? engagementRates.reduce((a, b) => a + b, 0) / engagementRates.length
+            : 0,
         totalMeetings: engagementRates.length,
-        avgDuration: durations.reduce((a, b) => a + b, 0) / durations.length,
+        avgDuration: durations.length > 0
+            ? durations.reduce((a, b) => a + b, 0) / durations.length
+            : 0,
     })).sort((a, b) => b.avgEngagement - a.avgEngagement);
 };

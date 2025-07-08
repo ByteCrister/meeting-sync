@@ -26,6 +26,7 @@ export enum SocketTriggerTypes {
     LEAVE_ROOM = "LEAVE_ROOM",
     USER_LEAVED = "USER_LEAVED",
     MEETING_ENDED="MEETING_ENDED",
+    RUNNING_VIDEO_MEETING_CANCELLED = "RUNNING_VIDEO_MEETING_CANCELLED",
 
     SEND_NEW_CHAT_MESSAGE = "SEND_NEW_CHAT_MESSAGE",
     DELETE_CHAT_MESSAGE = "DELETE_CHAT_MESSAGE",
@@ -76,7 +77,9 @@ export enum VMSocketTriggerTypes {
     RECEIVE_OFFER = "receive-offer",
     RECEIVE_ANSWER = "receive-answer",
     EXISTING_USERS = "existing-users",
-    USER_LEAVED = 'user-leaved'
+    USER_LEAVED = 'user-leaved',
+    LEAVE_ROOM = "leave-room",
+    INVITE_WAITING = "invite-waiting",
 }
 
 export enum IVideoCallStatus {
@@ -96,6 +99,14 @@ export enum VideoCallErrorTypes {
     USER_NOT_PARTICIPANT = "USER_NOT_PARTICIPANT",
     USER_ALREADY_JOINED = "USER_ALREADY_JOINED",
     USER_NOT_JOINED = "USER_NOT_JOINED",
+    MEDIA_ERROR ="MEDIA_ERROR",
+}
+
+export enum MediaStreamErrorTypes{
+    CAMERA_PERMISSION_DENIED = "camera-permission-denied",
+    MIC_PERMISSION_DENIED = "microphone-permission-denied",
+    CAMERA_MIC_PERMISSION_DENIED = "camera-mic-permission-denied",
+    MEDIA_STREAM_ERROR = "media-stream-error",
 }
 
 

@@ -18,16 +18,18 @@ export async function calculateAndUpdateEngagement(call: IVideoCall) {
     if (!Array.isArray(p.sessions) || p.sessions.length === 0) continue;
 
     let totalParticipantTime = 0;
-
     for (const session of p.sessions) {
+      if (!session.joinedAt) continue;
       const joinedAt = new Date(session.joinedAt);
-      const leftAt = session.leftAt ? new Date(session.leftAt) : call.endTime;
+      if (isNaN(joinedAt.getTime())) continue;
 
-      if (joinedAt >= call.endTime) continue;
+      const rawLeftAt = session.leftAt ? new Date(session.leftAt) : call.endTime;
+      const leftAt = !isNaN(rawLeftAt.getTime()) ? rawLeftAt : call.endTime;
 
+      const sessionStart = joinedAt < call.startTime ? call.startTime : joinedAt;
       const sessionEnd = leftAt > call.endTime ? call.endTime : leftAt;
-      const sessionTime = Math.max(0, sessionEnd.getTime() - joinedAt.getTime());
 
+      const sessionTime = Math.max(0, sessionEnd.getTime() - sessionStart.getTime());
       totalParticipantTime += sessionTime;
     }
 

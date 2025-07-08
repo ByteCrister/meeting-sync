@@ -1,5 +1,7 @@
 import ConnectDB from "@/config/ConnectDB";
-import NotificationsModel, { INotificationType } from "@/models/NotificationsModel";
+import NotificationsModel, {
+    INotificationType,
+} from "@/models/NotificationsModel";
 import SlotModel, { IRegisterStatus } from "@/models/SlotModel";
 import cron from "node-cron";
 import { triggerSocketEvent } from "../socket/triggerSocketEvent";
@@ -10,6 +12,8 @@ import { DateTime } from "luxon";
 import { handleCreateVideoCallDirectly } from "../server/handleCreateVideoCallDirectly";
 import { handleDeleteVideoCallDirectly } from "../server/handleDeleteVideoCallDirectly";
 import getNotificationExpiryDate from "../server/getNotificationExpiryDate";
+import { updateTrendScoreForSlot } from "../server/updateTrendScoreForSlot";
+import { cleanupExpiredVideoCalls } from "../server/cleanUpExpiredVideoCalls";
 
 declare global {
     // Extend the globalThis interface to include slotStatusCronStarted
@@ -19,11 +23,14 @@ declare global {
 globalThis.slotStatusCronStarted = globalThis.slotStatusCronStarted || false;
 
 // Parse 12-hour time to 24-hour
-function parseTimeTo24Hour(timeStr: string): { hours: number; minutes: number } | null {
+export function parseTimeTo24Hour(
+    timeStr: string
+): { hours: number; minutes: number } | null {
     try {
         if (!timeStr) throw new Error("Invalid time string");
 
-        let hours = 0, minutes = 0;
+        let hours = 0,
+            minutes = 0;
         const [time, modifier] = timeStr.trim().split(" ");
         // eslint-disable-next-line prefer-const
         let [h, m] = time.split(":").map(Number);
@@ -65,7 +72,9 @@ export async function updateSlotStatuses() {
                 continue;
             }
 
-            const user = await UserModel.findById(slot.ownerId).select("timeZone image email username");
+            const user = await UserModel.findById(slot.ownerId).select(
+                "timeZone image email username"
+            );
             const timeZone = user?.timeZone?.replace("UTC", "UTC") || "UTC";
 
             const fromTime = parseTimeTo24Hour(slot.durationFrom);
@@ -79,13 +88,23 @@ export async function updateSlotStatuses() {
             const dateStr = DateTime.fromJSDate(slot.meetingDate).toISODate();
 
             // Convert to user's local time zone first, then to UTC
-            const start = DateTime.fromISO(`${dateStr}T${String(fromTime.hours).padStart(2, '0')}:${String(fromTime.minutes).padStart(2, '0')}:00`, {
-                zone: timeZone,
-            }).toUTC();
+            const start = DateTime.fromISO(
+                `${dateStr}T${String(fromTime.hours).padStart(2, "0")}:${String(
+                    fromTime.minutes
+                ).padStart(2, "0")}:00`,
+                {
+                    zone: timeZone,
+                }
+            ).toUTC();
 
-            let end = DateTime.fromISO(`${dateStr}T${String(toTime.hours).padStart(2, '0')}:${String(toTime.minutes).padStart(2, '0')}:00`, {
-                zone: timeZone,
-            }).toUTC();
+            let end = DateTime.fromISO(
+                `${dateStr}T${String(toTime.hours).padStart(2, "0")}:${String(
+                    toTime.minutes
+                ).padStart(2, "0")}:00`,
+                {
+                    zone: timeZone,
+                }
+            ).toUTC();
 
             if (end <= start) {
                 end = end.plus({ days: 1 }); // handle overnight meetings
@@ -98,22 +117,37 @@ export async function updateSlotStatuses() {
             // Reminder conditions
             if (slot.status === IRegisterStatus.Upcoming && timeDiffDays <= 1) {
                 const shouldSend =
-                    (timeDiffDays === 1 && timeDiffHours % 24 === 0 && timeDiffMinutes % 60 === 0) ||
-                    (timeDiffDays === 0 && timeDiffHours === 3 && timeDiffMinutes % 60 === 0) ||
+                    (timeDiffDays === 1 &&
+                        timeDiffHours % 24 === 0 &&
+                        timeDiffMinutes % 60 === 0) ||
+                    (timeDiffDays === 0 &&
+                        timeDiffHours === 3 &&
+                        timeDiffMinutes % 60 === 0) ||
                     (timeDiffDays === 0 && timeDiffHours === 0 && timeDiffMinutes === 5);
 
                 if (shouldSend) {
-                    const lastSent = slot.lastReminderSentAt ? DateTime.fromJSDate(slot.lastReminderSentAt) : null;
-                    const lastSentDiff = lastSent ? nowUTC.diff(lastSent, "seconds").seconds : Infinity;
+                    const lastSent = slot.lastReminderSentAt
+                        ? DateTime.fromJSDate(slot.lastReminderSentAt)
+                        : null;
+                    const lastSentDiff = lastSent
+                        ? nowUTC.diff(lastSent, "seconds").seconds
+                        : Infinity;
 
                     if (lastSentDiff > 60) {
                         const subject = `🔔 Reminder: Your meeting "${slot.title}" is coming up!`;
-                        const html = getReminderHTML(user.username || '', slot.title, dateStr!, slot.durationFrom);
+                        const html = getReminderHTML(
+                            user.username || "",
+                            slot.title,
+                            dateStr!,
+                            slot.durationFrom
+                        );
                         if (user?.email) {
                             await emailAuthentication(user.email, subject, html);
                             slot.lastReminderSentAt = new Date();
                             await slot.save();
-                            console.log(`Reminder sent to ${user.email} for slot ${slot._id}`);
+                            console.log(
+                                `Reminder sent to ${user.email} for slot ${slot._id}`
+                            );
                         }
                     }
                 }
@@ -127,21 +161,30 @@ export async function updateSlotStatuses() {
             } else if (nowUTC >= start && nowUTC <= end) {
                 newStatus = IRegisterStatus.Ongoing;
             } else if (nowUTC > end) {
-                newStatus = slot.engagementRate === 0 ? IRegisterStatus.Expired : IRegisterStatus.Completed;
+                newStatus =
+                    slot.engagementRate === 0
+                        ? IRegisterStatus.Expired
+                        : IRegisterStatus.Completed;
             }
 
             if (slot.status !== newStatus) {
                 if (newStatus === IRegisterStatus.Ongoing) {
-                    // console.log(`Slot ${slot._id}: nowUTC=${nowUTC.toISO()}, start=${start.toISO()}, end=${end.toISO()}`);
-                    // console.log(`Calculated newStatus: ${newStatus}, Current status: ${slot.status}`);
-
                     try {
-                        const newCall = await handleCreateVideoCallDirectly(slot._id, slot.ownerId.toString());
+                        const newCall = await handleCreateVideoCallDirectly(
+                            slot._id,
+                            slot.ownerId.toString()
+                        );
                         console.log("Video call created:", newCall._id);
                     } catch (err) {
-                        console.error("Failed to create video call:", (err as Error).message);
+                        console.error(
+                            "Failed to create video call:",
+                            (err as Error).message
+                        );
                     }
-                } else if ((newStatus === IRegisterStatus.Expired || newStatus === IRegisterStatus.Completed)) {
+                } else if (
+                    newStatus === IRegisterStatus.Expired ||
+                    newStatus === IRegisterStatus.Completed
+                ) {
                     await handleDeleteVideoCallDirectly(slot._id);
                 }
 
@@ -174,10 +217,10 @@ export async function updateSlotStatuses() {
                         },
                     });
                 }
-
             } else {
                 await slot.save(); // Still persist reminder timestamp if changed
             }
+            await updateTrendScoreForSlot(slot._id.toString());
         }
 
         console.log(`END updateSlotStatuses: ${new Date()}\n`);
@@ -188,6 +231,8 @@ export async function updateSlotStatuses() {
 
 // Run this every minute
 let isRunning = false;
+let isCleanupRunning = false;
+let cleanupCronStarted = false;
 
 async function startCronJob() {
     if (globalThis.slotStatusCronStarted) {
@@ -209,19 +254,59 @@ async function startCronJob() {
     });
 
     globalThis.slotStatusCronStarted = true;
+}
 
+
+async function startVideoCallCleanupCron() {
+    if (cleanupCronStarted) {
+        console.log("Video call cleanup cron already started. Skipping.");
+        return;
+    }
+
+    cron.schedule("*/2 * * * *", async () => {
+        if (isCleanupRunning) {
+            console.warn("[Cron Skipped] Previous cleanup still running.");
+            return;
+        }
+
+        isCleanupRunning = true;
+        const startTime = new Date();
+
+        console.log(
+            `\n[${startTime.toISOString()}] Starting expired video call cleanup...`
+        );
+
+        try {
+            await cleanupExpiredVideoCalls();
+            console.log(`[${new Date().toISOString()}] Cleanup finished.`);
+        } catch (e) {
+            console.error(
+                `[Error - cleanupExpiredVideoCalls]:`,
+                (e as Error).message
+            );
+        } finally {
+            isCleanupRunning = false;
+        }
+    });
+
+    cleanupCronStarted = true;
+    console.log("Video call cleanup cron scheduled every 2 minutes.");
 }
 
 startCronJob();
+startVideoCallCleanupCron();
 
-
-
-const getReminderHTML = (username: string, title: string, dateStr: string, durationFrom: string) => {
+const getReminderHTML = (
+    username: string,
+    title: string,
+    dateStr: string,
+    durationFrom: string
+) => {
     return `
 <div style="max-width: 600px; margin: auto; padding: 24px; font-family: Arial, sans-serif; background-color: #ffffff; border: 1px solid #ddd; border-radius: 10px; color: #333;">
   <h2 style="text-align: center; color: #1565c0;">🔔 Meeting Reminder</h2>
 
-  <p style="font-size: 16px;">Hi ${username || 'there'},</p>
+  <p style="font-size: 16px;">Hi ${username || "there"},</p>
 
   <p style="font-size: 16px;">
     This is a friendly reminder that your upcoming meeting titled <strong style="color: #000;">"${title}"</strong> is scheduled to begin at:
@@ -240,5 +325,5 @@ const getReminderHTML = (username: string, title: string, dateStr: string, durat
     Thanks,<br/>
     <strong style="color: #1565c0;">– The MeetingSync Team</strong>
   </p>
-</div>`
-}
+</div>`;
+};

@@ -12,18 +12,23 @@ export const initiateSocket = (namespace: "chat" | "video" = "chat"): Socket => 
             transports: ["websocket"],
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
+            autoConnect: false,
         });
 
         socket.on("connect", () => {
-            console.log(`Socket [${namespace}] connected:`, socket.id);
+            console.log(`✅ Socket [${namespace}] connected:`, socket.id);
         });
 
         socket.on("connect_error", (error) => {
-            console.log(`Socket [${namespace}] connection error:`, error);
+            console.warn(`⚠️ Socket [${namespace}] connection error:`, error);
         });
 
         socket.on("disconnect", (reason) => {
-            console.log(`Socket [${namespace}] disconnected:`, reason);
+            console.warn(`🔌 Socket [${namespace}] disconnected:`, reason);
+        });
+
+        socket.on("reconnect", () => {
+            console.log(`✅ Socket [${namespace}] reconnected`);
         });
 
         sockets[namespace] = socket;

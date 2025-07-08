@@ -13,6 +13,7 @@ export interface IVideoCallParticipant {
     isVideoOn: boolean;
     isScreenSharing?: boolean;
     sessions: IVideoCallSession[];
+    isActive?: boolean; // Optional field to track if the participant is currently active
 }
 
 export interface IWaitingParticipants {
@@ -89,7 +90,11 @@ const VideoCallSchema = new Schema<IVideoCall>(
             sessions: [{
                 joinedAt: { type: Date, default: Date.now },
                 leftAt: { type: Date, default: null },
-            }]
+            }],
+            isActive: {
+                type: Boolean,
+                default: true, // Default to true when participant is added
+            }
         }],
         status: {
             type: String,
@@ -115,7 +120,8 @@ const VideoCallSchema = new Schema<IVideoCall>(
             },
             message: {
                 type: String,
-                required: true,
+                required: false,
+                default: "",
             },
             timestamp: {
                 type: Date,
@@ -135,7 +141,6 @@ const VideoCallSchema = new Schema<IVideoCall>(
                 type: Boolean,
                 default: false,
             }
-            // if I want to add more settings, I can do so here
         },
     },
     {

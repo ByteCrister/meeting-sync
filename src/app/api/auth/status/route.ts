@@ -5,8 +5,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { ApiNotificationTypes } from "@/utils/constants";
 import SlotModel, { IRegisterStatus } from "@/models/SlotModel";
 
-export async function GET(req: NextRequest) {
+export interface IBookedSlots {
+    userId: string;
+    slotId: string;
+    status: IRegisterStatus;
+}
 
+
+export async function GET(req: NextRequest) {
     try {
         await ConnectDB();
 
@@ -15,30 +21,57 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
         }
 
-        const user = await UserModel.findById(userId).select("-password"); // Exclude password
-
+        const user = await UserModel.findById(userId).select("-password");
         if (!user) {
             return new Response(JSON.stringify({ success: false, message: "User not found" }), { status: 404 });
         }
 
-        // Only fetch slots with specific statuses
-        const allowedStatuses = [IRegisterStatus.Upcoming, IRegisterStatus.Ongoing, IRegisterStatus.Completed];
+        const allowedStatuses = [
+            IRegisterStatus.Upcoming,
+            IRegisterStatus.Ongoing,
+            IRegisterStatus.Completed,
+        ];
+
         const slots = await SlotModel.find({
             ownerId: user._id,
             status: { $in: allowedStatuses },
-        }).sort({ meetingDate: -1 })
+        }).sort({ meetingDate: -1 });
 
-        // Format response to match sampleActivities
-        const activities = slots.map((slot) => ({
-            id: slot._id.toString(),
-            title: slot.title,
-            time: `${slot.durationFrom} - ${slot.durationTo}`,
-            type: slot.status === (IRegisterStatus.Completed || IRegisterStatus.Expired) ? 'recent'
-                : (slot.status === IRegisterStatus.Ongoing && slot.guestSize !== slot.bookedUsers.length) ? 'available'
-                    : 'upcoming',
-        }));
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-        return NextResponse.json({ user: user, activities: activities, success: true }, { status: 200 });
+        const recentBookedSlotIds: string[] = user.bookedSlots
+            .filter((b: IBookedSlots) => {
+                const statusValid = [IRegisterStatus.Upcoming, IRegisterStatus.Ongoing].includes(b.status);
+                return statusValid;
+            })
+            .map((b: IBookedSlots) => b.slotId.toString());
+
+        const activities = slots.map((slot) => {
+            const isBooked = recentBookedSlotIds.includes(slot._id.toString());
+
+            let type: "booked" | "upcoming" | "recent";
+
+            if (
+                slot.status === IRegisterStatus.Completed ||
+                slot.status === IRegisterStatus.Expired
+            ) {
+                type = "recent";
+            } else if (isBooked) {
+                type = "booked";
+            } else {
+                type = "upcoming";
+            }
+
+            return {
+                id: slot._id.toString(),
+                title: slot.title,
+                time: `${slot.durationFrom} - ${slot.durationTo}`,
+                type,
+            };
+        });
+
+        return NextResponse.json({ success: true, user, activities }, { status: 200 });
     } catch (error) {
         console.log("JWT Verification Error:", error);
         return new Response(JSON.stringify({ message: "Invalid token" }), { status: 401 });

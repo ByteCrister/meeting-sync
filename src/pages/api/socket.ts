@@ -9,11 +9,15 @@ import {
 } from "@/utils/socket/socketUserMap";
 import { setIOInstance } from "@/utils/socket/setIOInstance";
 
-import '../../utils/cron/updateSlotStatus';
-import VideoCallModel, { IVideoCall, IVideoCallParticipant, IVideoCallSession } from "@/models/VideoCallModel";
+import "../../utils/cron/updateSlotStatus";
 import getUsersInRoom from "@/utils/server/getUsersInRoom";
-import { calculateAndUpdateEngagement } from "@/utils/server/calculateAndUpdateEngagement";
-import { getVideoUserIdBySocketId, getVideoUserSocketId, registerVideoUserSocket, removeVideoUserSocket } from "@/utils/socket/videoSocketUserMap";
+import {
+    getVideoUserIdBySocketId,
+    getVideoUserSocketId,
+    registerVideoUserSocket,
+    removeVideoUserSocket,
+} from "@/utils/socket/videoSocketUserMap";
+import { handleUserLeft } from "@/utils/server/handleUserLeft";
 
 // Disable body parser for socket handling
 export const config = {
@@ -24,7 +28,6 @@ export const config = {
 let socketServerInitialized = false;
 
 const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const httpServer = (res.socket as unknown as { server: any }).server;
 
@@ -33,7 +36,7 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
 
         // Initialize Socket.IO server
         const io = new ServerIO(httpServer, {
-            path: process.env.SOCKET_PATH! || '/api/socket',
+            path: process.env.SOCKET_PATH! || "/api/socket",
             pingInterval: 10000,
             pingTimeout: 20000,
             cors: {
@@ -46,7 +49,7 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
 
         // Attach the Socket.IO instance to the server object
         httpServer.io = io;
-        setIOInstance(io);  // Set the global Socket.IO instance
+        setIOInstance(io); // Set the global Socket.IO instance
         socketServerInitialized = true;
 
         // ? CHAT/NOTIFICATION NAMESPACE HANDLER (if needed)
@@ -57,18 +60,19 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
 
             // ? Register a user to socket using userId
             socket.on(SocketTriggerTypes.REGISTER_USER, (data) => {
-                console.log("-------------------------- User registered: ", data.userId + ' -----------------------------');
+                console.log(
+                    "-------------------------- User registered: ",
+                    data.userId + " -----------------------------"
+                );
                 registerUserSocket(data.userId, socket.id);
                 socket.data.userId = data.userId;
             });
 
-            socket.on('disconnect', () => {
+            socket.on("disconnect", () => {
                 console.log(`[CHAT/NOTIFICATION] SOCKET Disconnected`);
                 removeUserSocket(socket.data.userId);
             });
-
         });
-
 
         // ? VIDEO CALL NAMESPACE HANDLER
         const videoNamespace = io.of("/video");
@@ -77,9 +81,10 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
             console.log("->> [VIDEO] Socket connected: ", socket.id);
 
             // * Video Meeting Socket Events
-            socket.on(SocketTriggerTypes.LEAVE_ROOM, ({ roomId, userId }) => {
+            socket.on(SocketTriggerTypes.LEAVE_ROOM, async ({ roomId, userId }) => {
+                console.log(`\n\n[VIDEO] User ${userId} left room ${roomId}`);
                 socket.leave(roomId);
-                socket.to(roomId).emit(SocketTriggerTypes.USER_LEAVED, { userId }); // <-- emit to all in the room
+                socket.to(roomId).emit(SocketTriggerTypes.USER_LEAVED, { userId });
             });
 
             // ? Joining a user to socket using meetingId/roomId
@@ -105,96 +110,69 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
                 console.log(`[VIDEO] User ${userId} joined room ${roomId}`);
             });
 
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            socket.on(VMSocketTriggerTypes.OFFER, ({ roomId, newUserId, offer }) => {
-                const targetSocketId = getVideoUserSocketId(newUserId);
-                if (targetSocketId) {
-                    socket.to(targetSocketId).emit(VMSocketTriggerTypes.RECEIVE_OFFER, {
-                        fromUserId: socket.data.userId,
-                        offer
-                    });
+            socket.on(VMSocketTriggerTypes.OFFER,
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                ({ roomId, fromUserId, targetUserId, offer }) => {
+                    const targetSocketId = getVideoUserSocketId(targetUserId);
+                    if (targetSocketId) {
+                        socket.to(targetSocketId).emit(VMSocketTriggerTypes.RECEIVE_OFFER, {
+                            fromUserId, // <- current user is sending offer
+                            offer,
+                        });
+                    }
                 }
-            });
+            );
 
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            socket.on(VMSocketTriggerTypes.ANSWER, ({ roomId, fromUserId, answer }) => {
-                const targetSocketId = getVideoUserSocketId(fromUserId);
-                if (targetSocketId) {
-                    socket.to(targetSocketId).emit(VMSocketTriggerTypes.RECEIVE_ANSWER, {
-                        fromUserId: socket.data.userId,
-                        answer
-                    });
+            socket.on(VMSocketTriggerTypes.ANSWER,
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                ({ roomId, fromUserId, targetUserId, answer }) => {
+                    const targetSocketId = getVideoUserSocketId(targetUserId);
+                    if (targetSocketId) {
+                        socket
+                            .to(targetSocketId)
+                            .emit(VMSocketTriggerTypes.RECEIVE_ANSWER, {
+                                fromUserId: socket.data.userId,
+                                answer,
+                            });
+                    }
                 }
-            });
+            );
 
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            socket.on(VMSocketTriggerTypes.ICE_CANDIDATE, ({ roomId, targetUserId, candidate }) => {
-                const targetSocketId = getVideoUserSocketId(targetUserId);
-                if (targetSocketId) {
-                    socket.to(targetSocketId).emit(VMSocketTriggerTypes.RECEIVE_ICE_CANDIDATE, {
-                        fromUserId: socket.data.userId,
-                        candidate
-                    });
+            socket.on(VMSocketTriggerTypes.ICE_CANDIDATE,
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                ({ roomId, targetUserId, candidate }) => {
+                    const targetSocketId = getVideoUserSocketId(targetUserId);
+                    if (targetSocketId) {
+                        socket
+                            .to(targetSocketId)
+                            .emit(VMSocketTriggerTypes.RECEIVE_ICE_CANDIDATE, {
+                                fromUserId: socket.data.userId,
+                                candidate,
+                            });
+                    }
                 }
-            });
+            );
 
             socket.on("disconnect", async () => {
                 console.log("VIDEO SOCKET Disconnected: ", socket.id);
                 const userId = getVideoUserIdBySocketId(socket.id);
                 removeVideoUserSocket(socket.id);
-
-                try {
-                    const call: IVideoCall | null = await VideoCallModel.findOne({ "participants.socketId": socket.id });
-
-                    if (call) {
-                        // ? Skipping time of host
-                        if (userId && userId.toString() === call.hostId.toString()) {
-                            console.log("Host disconnected — skip updating participant session.");
-                            return;
-                        }
-                        const roomId = call.meetingId.toString();
-                        if (roomId && userId) {
-                            socket.to(roomId).emit(VMSocketTriggerTypes.USER_LEAVED, { userId });
-                        }
-
-                        const participantIndex = call.participants.findIndex((p: IVideoCallParticipant) => p.socketId === socket.id);
-
-                        if (participantIndex !== -1) {
-                            const participant = call.participants[participantIndex];
-
-                            // Find the last session with leftAt not set
-                            const sessionIndex = participant.sessions.findIndex((s: IVideoCallSession) => !s.leftAt);
-                            if (sessionIndex !== -1) {
-                                const path = `participants.${participantIndex}.sessions.${sessionIndex}.leftAt`;
-
-                                await VideoCallModel.updateOne(
-                                    { _id: call._id },
-                                    { $set: { [path]: new Date() } }
-                                );
-                                // Fetch the updated call document
-                                const updatedCall = await VideoCallModel.findById(call._id);
-                                if (updatedCall) {
-                                    await calculateAndUpdateEngagement({
-                                        ...updatedCall.toObject(),
-                                        endTime: updatedCall.endTime || new Date(),
-                                    });
-                                }
-                                console.log(`Updated leftAt for session of socket: ${socket.id}`);
-                            } else {
-                                console.log(`No open session found for socket: ${socket.id}`);
-                            }
-                        }
-                    } else {
-                        console.log(`No matching video call found for socket: ${socket.id}`);
-                    }
-
-                } catch (err) {
-                    console.error("Error updating participant session leftAt:", err);
+                if (userId) {
+                    console.log(`\n\n[ User ${userId} disconnected from video call. Socket ID: ${socket.id}, Room ID: ${socket.data.roomId} ]\n`);
+                    await handleUserLeft(userId, socket.data.roomId);
+                }
+                if (userId && socket.data.roomId) {
+                    // * emit to user own room and clean up
+                    socket
+                        .to(socket.data.roomId)
+                        .emit(VMSocketTriggerTypes.USER_LEAVED, { userId });
+                    // * emit to all other users in the room to remove that user from their UI and redux
+                    socket
+                        .to(socket.data.roomId)
+                        .emit(SocketTriggerTypes.USER_LEAVED, { userId });
                 }
             });
-
         });
-
     } else {
         console.log("**Socket.IO already running.**");
     }

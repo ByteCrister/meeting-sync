@@ -9,7 +9,12 @@ export async function GET() {
         await ConnectDB();
 
         const rawSlots = await SlotModel
-            .find({}, { title: 1, description: 1, tags: 1, _id: 0 })
+            .find(
+                { status: "completed", trendScore: { $gt: 0 } }, // Only completed + trending
+                { title: 1, description: 1, tags: 1 }
+            )
+            .sort({ trendScore: -1 }) // Highest trend first
+            .limit(100) // Limit to most relevant
             .lean();
 
         const slots: PartialSlot[] = rawSlots as unknown as PartialSlot[];
