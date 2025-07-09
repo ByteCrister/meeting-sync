@@ -42,7 +42,7 @@ export default function VideoControls({
       {/* Audio */}
       <button
         onClick={onToggleAudio}
-        title={isAudio ? 'Mute Microphone' : 'Unmute Microphone'}
+        aria-label={isAudio ? 'Mute Microphone' : 'Unmute Microphone'}
         className={`
           w-14 h-14 flex items-center justify-center rounded-full
           transition-all duration-200
@@ -58,7 +58,7 @@ export default function VideoControls({
       {/* Video */}
       <button
         onClick={onToggleVideo}
-        title={isVideo ? 'Stop Camera' : 'Start Camera'}
+        aria-label={isVideo ? 'Stop Camera' : 'Start Camera'}
         className={`
           w-14 h-14 flex items-center justify-center rounded-full
           transition-all duration-200
@@ -74,7 +74,7 @@ export default function VideoControls({
       {/* Screen Share */}
       <button
         onClick={toggleScreenShare}
-        title={isScreenSharing ? 'Stop Screen Share' : 'Start Screen Share'}
+        aria-label={isScreenSharing ? 'Stop Screen Share' : 'Start Screen Share'}
         className={`
           w-14 h-14 flex items-center justify-center rounded-full
           transition-all duration-200

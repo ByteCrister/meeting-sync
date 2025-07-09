@@ -6,6 +6,7 @@ import { addNewMessage, deleteChatMessage, setCountOfUnseenMessage, updateSeenMe
 import { updateSlotBookedUsers } from "@/lib/features/news-feed/newsFeedSlice";
 import { decreaseBookedUsers, increaseBookedUsers, updateSlotStatus } from "@/lib/features/Slots/SlotSlice";
 import { addSingleNotification, incrementNotificationCount } from "@/lib/features/users/userSlice";
+import { setVideoCallStatus, VideoCallStatus } from "@/lib/features/videoMeeting/videoMeetingSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { RegisterSlotStatus } from "@/types/client-types";
 import { NotificationType, SocketTriggerTypes } from "@/utils/constants";
@@ -142,6 +143,11 @@ const useNotificationSocket = () => {
                     console.log(`Increase Notification count`);
                     dispatch(setCountOfUnseenMessage(countOfUnseenMessages + 1));
                 });
+
+                socket.on(SocketTriggerTypes.HOST_JOINED, () => {
+                    dispatch(setVideoCallStatus(VideoCallStatus.ACTIVE));
+                });
+
             }
 
             // Register events

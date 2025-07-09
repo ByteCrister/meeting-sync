@@ -1,39 +1,37 @@
-//src\utils\media\mediaStreamManager.ts
-
 let baseStream: MediaStream | null = null;
 
 export async function getClonedMediaStream(): Promise<MediaStream> {
-    // Check for permission first
-    const permissions = await navigator.permissions.query({ name: 'camera' as PermissionName })
-        .catch(() => null); // Some browsers might throw
-
-    if (permissions?.state === 'denied') {
-        throw new Error('camera-permission-denied');
-    }
-
-    const micPermission = await navigator.permissions.query({ name: 'microphone' as PermissionName })
-        .catch(() => null);
-
-    if (micPermission?.state === 'denied') {
-        throw new Error('microphone-permission-denied');
-    }
-
-    // Fallback to getUserMedia
     try {
-        if (!baseStream) {
-            baseStream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: true,
-            });
+        const constraints: MediaStreamConstraints = {
+            video: true,
+            audio: true,
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        baseStream = stream;
+        return stream.clone();
+    } catch (err: unknown) {
+        const error = err as Error;
+        console.log("Partial media access or denied:", error);
+
+        // Try to get at least one of video/audio
+        try {
+            const fallbackConstraints: MediaStreamConstraints = error.message.includes("audio")
+                ? { video: true }
+                : { audio: true };
+
+            const partialStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+            baseStream = partialStream;
+            return partialStream.clone();
+        } catch {
+            // No access to any media
+            console.log("No media access granted at all");
+            return new MediaStream(); // Return empty stream
         }
-        return baseStream.clone(); // clone before returning
-    } catch (err) {
-        console.error("getClonedMediaStream failed:", err);
-        throw err;
     }
 }
 
 export function stopBaseStream() {
-    baseStream?.getTracks().forEach(track => track.stop());
+    baseStream?.getTracks().forEach((track) => track.stop());
     baseStream = null;
-};
+}

@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
                 const participantIndex = videoCall.participants.findIndex((p: IVideoCallParticipant) => String(p.userId) === String(userId));
                 videoCall.participants[participantIndex].socketId = getUserSocketId(userId) || "";
                 videoCall.participants[participantIndex].sessions.push({ joinedAt: new Date() });
-                videoCall.participants[participantIndex].isActive =  true;
+                videoCall.participants[participantIndex].isActive = true;
             }
 
             //* Activate meeting if not already and join all waiting participants to the meeting
@@ -109,6 +109,13 @@ export async function GET(req: NextRequest) {
 
                 // ? emit socket event to notify user's that host is joined and join waiting participants in the meeting
                 triggerRoomSocketEvent({ roomId: meetingId, type: SocketTriggerTypes.HOST_JOINED, data: { userId } });
+                for (const participant of videoCall.waitingParticipants) {
+                    triggerSocketEvent({
+                        userId: participant.userId.toString(),
+                        type: SocketTriggerTypes.HOST_JOINED,
+                        notificationData: `Host just started the meeting!`
+                    });
+                }
 
                 // * Clear waiting participants after host joins
                 videoCall.waitingParticipants = [];

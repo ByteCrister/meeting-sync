@@ -15,7 +15,7 @@ export default function MeetingEndCountdown({ endTime }: { endTime: string }) {
             const end = new Date(endTime);
             const diff = end.getTime() - now.getTime();
 
-            if (diff <= 60 * 60 * 1000) {
+            if (diff <= 5 * 60 * 1000) {
                 setShowTimer(true);
             } else {
                 setTimeout(checkTime, diff - 5 * 60 * 1000);

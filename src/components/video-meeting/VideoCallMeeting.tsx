@@ -1,14 +1,8 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
 import { useAppSelector } from '@/lib/hooks';
 import VideoControls from './VideoControls';
-import LoadingUi from '../global-ui/ui-component/LoadingUi';
-import FullPageError from '../errors/FullPageError';
-import MeetingNotStarted from '../errors/MeetingNotStarted';
 import { useEffect, useRef } from 'react';
-import { videoErrorMessages } from '@/utils/error-messages/messages';
-import { VideoCallStatus } from '@/lib/features/videoMeeting/videoMeetingSlice';
 import { Grid } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChatModal } from '../video-chat/ChatModal';
@@ -74,15 +68,11 @@ function GuestTile({
     );
 }
 
-export default function VideoCallMeeting() {
-    const searchParams = useSearchParams();
-    const roomId = searchParams?.get('roomId') || '';
+export default function VideoCallMeeting({ roomId }: { roomId: string }) {
     const userId = useAppSelector((s) => s.userStore.user?._id || '');
     const meetingState = useAppSelector((state) => state.videoMeeting);
 
     const {
-        isLoading,
-        videoStatus,
         localVideoRef,
         remoteStreams,
         selectedCardVideo,
@@ -99,20 +89,6 @@ export default function VideoCallMeeting() {
     const guestIds = Object.keys(remoteStreams);
     const hasGuests = guestIds.length > 0;
     const isAlone = !hasGuests && !selectedCardVideo;
-
-    if (isLoading) return <LoadingUi />;
-
-    if (!roomId) {
-        return <FullPageError message="Room ID is missing from the URL." />;
-    }
-
-    if (videoStatus) {
-        return <FullPageError message={videoErrorMessages[videoStatus]} />;
-    }
-
-    if (meetingState.status === VideoCallStatus.WAITING) {
-        return <MeetingNotStarted />;
-    }
 
     const onTileClick = (stream: MediaStream) => {
         setSelectedCardVideo((prev) => (prev === stream ? null : stream));

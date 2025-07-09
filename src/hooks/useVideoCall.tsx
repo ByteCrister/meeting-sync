@@ -1,12 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { MediaStreamErrorTypes, SocketTriggerTypes, VideoCallErrorTypes, VMSocketTriggerTypes } from '@/utils/constants';
+import { SocketTriggerTypes, VideoCallErrorTypes, VMSocketTriggerTypes } from '@/utils/constants';
 import { getSocket } from '@/utils/socket/initiateSocket';
 import { getClonedMediaStream, stopBaseStream } from '@/utils/media/mediaStreamManager';
 import { useAppDispatch } from '@/lib/hooks';
-import { apiGetVideoCallStatus, apiJoinVideoCall, apiLeaveVideoCall } from '@/utils/client/api/api-video-meeting-call';
-import { addChatMessage, addParticipant, endMeeting, removeChatMessage, removeParticipant, setMeetingDetails, setVideoCallStatus, updateSettings, VideoCallStatus } from '@/lib/features/videoMeeting/videoMeetingSlice';
+import { apiLeaveVideoCall } from '@/utils/client/api/api-video-meeting-call';
+import { addChatMessage, addParticipant, endMeeting, removeChatMessage, removeParticipant, setVideoCallStatus, updateSettings, VideoCallStatus } from '@/lib/features/videoMeeting/videoMeetingSlice';
 import ShadcnToast from '@/components/global-ui/toastify-toaster/ShadcnToast';
 
 const servers: RTCConfiguration = {
@@ -18,6 +18,7 @@ type CandQueue = Record<string, RTCIceCandidateInit[]>;
 type RemoteStreamMap = Record<string, MediaStream>;
 
 export const useVideoCall = (roomId: string, userId: string) => {
+    const dispatch = useAppDispatch();
     const socketRef = useRef<ReturnType<typeof getSocket> | null>(null);
     const localRef = useRef<HTMLVideoElement | null>(null);
     const [localStreamState, setLocalStreamState] = useState<MediaStream | null>(null);
@@ -33,29 +34,70 @@ export const useVideoCall = (roomId: string, userId: string) => {
     const negotiationInProgress = useRef<Record<string, boolean>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [videoStatus, setVideoStatus] = useState<VideoCallErrorTypes | null>(null); // For video call status (error or success)
-    const [mediaPermissionError, setMediaPermissionError] = useState<string | null>(null);
-    const dispatch = useAppDispatch();
+
+    // Polling cleanup refs for negotiation rollback
+    const negotiationTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
+    const negotiationIntervals = useRef<Record<string, NodeJS.Timeout>>({});
+
+    // Helper to clear rollback poll timers
+    const clearRollbackTimers = (id: string) => {
+        if (negotiationTimeouts.current[id]) {
+            clearTimeout(negotiationTimeouts.current[id]);
+            delete negotiationTimeouts.current[id];
+        }
+        if (negotiationIntervals.current[id]) {
+            clearTimeout(negotiationIntervals.current[id]);
+            delete negotiationIntervals.current[id];
+        }
+    };
 
     // callback ref that always sets srcObject for us:
-    const localVideoRef = useCallback((el: HTMLVideoElement | null) => {
-        localRef.current = el;
-        if (el && localStream.current) {
-            el.srcObject = localStream.current;
-        }
-    }, []);
+    const localVideoRef = useCallback(
+        (el: HTMLVideoElement | null) => {
+            localRef.current = el;
+            if (el && localStream.current) {
+                el.srcObject = localStream.current;
+            }
+        },
+        []
+    )
 
+    // Instead of reload on camera permission granted, dynamically re-acquire stream
     useEffect(() => {
         const checkCameraPermission = async () => {
             try {
                 const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
-                result.onchange = () => {
+                result.onchange = async () => {
                     if (result.state === 'granted') {
-                        window.location.reload();
+                        ShadcnToast('Camera permission granted, reinitializing media...');
+                        try {
+                            const stream = await getClonedMediaStream();
+                            localStream.current = stream;
+                            setLocalStreamState(stream);
+
+                            // Replace tracks in peers dynamically
+                            const videoTrack = stream.getVideoTracks()[0];
+                            const audioTrack = stream.getAudioTracks()[0];
+                            if (videoTrack) {
+                                Object.values(peerConnections.current).forEach((pc) => {
+                                    const senders = pc.getSenders().filter((s) => s.track?.kind === 'video');
+                                    senders.forEach((sender) => sender.replaceTrack(videoTrack));
+                                });
+                            }
+                            if (audioTrack) {
+                                Object.values(peerConnections.current).forEach((pc) => {
+                                    const senders = pc.getSenders().filter((s) => s.track?.kind === 'audio');
+                                    senders.forEach((sender) => sender.replaceTrack(audioTrack));
+                                });
+                            }
+                        } catch (err) {
+                            ShadcnToast('Failed to reinitialize media after permission change.');
+                            console.log('Error reinitializing media:', err);
+                        }
                     }
                 };
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (err) {
-                console.warn('Permission API not supported');
+                console.log('Permission API not supported', err);
             }
         };
         checkCameraPermission();
@@ -64,7 +106,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
     const setupPeerConnection = (otherId: string) => {
         // Always clean old connection first (even if missed before)
         if (peerConnections.current[otherId]) {
-            console.warn(`[PC CLEANUP] Closing stale peer for ${otherId}`);
+            console.log(`[PC CLEANUP] Closing stale peer for ${otherId}`);
             peerConnections.current[otherId].close();
             delete peerConnections.current[otherId];
         }
@@ -129,14 +171,17 @@ export const useVideoCall = (roomId: string, userId: string) => {
 
                     // Poll signalingState until stable or timeout
                     await new Promise<void>((resolve, reject) => {
-                        const timeout = setTimeout(() => reject(new Error('Rollback timed out')), 5000);
+                        negotiationTimeouts.current[otherId] = setTimeout(() => {
+                            clearRollbackTimers(otherId);
+                            reject(new Error('Rollback timed out'));
+                        }, 5000);
 
                         const checkState = () => {
                             if (pc.signalingState === 'stable') {
-                                clearTimeout(timeout);
+                                clearRollbackTimers(otherId);
                                 resolve();
                             } else {
-                                setTimeout(checkState, 100);
+                                negotiationIntervals.current[otherId] = setTimeout(checkState, 100);
                             }
                         };
                         checkState();
@@ -157,12 +202,13 @@ export const useVideoCall = (roomId: string, userId: string) => {
                     });
                     console.log(`[OFFER] Sent offer to ${otherId}`);
                 } else {
-                    console.warn(`[NEGOTIATION] signalingState not stable after rollback, skipping offer`);
+                    console.log(`[NEGOTIATION] signalingState not stable after rollback, skipping offer`);
                 }
             } catch (err) {
                 console.error(`[NEGOTIATION ERROR] for ${otherId}:`, err);
             } finally {
                 negotiationInProgress.current[otherId] = false;
+                clearRollbackTimers(otherId);
             }
         };
 
@@ -176,54 +222,23 @@ export const useVideoCall = (roomId: string, userId: string) => {
         const joinRoom = async () => {
             try {
 
-                // 1. API Call to get video call status
-                const videoCallStatusData = await apiGetVideoCallStatus(roomId);
-                if (videoCallStatusData.isError) {
-                    setVideoStatus(videoCallStatusData.errorType);
-                    setIsLoading(false);
-                    return;
-                }
-                // 2. API Call to join the video call
-                const joinStatusData = await apiJoinVideoCall(roomId);
-                if (joinStatusData.success && joinStatusData?.meetingStatus === VideoCallStatus.WAITING) {
-                    setIsLoading(false);
-                    return;
-                } else if (joinStatusData.success && joinStatusData?.meeting) {
-                    dispatch(setMeetingDetails(joinStatusData.meeting));
-                    setIsLoading(false);
-                } else if (!joinStatusData.success) {
-                    setVideoStatus(VideoCallErrorTypes.MEETING_NOT_FOUND);
-                    setIsLoading(false);
-                    return;
-                }
-
                 if (!localRef.current) {
                     console.log("Local video element not set yet.");
                 }
 
-                // 1. Ensure local stream
-                if (!localStream.current) {
-                    try {
-                        const clonedStream = await getClonedMediaStream();
-                        localStream.current = clonedStream;
+                // Get media stream (does not block join)
+                try {
+                    const clonedStream = await getClonedMediaStream();
+                    localStream.current = clonedStream;
+                    if (clonedStream.getTracks().length > 0) {
                         setLocalStreamState(clonedStream);
-                    } catch (err: unknown) {
-                        if (typeof err === 'object' && err !== null && 'message' in err) {
-                            const message = (err as { message: string }).message;
-
-                            if (message === 'camera-permission-denied') {
-                                setMediaPermissionError(MediaStreamErrorTypes.CAMERA_PERMISSION_DENIED);
-                                console.error('Camera permission denied:', message);
-                                return;
-                            }
-                            if (message === 'microphone-permission-denied') {
-                                setMediaPermissionError(MediaStreamErrorTypes.MIC_PERMISSION_DENIED);
-                                return;
-                            }
-                        }
-                        setVideoStatus(VideoCallErrorTypes.MEDIA_ERROR);
-                        return;
+                    } else {
+                        ShadcnToast('Joined call without any media tracks.');
+                        console.log('Joined without any media stream');
                     }
+                } catch (err) {
+                    ShadcnToast('Media permission error or denied.');
+                    console.log('Media permission error:', err);
                 }
 
                 // 2. Wait until <video> ref is mounted and bound
@@ -293,7 +308,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
                 socket.on(VMSocketTriggerTypes.USER_JOINED, async ({ newUserId }) => {
                     // ✅ CLEANUP old state if user is rejoining
                     if (peerConnections.current[newUserId]) {
-                        console.warn(`[REJOIN DETECTED] Cleaning up stale peer connection for ${newUserId}`);
+                        console.log(`[REJOIN DETECTED] Cleaning up stale peer connection for ${newUserId}`);
                         peerConnections.current[newUserId].close();
                         delete peerConnections.current[newUserId];
                     }
@@ -325,12 +340,12 @@ export const useVideoCall = (roomId: string, userId: string) => {
                             console.log(`[ANSWER] Applied from ${fromUserId}`, answer);
 
                             (pendingCandidates.current[fromUserId] || []).forEach((cand) =>
-                                pc.addIceCandidate(cand).catch(console.warn)
+                                pc.addIceCandidate(cand).catch(console.log)
                             );
                             delete pendingCandidates.current[fromUserId];
 
                         } else {
-                            console.warn(`Remote description already set or signalingState not valid for ${fromUserId}`);
+                            console.log(`Remote description already set or signalingState not valid for ${fromUserId}`);
                         }
                     } catch (err) {
                         console.error("Error setting remote answer:", err);
@@ -355,7 +370,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
                         const offerDesc = new RTCSessionDescription(offer);
 
                         if (pc.signalingState === "have-local-offer") {
-                            console.warn(`[OFFER] signalingState have-local-offer, rolling back`);
+                            console.log(`[OFFER] signalingState have-local-offer, rolling back`);
                             await pc.setLocalDescription({ type: "rollback" });
 
                             // Poll signalingState to stable after rollback
@@ -372,7 +387,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
                                 checkState();
                             });
                         } else if (pc.signalingState !== "stable") {
-                            console.warn(`[OFFER] signalingState not stable: ${pc.signalingState}. Ignoring offer.`);
+                            console.log(`[OFFER] signalingState not stable: ${pc.signalingState}. Ignoring offer.`);
                             return;
                         }
 
@@ -392,7 +407,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
 
                             console.log(`[ANSWER] Sent answer to ${fromUserId}`);
                         } else {
-                            console.warn(`[${fromUserId}] Not in 'have-remote-offer' state, skipping answer`);
+                            console.log(`[${fromUserId}] Not in 'have-remote-offer' state, skipping answer`);
                         }
                     } catch (err) {
                         console.error("Error handling received offer:", err);
@@ -407,7 +422,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
                         const init = candidate as RTCIceCandidateInit;
 
                         if (pc && pc.remoteDescription) {
-                            await pc.addIceCandidate(init).catch(console.warn);
+                            await pc.addIceCandidate(init).catch(console.log);
                         } else {
                             pendingCandidates.current[fromUserId] ||= [];
                             pendingCandidates.current[fromUserId].push(init);
@@ -415,8 +430,13 @@ export const useVideoCall = (roomId: string, userId: string) => {
                     }
                 );
 
-                socket.emit(VMSocketTriggerTypes.JOIN_ROOM, { roomId, userId }, (result: unknown) => {
+                socket.emit(VMSocketTriggerTypes.JOIN_ROOM, { roomId, userId }, (result: { success: boolean; hostPresent: boolean }) => {
                     console.log('[JOIN ROOM RESULT]', result);
+                    if (result?.hostPresent) {
+                        dispatch(setVideoCallStatus(VideoCallStatus.ACTIVE));
+                    } else {
+                        dispatch(setVideoCallStatus(VideoCallStatus.WAITING));
+                    }
                 });
 
                 socket.on(VMSocketTriggerTypes.USER_LEAVED,
@@ -437,12 +457,6 @@ export const useVideoCall = (roomId: string, userId: string) => {
                 );
 
                 // ! ----------- Mange States in Redux ---------------
-                // Event: Host joined
-                socket.on(SocketTriggerTypes.HOST_JOINED, () => {
-                    ShadcnToast("Host just joined the meeting.");
-                    window.location.reload();
-                    // dispatch(setVideoCallStatus(VideoCallStatus.ACTIVE));
-                });
 
                 // Event: New participant joined
                 socket.on(SocketTriggerTypes.NEW_PARTICIPANT_JOINED, (data) => {
@@ -548,21 +562,63 @@ export const useVideoCall = (roomId: string, userId: string) => {
     }, [localStreamState]);
 
 
-    const toggleAudio = () => {
+    const toggleAudio = async () => {
         if (!localStream.current) return;
-        const track = localStream.current.getAudioTracks()[0];
-        if (track) {
-            track.enabled = !track.enabled;
-            setIsAudio(track.enabled);
+
+        try {
+            if (!isAudio) {
+                const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audioTrack = audioStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    localStream.current.addTrack(audioTrack);
+                    Object.values(peerConnections.current).forEach((pc) => pc.addTrack(audioTrack, localStream.current!));
+                    setIsAudio(true);
+                }
+            } else {
+                const audioTrack = localStream.current.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.stop();
+                    localStream.current.removeTrack(audioTrack);
+                    Object.values(peerConnections.current).forEach((pc) => {
+                        const sender = pc.getSenders().find((s) => s.track === audioTrack);
+                        if (sender) pc.removeTrack(sender);
+                    });
+                    setIsAudio(false);
+                }
+            }
+        } catch (err) {
+            ShadcnToast('Audio permission denied or error toggling audio.');
+            console.log('Audio toggle error:', err);
         }
     };
 
-    const toggleVideo = () => {
+    const toggleVideo = async () => {
         if (!localStream.current) return;
-        const track = localStream.current.getVideoTracks()[0];
-        if (track) {
-            track.enabled = !track.enabled;
-            setIsVideo(track.enabled);
+
+        try {
+            if (!isVideo) {
+                const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const videoTrack = videoStream.getVideoTracks()[0];
+                if (videoTrack) {
+                    localStream.current.addTrack(videoTrack);
+                    Object.values(peerConnections.current).forEach((pc) => pc.addTrack(videoTrack, localStream.current!));
+                    setIsVideo(true);
+                }
+            } else {
+                const videoTrack = localStream.current.getVideoTracks()[0];
+                if (videoTrack) {
+                    videoTrack.stop();
+                    localStream.current.removeTrack(videoTrack);
+                    Object.values(peerConnections.current).forEach((pc) => {
+                        const sender = pc.getSenders().find((s) => s.track === videoTrack);
+                        if (sender) pc.removeTrack(sender);
+                    });
+                    setIsVideo(false);
+                }
+            }
+        } catch (err) {
+            ShadcnToast('Video permission denied or error toggling video.');
+            console.log('Video toggle error:', err);
         }
     };
 
@@ -576,55 +632,53 @@ export const useVideoCall = (roomId: string, userId: string) => {
     const toggleScreenShare = async () => {
         if (!isScreenSharing) {
             try {
-                // 1. Start screen sharing
                 const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
                 const screenTrack = stream.getVideoTracks()[0];
 
-                // 2. When user stops screen sharing via browser UI or toolbar
                 screenTrack.onended = () => {
-                    // Stop screen sharing state
                     setIsScreenSharing(false);
 
-                    // Restore camera track in peers and local video element
                     const cameraTrack = localStream.current?.getVideoTracks()[0];
                     if (!cameraTrack) return;
 
                     replaceVideoTrackInPeers(cameraTrack);
-
-                    // Update local video element to camera stream + audio tracks
                     setLocalStreamState(new MediaStream([
                         ...localStream.current!.getAudioTracks(),
                         cameraTrack,
                     ]));
 
-                    localRef.current!.srcObject = localStream.current!;
+                    if (localRef.current) {
+                        localRef.current.srcObject = new MediaStream([
+                            ...localStream.current!.getAudioTracks(),
+                            cameraTrack,
+                        ]);
+                    }
 
-                    // Stop screen share tracks just in case (cleanup)
                     stream.getTracks().forEach(t => t.stop());
                     screenStream.current = null;
                 };
 
-                // 3. Save the screen share stream reference
                 screenStream.current = stream;
-
-                // 4. Replace camera track with screen track in peers
                 replaceVideoTrackInPeers(screenTrack);
-
-                // 5. Update local video element to show screen share + audio
                 setLocalStreamState(new MediaStream([
                     ...localStream.current!.getAudioTracks(),
                     screenTrack,
                 ]));
 
-                localRef.current!.srcObject = stream;
+                if (localRef.current) {
+                    localRef.current.srcObject = new MediaStream([
+                        ...localStream.current!.getAudioTracks(),
+                        screenTrack,
+                    ]);
+                }
 
-                // 6. Update state
                 setIsScreenSharing(true);
 
             } catch (err) {
                 console.error('Screen sharing failed:', err);
             }
-        } else {
+        }
+        else {
             // If screen sharing is currently ON, stop it and revert to camera
 
             // Stop all screen tracks & clear reference
@@ -644,7 +698,9 @@ export const useVideoCall = (roomId: string, userId: string) => {
                 cameraTrack,
             ]));
 
-            localRef.current!.srcObject = localStream.current!;
+            if (localRef.current && localStream.current) {
+                localRef.current.srcObject = localStream.current;
+            }
 
             setIsScreenSharing(false);
         }
@@ -674,7 +730,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
         isVideo,
         selectedCardVideo,
         isScreenSharing,
-        mediaPermissionError,
+        // mediaPermissionError,
         toggleAudio,
         toggleVideo,
         setSelectedCardVideo,
