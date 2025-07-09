@@ -1,8 +1,8 @@
 'use client';
 
-import { Pencil } from 'lucide-react';
 import Image from 'next/image';
 import React, { ChangeEvent, useState } from 'react';
+import { Pencil } from 'lucide-react';
 import LoadingSpinner from '../global-ui/ui-component/LoadingSpinner';
 
 import {
@@ -38,14 +38,13 @@ type ProfileImageTypes = {
 
 const ProfileImage = ({
     value,
-    //   handleImageClick,
     handleFileChange,
     fileInputRef,
     isLoading,
     isImgUpdating,
     handleRemoveImage,
 }: ProfileImageTypes) => {
-    const imageSrc = value && value.trim().length > 0 ? value : "/images/blank_profile_image.png";
+    const imageSrc = value?.trim() ? value : '/images/blank_profile_image.png';
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
@@ -61,12 +60,12 @@ const ProfileImage = ({
                 />
             )}
 
-            {/* Main Clickable Image with Hover Icons */}
+            {/* Dialog trigger (avatar) */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
                     <div
+                        className="relative w-32 h-32 rounded-full border-4 border-primary shadow-md overflow-hidden group cursor-pointer"
                         onClick={() => setIsDialogOpen(true)}
-                        className="relative w-32 h-32 rounded-full border-4 border-blue-500 shadow-md overflow-hidden group cursor-pointer"
                     >
                         <Image
                             src={imageSrc}
@@ -74,27 +73,24 @@ const ProfileImage = ({
                             fill
                             className="object-cover"
                         />
-
-                        <div className={`absolute inset-0 bg-opacity-40 flex items-center justify-center opacity-0 bg-stone-600 group-hover:opacity-50 transition`}>
-                            <div className={`absolute inset-0 flex items-center justify-center ${isLoading ? 'opacity-100 bg-stone-100' : 'opacity-0 bg-stone-600'} group-hover:opacity-50 transition`}>
-                                {isLoading ? (
-                                    <LoadingSpinner />
-                                ) : (
-                                    <div className="flex items-center gap-2">
-                                        <Pencil className="text-white" size={22} />
-                                    </div>
-                                )}
-                            </div>
+                        {/* Hover overlay */}
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            {isLoading ? (
+                                <LoadingSpinner />
+                            ) : (
+                                <Pencil className="text-white" size={22} />
+                            )}
                         </div>
                     </div>
                 </DialogTrigger>
 
-                {/* Fullscreen Dialog Modal */}
-                <DialogContent className="max-w-md bg-white p-4">
+                {/* Full-screen profile image dialog */}
+                <DialogContent className="max-w-md bg-white p-6 rounded-xl shadow-xl">
                     <DialogHeader>
                         <DialogTitle className="text-center">Profile Image</DialogTitle>
                     </DialogHeader>
-                    <div className="w-full h-64 relative mb-4">
+
+                    <div className="w-full h-64 relative mb-6">
                         <Image
                             src={imageSrc}
                             alt="Full Profile"
@@ -102,22 +98,29 @@ const ProfileImage = ({
                             className="object-contain rounded-md"
                         />
                     </div>
-                    <DialogFooter className="flex justify-between">
+
+                    <DialogFooter className="flex justify-between gap-4">
                         <button
-                            id='change-image'
-                            disabled={isLoading}
                             onClick={() => fileInputRef.current?.click()}
-                            className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-600"
+                            disabled={isLoading}
+                            className="flex-1 bg-gray-900 text-white py-2 rounded hover:bg-gray-700 transition disabled:opacity-50"
                         >
-                            {isLoading ? <LoadingSpinner border='border-white' /> : isImgUpdating ? 'Changing...' : 'Change'}
+                            {isLoading ? (
+                                <LoadingSpinner border="border-white" />
+                            ) : isImgUpdating ? (
+                                'Updating...'
+                            ) : (
+                                'Update Image'
+                            )}
                         </button>
+
+                        {/* Remove Button with Confirmation */}
                         <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
                             <AlertDialogTrigger asChild>
                                 <button
-                                    id='remove-image'
-                                    disabled={isLoading}
-                                    className="bg-red-900 text-white px-4 py-2 rounded hover:bg-red-700"
                                     onClick={() => setIsConfirmOpen(true)}
+                                    disabled={isLoading}
+                                    className="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700 transition disabled:opacity-50"
                                 >
                                     Remove
                                 </button>
@@ -126,7 +129,7 @@ const ProfileImage = ({
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        This action will remove your profile picture. You can re-upload it later.
+                                        This action will permanently remove your profile picture.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

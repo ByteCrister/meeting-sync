@@ -13,10 +13,10 @@ import {
 import { toggleDeleteBookedSlotAlert } from "@/lib/features/component-state/componentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useState } from "react";
-import ShowToaster from "@/components/global-ui/toastify-toaster/show-toaster";
 import LoadingSpinner from "../global-ui/ui-component/LoadingSpinner";
 import { APIDeleteMeeting } from "@/utils/client/api/api-book-meetings";
 import { deleteBookedMeeting } from "@/lib/features/booked-meetings/bookedSlice";
+import ShadcnToast from "../global-ui/toastify-toaster/ShadcnToast";
 
 export function AlertDeleteBookedSlot() {
   const [loading, setLoading] = useState<boolean>(false);
@@ -34,7 +34,7 @@ export function AlertDeleteBookedSlot() {
 
     if (responseData.success) {
       dispatch(deleteBookedMeeting(slotId));
-      ShowToaster(responseData.message, 'success');
+      ShadcnToast(responseData.message);
       setLoading(false);
       dispatch(toggleDeleteBookedSlotAlert({ isOpen: false, slotId: null }));
     }

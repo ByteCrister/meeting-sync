@@ -10,8 +10,8 @@ import ImageCropDialog from "../global-ui/dialoges/ImageCropDialog";
 import LoadingUIBlackBullfrog from "../global-ui/ui-component/LoadingUIBlackBullfrog";
 import apiService from "@/utils/client/api/api-services";
 import { updateUserInfo } from "@/lib/features/users/userSlice";
-import ShowToaster from "../global-ui/toastify-toaster/show-toaster";
 import { APISendUpdatedTimeZoneEmail } from "@/utils/client/api/api-send-email";
+import ShadcnToast from "../global-ui/toastify-toaster/ShadcnToast";
 
 type LoadingButtonStateType = {
   username: boolean;
@@ -88,7 +88,7 @@ export default function ProfileComponent() {
     });
     if (responseData.success) {
       dispatch(updateUserInfo({ field: field, updatedValue: value }));
-      ShowToaster(responseData.message, "success");
+      ShadcnToast(responseData.message);
       // ? executes only if the field is timeZone and updated timeZone is not same as the previous timeZone
       if (field === "timeZone" && value !== responseData.previous) {
         await APISendUpdatedTimeZoneEmail({
@@ -106,6 +106,7 @@ export default function ProfileComponent() {
     const resData = await updateProfileField("image", "");
     if (resData.success) {
       dispatch(updateUserInfo({ field: 'image', updatedValue: "" }));
+      setImagePreview("");
     }
   };
 
@@ -128,14 +129,15 @@ export default function ProfileComponent() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
               {/* Non-editable Email */}
-              <div className="relative bg-white rounded-xl shadow p-4">
+              <div className="relative bg-white rounded-xl shadow p-4 overflow-hidden">
                 <label className="block text-sm font-medium text-gray-600 mb-1">
                   Email
                 </label>
-                <p className="text-lg text-gray-800">
+                <p className="text-lg text-gray-800 break-words whitespace-pre-wrap word-break">
                   {user.email}
                 </p>
               </div>
+
               <EditableField
                 label="Name"
                 field={"username"}
@@ -178,7 +180,7 @@ export default function ProfileComponent() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <StatCard title="Followers" value={user.followers.length} />
               <StatCard title="Following" value={user.following.length} />
               <StatCard

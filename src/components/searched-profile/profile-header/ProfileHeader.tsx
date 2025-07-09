@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { SearchedUserProfile } from '../profile/SearchedProfile';
 import LoadingSpinner from '@/components/global-ui/ui-component/LoadingSpinner';
 import { followFriend, unfollowFriend } from '@/utils/client/api/api-friendZone';
-import ShowToaster from '@/components/global-ui/toastify-toaster/show-toaster';
+import ShadcnToast from '@/components/global-ui/toastify-toaster/ShadcnToast';
 
 export const ProfileHeader = ({ profile }: { profile: SearchedUserProfile }) => {
   const [isFollowing, setIsFollowing] = useState(profile.isFollowing);
@@ -23,7 +23,7 @@ export const ProfileHeader = ({ profile }: { profile: SearchedUserProfile }) => 
     const responseData = isFollowing ? await unfollowFriend(profile._id) : await followFriend(profile._id);
     if (responseData.success) {
       setIsFollowing(prev => !prev);
-      ShowToaster(responseData.message, 'success');
+      ShadcnToast(responseData.message);
     }
     setIsLoading(false);
   };

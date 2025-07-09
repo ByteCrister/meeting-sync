@@ -11,10 +11,10 @@ import {
 import { toggleNotifyChangeDialog } from "@/lib/features/component-state/componentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import React, { useState } from "react";
-import ShowToaster from "../../global-ui/toastify-toaster/show-toaster";
 import { deleteNotification, updateNotification } from "@/lib/features/users/userSlice";
 import LoadingSpinner from "../ui-component/LoadingSpinner";
 import { APIdeleteNotification, APIputChangePreference } from "@/utils/client/api/api-notifications";
+import ShadcnToast from "../toastify-toaster/ShadcnToast";
 
 const NotifyChangeDialog = () => {
     const { isOpen, mode, senderId, notificationId, isDisable } = useAppSelector(
@@ -41,7 +41,7 @@ const NotifyChangeDialog = () => {
         const responseData = await APIdeleteNotification (notificationId!);
         if (responseData.success) {
             dispatch(deleteNotification(notificationId!));
-            ShowToaster(responseData.message, 'success');
+            ShadcnToast(responseData.message);
             dispatch(
                 toggleNotifyChangeDialog({
                     isOpen: false,
@@ -61,7 +61,7 @@ const NotifyChangeDialog = () => {
         const responseData = await APIputChangePreference(senderId!);
         if (responseData.success) {
             dispatch(updateNotification({ field: 'isDisable', value: responseData.isDisable!, _id: notificationId! }));
-            ShowToaster(responseData.message, 'success');
+            ShadcnToast(responseData.message);
             dispatch(
                 toggleNotifyChangeDialog({
                     isOpen: false,
