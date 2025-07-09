@@ -118,6 +118,29 @@
 - Compute engagement rate: total time joined ÷ slot duration
 - Derive trendingScore from engagement rate and call frequency
 
+## ⏱️ Corn setUp - Automated Scheduling, Real-Time Sync, and Trend Analytics
+
+- **Cron Jobs for Automation:**
+  - Automatically update the status of meeting slots (e.g., upcoming, active, ended).
+  - Auto-create and delete video calls based on meeting slot timeframes.
+  - Keeps frontend updated in real-time for all participants.
+
+- **Real-Time Synchronization:**
+  - Changes to slot status and availability are synced instantly using WebSockets (Socket.IO).
+  - Ensures accurate availability view across all users.
+
+- **Engagement Metrics:**
+  - Measures total **participant active time** during video calls.
+  - This engagement data is used to compute a **Trending Score**.
+
+- **Trending Score Calculation:**
+  - Calculated based on participant interaction time and activity.
+  - Updated periodically using automated jobs to ensure meeting slots remain relevant with current trends.
+
+- **Data-Driven Recommendations (Coming Soon):**
+  - Trending score will help suggest popular topics, time slots, or hosts in future updates.
+
+
 ### Project Structure
 
 <details>
