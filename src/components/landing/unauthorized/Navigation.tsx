@@ -37,11 +37,11 @@ export default function Navigation({
 
   const baseLink = `relative text-sm font-semibold transition-all duration-300`;
 
-  const activeLink =
-    "text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-pink-500 after:absolute after:inset-x-0 after:-bottom-1 after:h-[2px] after:bg-gradient-to-r after:from-indigo-500 after:to-pink-500 after:rounded-full after:animate-pulse";
+const activeLink =
+  "relative text-blue-800 font-medium after:absolute after:inset-x-0 after:-bottom-1 after:h-[2px] after:bg-gradient-to-r after:from-blue-300 after:to-blue-600 after:rounded-full after:transition-all after:duration-300";
 
   const inactiveLink =
-    "text-gray-700 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-indigo-500 hover:via-pink-500 hover:to-yellow-500 hover:after:absolute hover:after:inset-x-0 hover:after:-bottom-1 hover:after:h-[2px] hover:after:bg-gradient-to-r hover:after:from-indigo-500 hover:after:to-pink-500 hover:after:rounded-full";
+  "relative text-gray-700 hover:text-blue-800 hover:after:absolute hover:after:inset-x-0 hover:after:-bottom-1 hover:after:h-[2px] hover:after:bg-gradient-to-r hover:after:from-blue-300 hover:after:to-blue-600 hover:after:rounded-full hover:after:transition-all hover:after:duration-300";
 
   return (
     <motion.header

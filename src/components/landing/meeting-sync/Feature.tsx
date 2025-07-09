@@ -8,7 +8,7 @@ import {
   Puzzle,
   BarChart2,
   WifiOff,
-   Layers,
+  Layers,
   Rocket,
   AlarmClock,
   Users,
@@ -16,6 +16,7 @@ import {
   FileText,
 } from 'lucide-react';
 import Link from 'next/link';
+import Footer from '../unauthorized/Footer';
 
 const FEATURES = [
   {
@@ -173,76 +174,81 @@ const FEATURES = [
 ];
 
 export default function Feature() {
+  const scrollToTop = () =>
+    window.scrollTo({ top: 0, behavior: "smooth" });
   return (
-    <div className="space-y-20">
-      {FEATURES.map((feat, idx) => (
-        <motion.section
-          id={feat.id}
-          key={feat.id}
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: idx * 0.2 }}
-          className={`${feat.bg} ${feat.textColor} py-24 px-6 md:px-12`}
-        >
-          {/* Decorative Blob */}
-          <motion.div
-            className="absolute top-0 left-0 w-64 h-64 rounded-full opacity-10 mix-blend-multiply"
-            style={{
-              background: feat.bg.includes('to-') ? undefined : '',
-            }}
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-          />
+    <>
+      <div className="space-y-20">
+        {FEATURES.map((feat, idx) => (
+          <motion.section
+            id={feat.id}
+            key={feat.id}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: idx * 0.2 }}
+            className={`${feat.bg} ${feat.textColor} py-24 px-6 md:px-12`}
+          >
+            {/* Decorative Blob */}
+            <motion.div
+              className="absolute top-0 left-0 w-64 h-64 rounded-full opacity-10 mix-blend-multiply"
+              style={{
+                background: feat.bg.includes('to-') ? undefined : '',
+              }}
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+            />
 
-          <div className="relative max-w-3xl mx-auto text-center">
-            <div
-              className={`
+            <div className="relative max-w-3xl mx-auto text-center">
+              <div
+                className={`
                 inline-flex items-center justify-center w-16 h-16 mb-6 rounded-full
                 ${feat.bg.includes('bg-white') ? 'bg-indigo-500' : 'bg-opacity-75'}
               `}
-            >
-              {feat.icon}
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              {feat.title}
-            </h2>
-            <p className="mb-6 text-lg">{feat.description}</p>
-            <ul className="mx-auto max-w-md space-y-2 text-left">
-              {feat.details.map((d) => (
-                <li key={d} className="flex items-start">
-                  <CheckCircle
-                    className={`w-5 h-5 flex-shrink-0 mt-1 mr-2 ${
-                      feat.textColor.startsWith('text-white')
+              >
+                {feat.icon}
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                {feat.title}
+              </h2>
+              <p className="mb-6 text-lg">{feat.description}</p>
+              <ul className="mx-auto max-w-md space-y-2 text-left">
+                {feat.details.map((d) => (
+                  <li key={d} className="flex items-start">
+                    <CheckCircle
+                      className={`w-5 h-5 flex-shrink-0 mt-1 mr-2 ${feat.textColor.startsWith('text-white')
                         ? 'text-white'
                         : 'text-indigo-500'
-                    }`}
-                  />
-                  <span>{d}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </motion.section>
-      ))}
+                        }`}
+                    />
+                    <span>{d}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </motion.section>
+        ))}
 
-      {/* Back to Home */}
-      <motion.div
-        className="text-center py-12"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: FEATURES.length * 0.2 }}
-      >
-        <Link href="/">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-pink-500 text-white font-semibold rounded-full shadow-lg"
-          >
-            ← Back to Home
-          </motion.button>
-        </Link>
-      </motion.div>
-    </div>
+        {/* Back to Home */}
+        <motion.div
+          className="text-center py-12"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: FEATURES.length * 0.2 }}
+        >
+          <Link href="/">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-pink-500 text-white font-semibold rounded-full shadow-lg"
+            >
+              ← Back to Home
+            </motion.button>
+          </Link>
+        </motion.div>
+      </div>
+
+      <Footer scrollToTop={scrollToTop} />
+    </>
   );
 }

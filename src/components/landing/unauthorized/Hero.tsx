@@ -275,8 +275,9 @@ const Hero = ({ displayText, setIsModalOpen }: { displayText: string, setIsModal
                 </section>
 
                 {/* Feature Sections */}
-                {roadmap.map((feat) => (
-                    <motion.section
+                {roadmap.map((feat, index) => {
+                    const isEven = index % 2 === 0;
+                    return (<motion.section
                         key={feat.id}
                         id={feat.id}
                         ref={(el) => {
@@ -290,7 +291,7 @@ const Hero = ({ displayText, setIsModalOpen }: { displayText: string, setIsModal
                     >
                         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
                             {/* Icon Preview */}
-                            <div className="space-y-8 text-center lg:text-left">
+                            <div className={`space-y-8 text-center lg:text-left ${isEven ? '' : 'lg:order-last'}`}>
                                 <div className="w-48 h-48 mx-auto lg:mx-0 flex items-center justify-center bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl shadow-inner border-2 border-indigo-200">
                                     <feat.icon className="text-indigo-500 w-20 h-20" />
                                 </div>
@@ -330,7 +331,9 @@ const Hero = ({ displayText, setIsModalOpen }: { displayText: string, setIsModal
                             </div>
                         </div>
                     </motion.section>
-                ))}
+                    )
+                }
+                )}
             </div>
         </main>
     )

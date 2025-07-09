@@ -20,6 +20,7 @@ import {
   Heart
 } from 'lucide-react';
 import Link from 'next/link';
+import Footer from '../unauthorized/Footer';
 
 const STEPS = [
   {
@@ -148,128 +149,134 @@ const stepAnim = {
 };
 
 export default function Roadmap() {
+  const scrollToTop = () =>
+    window.scrollTo({ top: 0, behavior: "smooth" });
   return (
-    <motion.section
-className="relative overflow-hidden py-28 px-6 sm:px-12 bg-gradient-to-br from-indigo-500 via-purple-400 to-pink-300"
-initial="hidden"
-      animate="visible"
-      variants={container}
-    >
-      <h2 className="text-4xl font-bold text-center text-gray-200 mb-20">
-        Get Started in {STEPS.length} Steps
-      </h2>
-
-      <div className="relative max-w-6xl mx-auto">
-        {/* Vertical Line */}
-        <div className="absolute left-1/2 top-0 h-full w-1 bg-gradient-to-b from-indigo-300 via-gray-300 to-purple-300 -translate-x-1/2" />
-
-        <div className="relative z-10 space-y-32">
-          {STEPS.map((step, idx) => {
-            const isLeft = idx % 2 === 0;
-
-            return (
-              <motion.div
-                key={step.id}
-                className={`relative flex flex-col md:flex-row items-center ${isLeft ? 'md:justify-start' : 'md:justify-end'} group`}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.3 }}
-                variants={stepAnim}
-              >
-                {/* Step number on center line */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-indigo-600 text-white font-bold text-lg shadow-lg">
-                    {idx + 1}
-                  </div>
-                </div>
-
-                {/* The card side */}
-                {isLeft && (
-                  <motion.div
-                    whileHover={{ rotateY: 5, scale: 1.02 }}
-                    className="w-full md:w-[48%] p-8 rounded-3xl bg-white/90 shadow-2xl ring-1 ring-gray-200 hover:ring-indigo-300 backdrop-blur-md hover:shadow-2xl transition-transform duration-500 md:mr-auto"
-                  >
-                    <div
-                      className={`w-12 h-12 mb-4 rounded-xl flex items-center justify-center bg-gradient-to-br ${step.bg} shadow-lg`}
-                    >
-                      {step.icon}
-                    </div>
-                    <h3 className="text-2xl font-semibold text-gray-800 mb-2">
-                      {step.title}
-                    </h3>
-                    <p className="text-gray-600 leading-relaxed">{step.description}</p>
-                  </motion.div>
-                )}
-
-                {/* The opposite side icon */}
-                <div className="hidden md:flex md:w-[48%] justify-center items-center">
-                  <div
-                    className={`text-[10rem] select-none pointer-events-none text-gray-300 opacity-30 drop-shadow-lg
-                      bg-gradient-to-br from-indigo-400 to-purple-300 rounded-3xl p-6`}
-                    style={{
-                      filter: 'drop-shadow(0 5px 10px rgba(0,0,0,0.05))',
-                      transformStyle: 'preserve-3d',
-                      transform: 'rotateY(15deg) rotateX(5deg)',
-                    }}
-                  >
-                    {step.icon}
-                  </div>
-                </div>
-
-                {/* Card on right side */}
-                {!isLeft && (
-                  <motion.div
-                    whileHover={{ rotateY: 5, scale: 1.02 }}
-                    className="w-full md:w-[48%] p-8 rounded-3xl bg-white/90 shadow-2xl ring-1 ring-gray-200 hover:ring-indigo-300 backdrop-blur-md hover:shadow-2xl transition-transform duration-500 md:ml-auto"
-                  >
-                    <div
-                      className={`w-12 h-12 mb-4 rounded-xl flex items-center justify-center bg-gradient-to-br ${step.bg} shadow-lg`}
-                    >
-                      {step.icon}
-                    </div>
-                    <h3 className="text-2xl font-semibold text-gray-800 mb-2">
-                      {step.title}
-                    </h3>
-                    <p className="text-gray-600 leading-relaxed">{step.description}</p>
-                  </motion.div>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Decorative Blobs: behind everything */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-visible">
-        <motion.div
-          className="absolute w-[30rem] h-[30rem] bg-blue-300 rounded-full opacity-20 top-[20%] left-[5%] blur-3xl"
-          animate={{ scale: [1, 1.15, 1] }}
-          transition={{ duration: 10, repeat: Infinity }}
-        />
-        <motion.div
-          className="absolute w-[25rem] h-[25rem] bg-purple-300 rounded-full opacity-20 top-[60%] right-[5%] blur-3xl"
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ duration: 12, repeat: Infinity }}
-        />
-      </div>
-
-      {/* Back Button */}
-      <motion.div
-        className="mt-24 text-center"
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+    <>
+      <motion.section
+        className="relative overflow-hidden py-28 px-6 sm:px-12 bg-gradient-to-br from-indigo-500 via-purple-400 to-pink-300"
+        initial="hidden"
+        animate="visible"
+        variants={container}
       >
-        <Link href="/user-authentication">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300"
-          >
-            <ArrowLeft className="w-5 h-5" /> Back to Home
-          </motion.button>
-        </Link>
-      </motion.div>
-    </motion.section>
+        <h2 className="text-4xl font-bold text-center text-gray-200 mb-20">
+          Get Started in {STEPS.length} Steps
+        </h2>
+
+        <div className="relative max-w-6xl mx-auto">
+          {/* Vertical Line */}
+          <div className="absolute left-1/2 top-0 h-full w-1 bg-gradient-to-b from-indigo-300 via-gray-300 to-purple-300 -translate-x-1/2" />
+
+          <div className="relative z-10 space-y-32">
+            {STEPS.map((step, idx) => {
+              const isLeft = idx % 2 === 0;
+
+              return (
+                <motion.div
+                  key={step.id}
+                  className={`relative flex flex-col md:flex-row items-center ${isLeft ? 'md:justify-start' : 'md:justify-end'} group`}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, amount: 0.3 }}
+                  variants={stepAnim}
+                >
+                  {/* Step number on center line */}
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-indigo-600 text-white font-bold text-lg shadow-lg">
+                      {idx + 1}
+                    </div>
+                  </div>
+
+                  {/* The card side */}
+                  {isLeft && (
+                    <motion.div
+                      whileHover={{ rotateY: 5, scale: 1.02 }}
+                      className="w-full md:w-[48%] p-8 rounded-3xl bg-white/90 shadow-2xl ring-1 ring-gray-200 hover:ring-indigo-300 backdrop-blur-md hover:shadow-2xl transition-transform duration-500 md:mr-auto"
+                    >
+                      <div
+                        className={`w-12 h-12 mb-4 rounded-xl flex items-center justify-center bg-gradient-to-br ${step.bg} shadow-lg`}
+                      >
+                        {step.icon}
+                      </div>
+                      <h3 className="text-2xl font-semibold text-gray-800 mb-2">
+                        {step.title}
+                      </h3>
+                      <p className="text-gray-600 leading-relaxed">{step.description}</p>
+                    </motion.div>
+                  )}
+
+                  {/* The opposite side icon */}
+                  <div className="hidden md:flex md:w-[48%] justify-center items-center">
+                    <div
+                      className={`text-[10rem] select-none pointer-events-none text-gray-300 opacity-30 drop-shadow-lg
+                      bg-gradient-to-br from-indigo-400 to-purple-300 rounded-3xl p-6`}
+                      style={{
+                        filter: 'drop-shadow(0 5px 10px rgba(0,0,0,0.05))',
+                        transformStyle: 'preserve-3d',
+                        transform: 'rotateY(15deg) rotateX(5deg)',
+                      }}
+                    >
+                      {step.icon}
+                    </div>
+                  </div>
+
+                  {/* Card on right side */}
+                  {!isLeft && (
+                    <motion.div
+                      whileHover={{ rotateY: 5, scale: 1.02 }}
+                      className="w-full md:w-[48%] p-8 rounded-3xl bg-white/90 shadow-2xl ring-1 ring-gray-200 hover:ring-indigo-300 backdrop-blur-md hover:shadow-2xl transition-transform duration-500 md:ml-auto"
+                    >
+                      <div
+                        className={`w-12 h-12 mb-4 rounded-xl flex items-center justify-center bg-gradient-to-br ${step.bg} shadow-lg`}
+                      >
+                        {step.icon}
+                      </div>
+                      <h3 className="text-2xl font-semibold text-gray-800 mb-2">
+                        {step.title}
+                      </h3>
+                      <p className="text-gray-600 leading-relaxed">{step.description}</p>
+                    </motion.div>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Decorative Blobs: behind everything */}
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-visible">
+          <motion.div
+            className="absolute w-[30rem] h-[30rem] bg-blue-300 rounded-full opacity-20 top-[20%] left-[5%] blur-3xl"
+            animate={{ scale: [1, 1.15, 1] }}
+            transition={{ duration: 10, repeat: Infinity }}
+          />
+          <motion.div
+            className="absolute w-[25rem] h-[25rem] bg-purple-300 rounded-full opacity-20 top-[60%] right-[5%] blur-3xl"
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 12, repeat: Infinity }}
+          />
+        </div>
+
+        {/* Back Button */}
+        <motion.div
+          className="mt-24 text-center"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <Link href="/user-authentication">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300"
+            >
+              <ArrowLeft className="w-5 h-5" /> Back to Home
+            </motion.button>
+          </Link>
+        </motion.div>
+      </motion.section>
+
+      <Footer scrollToTop={scrollToTop} />
+    </>
   );
 }

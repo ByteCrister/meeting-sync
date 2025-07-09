@@ -6,6 +6,7 @@ import {
   Users, Zap, Rocket, ArrowLeft,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Footer from '../unauthorized/Footer';
 
 const STEPS = [
   {
@@ -68,60 +69,66 @@ const STEPS = [
 
 const HowItWorks = () => {
   const router = useRouter();
+  const scrollToTop = () =>
+    window.scrollTo({ top: 0, behavior: "smooth" });
 
   return (
-    <section className="relative py-28 px-6 sm:px-12 bg-gradient-to-br from-purple-600 via-pink-500 to-yellow-400 overflow-hidden">
-      <div className="max-w-6xl mx-auto">
-        <motion.h2
-          initial={{ opacity: 0, y: -20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center text-white text-4xl font-extrabold mb-16"
-        >
-          How Scheduling Becomes Effortless
-        </motion.h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          {STEPS.map((step, index) => (
-            <motion.div
-              key={index}
-              whileInView={{ opacity: 1, y: 0 }}
-              initial={{ opacity: 0, y: 40 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="group perspective"
-            >
-              <div
-                className={`relative transform transition-transform duration-500 group-hover:rotateX-6 group-hover:-rotate-y-6 group-hover:translate-z-10 bg-white/10 border border-white/10 p-6 rounded-3xl shadow-xl backdrop-blur-md`}
-                style={{ transformStyle: 'preserve-3d' }}
-              >
-                <div className={`w-14 h-14 flex items-center justify-center rounded-full mb-4 text-white bg-gradient-to-br ${step.from} ${step.to}`}>
-                  {step.icon}
-                </div>
-                <h3 className="text-white text-xl font-semibold mb-2">{step.title}</h3>
-                <p className="text-white/80 mb-4">{step.desc}</p>
-                <ul className="list-disc list-inside text-white/60 text-sm space-y-1">
-                  {step.bulletPoints.map((point, i) => (
-                    <li key={i}>{point}</li>
-                  ))}
-                </ul>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="mt-16 text-center">
-          <motion.button
-            onClick={() => router.back()}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 text-white border border-white/20 rounded-full hover:bg-white/20 backdrop-blur transition"
+    <>
+      <section className="relative py-28 px-6 sm:px-12 bg-gradient-to-br from-purple-600 via-pink-500 to-yellow-400 overflow-hidden">
+        <div className="max-w-6xl mx-auto">
+          <motion.h2
+            initial={{ opacity: 0, y: -20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center text-white text-4xl font-extrabold mb-16"
           >
-            <ArrowLeft className="w-5 h-5" />
-            Go Back
-          </motion.button>
+            How Scheduling Becomes Effortless
+          </motion.h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            {STEPS.map((step, index) => (
+              <motion.div
+                key={index}
+                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 40 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                className="group perspective"
+              >
+                <div
+                  className={`relative transform transition-transform duration-500 group-hover:rotateX-6 group-hover:-rotate-y-6 group-hover:translate-z-10 bg-white/10 border border-white/10 p-6 rounded-3xl shadow-xl backdrop-blur-md`}
+                  style={{ transformStyle: 'preserve-3d' }}
+                >
+                  <div className={`w-14 h-14 flex items-center justify-center rounded-full mb-4 text-white bg-gradient-to-br ${step.from} ${step.to}`}>
+                    {step.icon}
+                  </div>
+                  <h3 className="text-white text-xl font-semibold mb-2">{step.title}</h3>
+                  <p className="text-white/80 mb-4">{step.desc}</p>
+                  <ul className="list-disc list-inside text-white/60 text-sm space-y-1">
+                    {step.bulletPoints.map((point, i) => (
+                      <li key={i}>{point}</li>
+                    ))}
+                  </ul>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-16 text-center">
+            <motion.button
+              onClick={() => router.back()}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 text-white border border-white/20 rounded-full hover:bg-white/20 backdrop-blur transition"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Go Back
+            </motion.button>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <Footer scrollToTop={scrollToTop} />
+    </>
   );
 };
 

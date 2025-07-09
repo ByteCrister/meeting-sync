@@ -6,7 +6,7 @@ import { motion, } from 'framer-motion';
 
 const Footer = ({ scrollToTop }: { scrollToTop: () => void }) => {
     return (
-        <footer className="container mx-auto px-4 py-8 mt-32 border-t border-gray-200">
+        <footer className="container mx-auto px-4 py-8 border-t border-gray-200">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <Logo />
                 <p className="text-gray-500">© 2025 MeetSync. All rights reserved.</p>
