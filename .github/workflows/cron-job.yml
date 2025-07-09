@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Send secured POST request to cron API
         run: |
-          curl -X POST https://your-vercel-app.vercel.app/api/run-cron \
+          curl -X POST https://meeting-sync-beta.vercel.app/api/run-cron \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
