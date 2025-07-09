@@ -62,7 +62,7 @@ const SignIn = () => {
             setIsGoogleBtnLoading(true);
 
             const result = await signIn("google", {
-                callbackUrl: "/api/auth/custom-google-callback",
+                callbackUrl: `${process.env.NEXT_PUBLIC_DOMAIN}/api/auth/custom-google-callback`,
                 redirect: true,
             });
 
