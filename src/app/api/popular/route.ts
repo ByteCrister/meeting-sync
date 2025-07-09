@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
         // Fetch slots owned by this user
         const slots = await SlotModel.find({
             ownerId: userId,
-            status: { $in: [IRegisterStatus.Upcoming, IRegisterStatus.Ongoing, IRegisterStatus.Completed] },
+            status: { $in: [IRegisterStatus.Completed] },
         })
             .sort({ trendScore: -1, engagementRate: -1 })
             .lean();
