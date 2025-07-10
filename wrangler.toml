@@ -1,0 +1,10 @@
+name = "meeting-sync-cron"
+main = "cf-worker/index.ts"
+compatibility_date = "2025-07-10"
+type = "javascript"
+
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+CRON_SECRET = "cron-secret-meeting-scheduling-software-engineering-course"
