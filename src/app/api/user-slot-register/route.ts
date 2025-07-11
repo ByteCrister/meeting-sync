@@ -11,6 +11,25 @@ import getNotificationExpiryDate from '@/utils/server/getNotificationExpiryDate'
 import VideoCallModel from '@/models/VideoCallModel';
 import { triggerRoomSocketEvent } from '@/utils/socket/triggerRoomSocketEvent';
 
+interface registerSlot {
+    _id: string;
+    title: string;
+    category: string;
+    description: string;
+    meetingDate: string | undefined;
+    tags: string[];
+    durationFrom: string;
+    durationTo: string;
+    guestSize: number;
+    bookedUsers: string[];
+    blockedUsers: string[];
+    trendScore: number;
+    engagementRate: number;
+    status: RegisterSlotStatus;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export async function GET(req: NextRequest) {
     try {
         await ConnectDB();
@@ -64,11 +83,11 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
         }
 
-        const rawData = await req.json();
+        const rawData = await req.json() as registerSlot;
         const data = { ...rawData };
 
         // Clean up unnecessary props
-        ['_id', 'createdAt', 'updatedAt'].forEach(prop => {
+        (['_id', 'createdAt', 'updatedAt'] as (keyof registerSlot)[]).forEach(prop => {
             if (prop in data) {
                 delete data[prop];
             }
@@ -207,7 +226,7 @@ export async function DELETE(req: NextRequest) {
     try {
         await ConnectDB();
         const body = await req.json();
-        const { slotId } = body;
+        const { slotId } = body as { slotId: string };
 
         const userId = await getUserIdFromRequest(req);
         if (!userId) {

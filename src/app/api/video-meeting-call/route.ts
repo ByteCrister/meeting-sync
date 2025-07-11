@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
 // ? update states of video meeting
 export async function PUT(req: NextRequest) {
     try {
-        const body = await req.json();
+        const body = await req.json() as { type: VCallUpdateApiType; meetingId: string; data: unknown };
         const { type, meetingId, data } = body;
 
         if (!meetingId || !type) {
@@ -113,7 +113,7 @@ export async function PUT(req: NextRequest) {
 
         switch (type) {
             case VCallUpdateApiType.PARTICIPANTS_DATA: {
-                const { userId, isMuted, isVideoOn, isScreenSharing } = data;
+                const { userId, isMuted, isVideoOn, isScreenSharing } = data as { userId: string; isMuted: boolean; isVideoOn: boolean; isScreenSharing: boolean };
                 if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
                 await VideoCallModel.updateOne(
@@ -134,7 +134,7 @@ export async function PUT(req: NextRequest) {
                 const userId = await getUserIdFromRequest(req);
                 if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-                const { message } = data;
+                const { message } = data as { message: string };
 
                 if (!message || typeof message !== "string" || !message.trim()) {
                     return NextResponse.json({ message: "Message is required and must be non-empty." }, { status: 400 });
@@ -164,7 +164,7 @@ export async function PUT(req: NextRequest) {
             }
 
             case VCallUpdateApiType.REMOVE_VIDEO_CHAT_MESSAGE: {
-                const { messageId: _id } = data;
+                const { messageId: _id } = data as { messageId: string };
 
                 if (!_id) {
                     return NextResponse.json({ message: 'Message _id is required' }, { status: 400 });
@@ -197,7 +197,7 @@ export async function PUT(req: NextRequest) {
                     return NextResponse.json({ message: "Only host can update settings" }, { status: 403 });
                 }
 
-                const { allowChat, allowRecording, allowScreenShare } = data;
+                const { allowChat, allowRecording, allowScreenShare } = data as { allowChat: boolean; allowRecording: boolean; allowScreenShare: boolean };
 
                 await VideoCallModel.updateOne(
                     { meetingId },

@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
         await ConnectDB();
 
         const body = await req.json();
-        const { type, value } = body;
+        const { type, value } = body as { type: ApiSendEmailType; value: { updatedValue: string; previousValue: string } };
         const { updatedValue, previousValue } = value;
 
         const userId = await getUserIdFromRequest(req);

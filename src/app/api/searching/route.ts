@@ -182,7 +182,7 @@ export async function PUT(req: NextRequest) {
     try {
         await ConnectDB();
 
-        const { fieldUniqueId, field } = await req.json();
+        const { fieldUniqueId, field } = await req.json() as { fieldUniqueId: string; field: 'user' | 'slot' };
 
         if (!fieldUniqueId) {
             return NextResponse.json({ success: false, message: 'ID is required' }, { status: 400 });

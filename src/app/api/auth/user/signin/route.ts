@@ -6,7 +6,7 @@ import UserModel from "@/models/UserModel";
 
 export const POST = async (request: NextRequest) => {
     try {
-        const body = await request.json();
+        const body: { email: string, password: string, isRemember: boolean } = await request.json();
 
         if (!body.email || !body.password) {
             return NextResponse.json({ success: false, message: "Email and password are required!" }, { status: 400 });

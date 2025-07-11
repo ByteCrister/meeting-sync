@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const POST = async (req: NextRequest) => {
     try {
-        const body = await req.json();
+        const body: { email: string } = await req.json();
         await ConnectDB();
 
         const isEmailExist = await UserModel.findOne({ email: body.email });

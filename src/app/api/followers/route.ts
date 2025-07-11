@@ -67,7 +67,7 @@ export async function PUT(req: NextRequest) {
         if (!currentUserId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
         // ? The user who followed me
-        const { followerId } = await req.json();
+        const { followerId } = await req.json() as { followerId: string };
         if (!followerId) return NextResponse.json({ message: "Missing target user ID" }, { status: 400 });
 
         if (currentUserId === followerId) {
@@ -129,7 +129,7 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
         }
 
-        const { followerId } = await req.json();
+        const { followerId } = await req.json() as { followerId: string };
         if (!followerId) {
             return NextResponse.json({ message: "Missing target user ID" }, { status: 400 });
         }

@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
         const currentUserId = await getUserIdFromRequest(req);
         if (!currentUserId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-        const { participantsId, message } = await req.json();
+        const { participantsId, message } = await req.json() as { participantsId: string; message: string };
 
         if (!participantsId || !message) {
             return NextResponse.json({ message: "Invalid data" }, { status: 400 });
@@ -197,7 +197,11 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
     try {
         const body = await req.json();
-        const { type, participantId, isOpened } = body;
+        const { type, participantId, isOpened } = body as {
+            type: ApiChatBoxMessageType;
+            participantId?: string;
+            isOpened?: boolean;
+        };
 
         const currentUserId = await getUserIdFromRequest(req);
         if (!currentUserId) {
@@ -247,7 +251,7 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
     try {
         await ConnectDB();
-        const { participantId, messageId } = await req.json();
+        const { participantId, messageId } = await req.json() as { participantId: string; messageId: string };
         if (!participantId || !messageId) {
             return NextResponse.json({ message: 'participantId and messageId are required' }, { status: 400 });
         }

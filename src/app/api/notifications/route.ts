@@ -103,7 +103,7 @@ export async function PUT(req: NextRequest) {
             return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
         }
 
-        const { senderId } = await req.json();
+        const { senderId } = await req.json() as { senderId: string };
 
         if (!mongoose.Types.ObjectId.isValid(senderId)) {
             return NextResponse.json({ success: false, message: "Invalid senderId" }, { status: 400 });
@@ -148,7 +148,7 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
         }
 
-        const { notificationId } = await req.json();
+        const { notificationId } = await req.json() as { notificationId: string };
 
         if (!notificationId || !mongoose.Types.ObjectId.isValid(notificationId)) {
             return NextResponse.json({ success: false, message: 'Invalid notification ID' }, { status: 400 });

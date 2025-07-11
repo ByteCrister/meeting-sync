@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
         const userId = await getUserIdFromRequest(req);
         if (!userId) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-        const { followingFriendId } = await req.json();
+        const { followingFriendId } = await req.json() as { followingFriendId: string };
         if (!followingFriendId) return NextResponse.json({ message: "Missing target user ID" }, { status: 400 });
 
         // Prevent following self
@@ -158,7 +158,7 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ message: "Unauthorized", success: false }, { status: 401 });
         }
 
-        const { followingFriendId } = await req.json();
+        const { followingFriendId } = await req.json() as { followingFriendId: string };
         if (!followingFriendId) {
             return NextResponse.json({ message: "Missing target user ID", success: false }, { status: 400 });
         }

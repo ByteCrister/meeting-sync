@@ -83,7 +83,7 @@ export async function POST(req: NextRequest,) {
         }
 
         // Get slot id
-        const { slotId } = await req.json();
+        const { slotId } = await req.json() as { slotId: string };
 
         //  Get the slot
         const slot = await SlotModel.findById(slotId);
@@ -215,7 +215,7 @@ export async function DELETE(req: NextRequest) {
         }
 
         // Get slot id
-        const { slotId } = await req.json();
+        const { slotId } = await req.json() as { slotId: string };
         if (!slotId) {
             return NextResponse.json({ success: false, message: "slotId is required" }, { status: 400 });
         }

@@ -9,7 +9,7 @@ export const runtime = 'nodejs';
 // ? Signup POST from AuthenticateOTP.tsx -> signUpApi()
 export const POST = async (req: NextRequest) => {
     try {
-        const body = await req.json();
+        const body: { full_name: string, email: string, password: string, timeZone: string, isRemember: boolean } = await req.json();
 
         const { full_name, email, password, timeZone, isRemember } = body;
 

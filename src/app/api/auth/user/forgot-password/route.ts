@@ -7,7 +7,7 @@ import UserModel from "@/models/UserModel";
 
 export const POST = async (req: NextRequest) => {
     try {
-        const body = await req.json();
+        const body: { email: string, password: string } = await req.json();
         const { email, password } = body;
 
         await ConnectDB();
@@ -36,9 +36,9 @@ export const POST = async (req: NextRequest) => {
         response.cookies.set(process.env.NEXT_TOKEN as string, token, {
             httpOnly: false,
             secure: false, // true for production with HTTPS
-            sameSite: "lax", 
+            sameSite: "lax",
             path: "/",
-            maxAge: 30 * 24 * 60 * 60, 
+            maxAge: 30 * 24 * 60 * 60,
         });
 
         return response;
