@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     try {
         await ConnectDB();
 
-        const { userId, slotId } = await req.json();
+        const { userId, slotId } = await req.json() as { userId: string, slotId: string };
 
         if (!userId || !slotId) {
             return NextResponse.json({ message: "Missing userId or slotId" }, { status: 400 });
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
     try {
         await ConnectDB();
-        const { userId, slotId, type } = await req.json();
+        const { userId, slotId, type } = await req.json() as { userId: string, slotId: string, type: 'unblock-user' | 'undo-remove-user' };
 
         if (!userId || !slotId || !type) {
             return NextResponse.json({ message: "Missing userId or slotId" }, { status: 400 });
@@ -135,7 +135,7 @@ export async function DELETE(req: NextRequest) {
         await ConnectDB();
 
         // Get slot id
-        const { slotId, userId } = await req.json();
+        const { slotId, userId } = await req.json() as { slotId: string, userId: string };
         if (!slotId || !userId) {
             return NextResponse.json({ success: false, message: "Invalid Credentials." }, { status: 400 });
         }
