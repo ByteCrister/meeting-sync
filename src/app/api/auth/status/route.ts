@@ -4,6 +4,7 @@ import { getUserIdFromRequest } from "@/utils/server/getUserFromToken";
 import { NextRequest, NextResponse } from "next/server";
 import { ApiNotificationTypes } from "@/utils/constants";
 import SlotModel, { IRegisterStatus } from "@/models/SlotModel";
+import mongoose from "mongoose";
 
 export interface IBookedSlots {
     userId: string;
@@ -23,58 +24,67 @@ export async function GET(req: NextRequest) {
 
         const user = await UserModel.findById(userId).select("-password");
         if (!user) {
-            return new Response(JSON.stringify({ success: false, message: "User not found" }), { status: 404 });
+            return NextResponse.json({ message: "User not found" }, { status: 404 });
         }
 
-        const allowedStatuses = [
-            IRegisterStatus.Upcoming,
-            IRegisterStatus.Ongoing,
-            IRegisterStatus.Completed,
-        ];
-
-        const slots = await SlotModel.find({
-            ownerId: user._id,
-            status: { $in: allowedStatuses },
-        }).sort({ meetingDate: -1 });
+        const now = new Date();
+        const nextWeek = new Date();
+        nextWeek.setDate(now.getDate() + 7);
 
         const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        oneWeekAgo.setDate(now.getDate() - 7);
 
-        const recentBookedSlotIds: string[] = user.bookedSlots
-            .filter((b: IBookedSlots) => {
-                const statusValid = [IRegisterStatus.Upcoming, IRegisterStatus.Ongoing].includes(b.status);
-                return statusValid;
+        // Fetch all user-created slots
+        const ownSlots = await SlotModel.find({ ownerId: userId }).lean();
+
+        // Separate own slots by logic
+        const upcomingSlots = ownSlots.filter(slot =>
+            [IRegisterStatus.Upcoming, IRegisterStatus.Ongoing].includes(slot.status as IRegisterStatus)
+        );
+
+        const recentSlots = ownSlots.filter(slot =>
+            [IRegisterStatus.Completed, IRegisterStatus.Expired].includes(slot.status as IRegisterStatus) &&
+            slot.meetingDate >= oneWeekAgo
+        );
+
+        // Get user's booked slotIds
+        const bookedSlotIds = user.bookedSlots.map((b: IBookedSlots) => b.slotId.toString());
+
+        const bookedSlots = bookedSlotIds.length
+            ? await SlotModel.find({
+                _id: { $in: bookedSlotIds },
+                meetingDate: { $gte: now, $lte: nextWeek }
             })
-            .map((b: IBookedSlots) => b.slotId.toString());
+                .select("title durationFrom durationTo meetingDate status")
+                .lean()
+            : [];
 
-        const activities = slots.map((slot) => {
-            const isBooked = recentBookedSlotIds.includes(slot._id.toString());
-
-            let type: "booked" | "upcoming" | "recent";
-
-            if (
-                slot.status === IRegisterStatus.Completed ||
-                slot.status === IRegisterStatus.Expired
-            ) {
-                type = "recent";
-            } else if (isBooked) {
-                type = "booked";
-            } else {
-                type = "upcoming";
-            }
-
-            return {
-                id: slot._id.toString(),
+        const activities = [
+            ...upcomingSlots.map(slot => ({
+                id: (slot._id as mongoose.Types.ObjectId).toString(),
                 title: slot.title,
-                time: `${slot.durationFrom} - ${slot.durationTo}`,
-                type,
-            };
-        });
+                time: `${slot.durationFrom} – ${slot.durationTo}`,
+                type: "upcoming" as const,
+            })),
+            ...recentSlots.map(slot => ({
+                id: (slot._id as mongoose.Types.ObjectId).toString(),
+                title: slot.title,
+                time: `${slot.durationFrom} – ${slot.durationTo}`,
+                type: "recent" as const,
+            })),
+            ...bookedSlots.map(slot => ({
+                id: (slot._id as mongoose.Types.ObjectId).toString(),
+                title: slot.title,
+                time: `${slot.durationFrom} – ${slot.durationTo}`,
+                type: "booked" as const,
+            })),
+        ];
 
         return NextResponse.json({ success: true, user, activities }, { status: 200 });
-    } catch (error) {
-        console.log("JWT Verification Error:", error);
-        return new Response(JSON.stringify({ message: "Invalid token" }), { status: 401 });
+
+    } catch (err) {
+        console.error("GET /api/activities error:", err);
+        return NextResponse.json({ message: "Internal server error" }, { status: 500 });
     }
 }
 

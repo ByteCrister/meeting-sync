@@ -125,6 +125,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </svg>
           </button>
         }
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-transparent z-30 md:hidden"
+            onClick={handleToggleSidebar}
+          />
+        )}
 
         {/* Sidebar */}
         <aside
@@ -146,34 +152,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
 
             {/* Navigation Items */}
-           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-  {sidebarItems.map((item) => {
-    const isProfilePage = pathname === '/' || pathname!.startsWith('/profile?');
-    const isActive = (item.href === '/' && isProfilePage) || (item.href !== '/' && pathname!.startsWith(item.href));
+            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+              {sidebarItems.map((item) => {
+                const isProfilePage = pathname === '/' || pathname!.startsWith('/profile?');
+                const isActive = (item.href === '/' && isProfilePage) || (item.href !== '/' && pathname!.startsWith(item.href));
 
-    return (
-      <Link
-        key={item.name}
-        href={item.href}
-        className={`group flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`group flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300
           ${isActive
-            ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg'
-            : 'text-gray-300 hover:bg-gradient-to-r hover:from-gray-700 hover:to-gray-600 hover:text-white hover:shadow-md hover:scale-[1.02]'
-          }`}
-      >
-        <span
-          className={`transition-transform duration-300 group-hover:scale-110
+                        ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg'
+                        : 'text-gray-300 hover:bg-gradient-to-r hover:from-gray-700 hover:to-gray-600 hover:text-white hover:shadow-md hover:scale-[1.02]'
+                      }`}
+                  >
+                    <span
+                      className={`transition-transform duration-300 group-hover:scale-110
             ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}
-        >
-          {item.icon}
-        </span>
-        <span className="font-medium text-sm tracking-wide">
-          {item.name}
-        </span>
-      </Link>
-    );
-  })}
-</nav>
+                    >
+                      {item.icon}
+                    </span>
+                    <span className="font-medium text-sm tracking-wide">
+                      {item.name}
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
 
 
             {/* User Profile Section */}
