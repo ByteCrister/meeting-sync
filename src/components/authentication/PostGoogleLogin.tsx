@@ -15,7 +15,7 @@ export default function PostGoogleLogin() {
 
         const finalizeLogin = async () => {
             const res = await fetch("/api/auth/set-cookie");
-            const data = await res.json();
+            const data = await res.json() as { success: boolean };
 
             if (!data.success) {
                 ShowToaster("Failed to set session cookie", "error");
