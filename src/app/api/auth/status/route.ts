@@ -111,7 +111,7 @@ export async function PUT(req: NextRequest) {
     try {
         await ConnectDB();
 
-        const body = await req.json();
+        const body: { field: string; value?: string } = await req.json();
         const { field, value } = body;
 
         if (!field || (field !== 'image' && !value)) {
