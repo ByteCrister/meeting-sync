@@ -27,6 +27,7 @@ export default function VideoCallPage() {
         // 1. API Call to get video call status
         const getValidation = async () => {
             const videoCallStatusData = await apiGetVideoCallStatus(roomId);
+            console.log(videoCallStatusData);
             if (videoCallStatusData.isError) {
                 setVideoStatus(videoCallStatusData.errorType);
                 setIsLoading(false);
@@ -34,6 +35,7 @@ export default function VideoCallPage() {
             }
             // 2. API Call to join the video call
             const joinStatusData = await apiJoinVideoCall(roomId);
+            console.log(joinStatusData);
             if (
                 joinStatusData.success &&
                 joinStatusData?.meetingStatus === VideoCallStatus.WAITING

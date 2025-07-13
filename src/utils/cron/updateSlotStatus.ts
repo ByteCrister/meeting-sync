@@ -165,16 +165,19 @@ export async function updateSlotStatuses(): Promise<void> {
             // 5️⃣  Persist status changes + side‑effects
             // ---------------------------------------------------------------------
             if (slot.status !== newStatus) {
+                console.log(`Duration from: ${slot.durationFrom}  -  Duration to: ${slot.durationTo}\n`);
+                console.log(`Slot ID: ${slot._id}   time now: ${nowUTC}  -   time start: ${start} olt status: ${slot.status}   new status: ${newStatus}\n`);
                 if (newStatus === IRegisterStatus.Ongoing) {
                     try {
                         const call = await handleCreateVideoCallDirectly(slot._id, slot.ownerId.toString());
-                        console.log("Video call created:", call._id);
+                        console.log("\n[    Video call created: " + call._id + "   ]");
                     } catch (err) {
                         console.error("Failed to create video call:", (err as Error).message);
                     }
                 }
 
                 if ([IRegisterStatus.Expired, IRegisterStatus.Completed].includes(newStatus)) {
+                    console.log('\n[    Video call Deleted.     ]\n');
                     await handleDeleteVideoCallDirectly(slot._id);
                 }
 

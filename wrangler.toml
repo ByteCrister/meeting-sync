@@ -3,8 +3,8 @@ main = "cf-worker/index.ts"
 compatibility_date = "2025-07-13"
 type = "module"
 
-[triggers]
-crons = ["* * * * *"]
+# [triggers]
+# crons = ["* * * * *"]
 
 [vars]
 CRON_SECRET = "cron-secret-meeting-scheduling-software-engineering-course"
