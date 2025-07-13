@@ -1,7 +1,7 @@
 // src/app/api/run-cron/route.ts
 
 import { updateSlotStatuses } from "@/utils/cron/updateSlotStatus";
-import { cleanupExpiredVideoCalls } from "@/utils/server/cleanUpExpiredVideoCalls";
+import { cleanupExpiredVideoCalls } from "@/utils/cron/cleanUpExpiredVideoCalls";
 
 export async function POST(req: Request) {
     const token = req.headers.get("x-cron-secret");
