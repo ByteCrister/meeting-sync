@@ -55,10 +55,6 @@ function toLuxonZone(offset: string | undefined): string {
     return raw.startsWith("+") || raw.startsWith("-") ? raw : "+" + raw;
 }
 
-function pad(num: number): string {
-    return num.toString().padStart(2, "0");
-}
-
 // -----------------------------------------------------------------------------
 // Slot status updater (invoked by cron / scheduled job)
 // -----------------------------------------------------------------------------
@@ -98,17 +94,24 @@ export async function updateSlotStatuses(): Promise<void> {
                 continue;
             }
 
-            const dateStr = DateTime.fromJSDate(slot.meetingDate).toISODate();
+            const meetingDateInUserZone = DateTime.fromJSDate(slot.meetingDate).setZone(luxonZone);
 
             // ---------------------------------------------------------------------
             // 2️⃣  Calculate start & end in UTC using fixed offset zone
             // ---------------------------------------------------------------------
-            const start = DateTime.fromISO(`${dateStr}T${pad(fromTime.hours)}:${pad(fromTime.minutes)}:00`, {
-                zone: luxonZone,
+            const start = meetingDateInUserZone.set({
+                hour: fromTime.hours,
+                minute: fromTime.minutes,
+                second: 0,
+                millisecond: 0
             }).toUTC();
 
-            let end = DateTime.fromISO(`${dateStr}T${pad(toTime.hours)}:${pad(toTime.minutes)}:00`, {
-                zone: luxonZone,
+            // Build end time in user zone
+            let end = meetingDateInUserZone.set({
+                hour: toTime.hours,
+                minute: toTime.minutes,
+                second: 0,
+                millisecond: 0
             }).toUTC();
 
             if (end <= start) {
@@ -133,8 +136,9 @@ export async function updateSlotStatuses(): Promise<void> {
                     const secondsSinceLast = lastSent ? nowUTC.diff(lastSent, "seconds").seconds : Infinity;
 
                     if (secondsSinceLast > 60) {
+                        const readableDate = meetingDateInUserZone.toFormat("yyyy-MM-dd"); // Or "dd LLL yyyy" or whatever format you like
                         const subject = `🔔 Reminder: Your meeting "${slot.title}" is coming up!`;
-                        const html = getReminderHTML(user?.username || "", slot.title, dateStr!, slot.durationFrom);
+                        const html = getReminderHTML(user?.username || "", slot.title, readableDate!, slot.durationFrom);
                         if (user?.email) {
                             await emailAuthentication(user.email, subject, html);
                             slot.lastReminderSentAt = new Date();
