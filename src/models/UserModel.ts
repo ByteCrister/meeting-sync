@@ -21,7 +21,7 @@ export interface IUsers extends Document {
     password: string;
     image: string;
     profession: string;
-    timeZone: string;
+    timeZone: string; // * e.g UTC+06:00
     searchScore: number;
     trendScore: number;
     followers: IUserFollowInfo[];

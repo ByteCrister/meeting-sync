@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
     }
 };
 
-// ? Post for create or update any slot
+// ? Post for create or update any slot (Next.js)
 export async function POST(req: NextRequest) {
     try {
         await ConnectDB();
