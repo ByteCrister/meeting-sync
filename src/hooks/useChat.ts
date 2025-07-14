@@ -4,20 +4,16 @@
 import { useAppSelector } from '@/lib/hooks';
 import { apiUpdateVideoCall } from '@/utils/client/api/api-video-meeting-call';
 import { VCallUpdateApiType } from '@/utils/constants';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 
 export function useChat(roomId: string) {
   const currentUser = useAppSelector(s => s.userStore.user)!;
   const messages = useAppSelector(s => s.videoMeeting.chatMessages);
-  const allParticipants = useAppSelector(
+  const participants = useAppSelector(
     state => state.videoMeeting.participants
   )
 
   // Only recompute the filtered list when the upstream array changes
-  const participants = useMemo(
-    () => allParticipants.filter(p => p.isActive),
-    [allParticipants]
-  )
   const sendMessage = useCallback(async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;

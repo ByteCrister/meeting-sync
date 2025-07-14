@@ -23,6 +23,7 @@ import { getLastParticipants, toggleChatBoxStatus } from "@/utils/client/api/api
 import { ApiChatBoxMessageType } from "@/utils/constants";
 import { setChatBoxActiveUser, setChatBoxStatus, setCountOfUnseenMessage } from "@/lib/features/chat-box-slice/chatBoxSlice";
 import { toggleChatBox, toggleMessageUserList } from "@/lib/features/component-state/componentSlice";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ChatIconPopover() {
     const unseenMessagesCount = useAppSelector(state => state.chatBoxStore.countOfUnseenMessages);
@@ -68,19 +69,51 @@ export default function ChatIconPopover() {
         <>
             <Popover open={isPopOverOpen} onOpenChange={handlePopOver}>
                 <PopoverTrigger asChild>
-                    <button
-                        onClick={() => {
-                            setIsUserListOpen(true);
-                        }} // Open dialog instead of popover
-                        className="relative p-2 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+                    <motion.button
+                        onClick={() => setIsUserListOpen(true)}
+                        whileHover={{ scale: 1.1, rotate: 3 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="relative p-2 rounded-full transition-all group hover:bg-blue-100/40 focus:outline-none"
                     >
-                        <BiMessageDetail className="w-5 h-5" />
-                        {unseenMessagesCount !== 0 && (
-                            <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-red-500 rounded-full shadow-md">
-                                {unseenMessagesCount}
-                            </span>
-                        )}
-                    </button>
+                        <BiMessageDetail className="w-6 h-6 text-gray-700 group-hover:text-blue-600 transition-colors" />
+
+                        {/* Unseen badge */}
+                        <AnimatePresence>
+                            {unseenMessagesCount > 0 && (
+                                <>
+                                    {/* Pulse ring */}
+                                    <motion.span
+                                        key="pulse"
+                                        className="absolute -top-1.5 -right-1.5 inline-flex h-5 w-5 rounded-full bg-red-500/60"
+                                        initial={{ scale: 0.8, opacity: 0.6 }}
+                                        animate={{
+                                            scale: [1, 1.5, 1],
+                                            opacity: [0.7, 0, 0.7],
+                                        }}
+                                        exit={{ scale: 0, opacity: 0 }}
+                                        transition={{
+                                            duration: 1.5,
+                                            repeat: Infinity,
+                                            repeatType: "loop",
+                                            ease: "easeInOut",
+                                        }}
+                                    />
+
+                                    {/* Count badge */}
+                                    <motion.span
+                                        key="count"
+                                        className="absolute -top-1.5 -right-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[0.65rem] font-medium text-white shadow"
+                                        initial={{ scale: 0, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        exit={{ scale: 0, opacity: 0 }}
+                                        transition={{ type: "spring", stiffness: 380, damping: 18 }}
+                                    >
+                                        {unseenMessagesCount}
+                                    </motion.span>
+                                </>
+                            )}
+                        </AnimatePresence>
+                    </motion.button>
                 </PopoverTrigger>
 
                 <PopoverContent className="w-[85vw] sm:w-96 max-w-sm p-4 absolute right-2 sm:right-4 top-16 translate-x-4 bg-white sm:translate-x-0 shadow rounded-xl">

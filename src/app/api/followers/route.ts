@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
 }
 
 
-// ? Unremoved a follower, suppose I have just removed a follower from my list but now I want undo.
+// ? Undo remove a follower, suppose I have just removed a follower from my list but now I want undo.
 export async function PUT(req: NextRequest) {
     try {
         await ConnectDB();

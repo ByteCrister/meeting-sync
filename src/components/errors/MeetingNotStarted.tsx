@@ -10,6 +10,7 @@ interface MeetingNotStartedProps {
 const MeetingNotStarted: React.FC<MeetingNotStartedProps> = ({
     message = "Meeting has not started yet. The host has not joined.",
 }) => {
+
     return (
         <div className="h-screen w-full flex flex-col justify-center items-center text-center px-4">
             <MonitorPause className="h-16 w-16 text-gray-500 mb-4" />

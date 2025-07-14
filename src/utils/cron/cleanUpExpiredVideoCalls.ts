@@ -19,7 +19,9 @@ export async function cleanupExpiredVideoCalls() {
 
     let videoCalls: IVideoCall[];
     try {
-        videoCalls = await VideoCallModel.find({ status: IVideoCallStatus.ACTIVE });  // Fetch all active video calls
+        videoCalls = await VideoCallModel.find({
+            status: { $in: [IVideoCallStatus.ACTIVE, IVideoCallStatus.WAITING] }
+        });
         if (videoCalls && videoCalls.length === 0) return;
     } catch (err) {
         console.log("[cleanupExpiredVideoCalls] Failed to fetch video calls:", err);

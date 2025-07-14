@@ -256,7 +256,7 @@ export async function DELETE(req: NextRequest) {
             const videoCallId = activeVideoCall._id;
 
             // Delete the video call
-            await VideoCallModel.findByIdAndDelete({ _id: videoCallId });
+            await VideoCallModel.findByIdAndDelete(videoCallId);
 
             // Notify all participants via socket
             triggerRoomSocketEvent({ roomId: slotId, type: SocketTriggerTypes.RUNNING_VIDEO_MEETING_CANCELLED, data: { userId } });

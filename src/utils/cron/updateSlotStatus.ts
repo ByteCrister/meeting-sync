@@ -10,12 +10,12 @@ import UserModel from "@/models/UserModel";
 import { emailAuthentication } from "@/config/NodeEmailer";
 import { DateTime } from "luxon";
 import { handleCreateVideoCallDirectly } from "../server/handleCreateVideoCallDirectly";
-// import { handleDeleteVideoCallDirectly } from "../server/handleDeleteVideoCallDirectly";
+import { handleDeleteVideoCallDirectly } from "../server/handleDeleteVideoCallDirectly";
 import getNotificationExpiryDate from "../server/getNotificationExpiryDate";
 import { updateTrendScoreForSlot } from "../server/updateTrendScoreForSlot";
-// import { cleanupExpiredVideoCalls } from "./cleanUpExpiredVideoCalls";
+import { cleanupExpiredVideoCalls } from "./cleanUpExpiredVideoCalls";
 import { getReminderHTML } from "./getReminderHTML";
-import VideoCallModel from "@/models/VideoCallModel";
+import VideoCallModel, { IVideoCall } from "@/models/VideoCallModel";
 
 declare global {
     // Extend the globalThis interface to include slotStatusCronStarted
@@ -159,8 +159,9 @@ export async function updateSlotStatuses(): Promise<void> {
                 newStatus = IRegisterStatus.Upcoming;
             } else if (nowUTC >= start && nowUTC <= end) {
                 newStatus = IRegisterStatus.Ongoing;
-            } else if (nowUTC > end.plus({ minutes: 1 })) {
-                newStatus = slot.engagementRate === 0 ? IRegisterStatus.Expired : IRegisterStatus.Completed;
+            } else if (nowUTC > end) {
+                const targetCall: IVideoCall | null = await VideoCallModel.findOne({ meetingId: slot._id })
+                newStatus = targetCall && targetCall.participants.length > 1 ? IRegisterStatus.Completed : IRegisterStatus.Expired;
             }
 
             // ---------------------------------------------------------------------
@@ -207,8 +208,8 @@ export async function updateSlotStatuses(): Promise<void> {
 
                     console.log(existingCall);
                     if (existingCall) {
-                        // console.log(`[updateSlotStatuses] Deleting video call for slot ${slot._id}`);
-                        // await handleDeleteVideoCallDirectly(slot._id);
+                        console.log(`[updateSlotStatuses] Deleting video call for slot ${slot._id}`);
+                        await handleDeleteVideoCallDirectly(slot._id);
                     } else {
                         console.log(`[updateSlotStatuses] Skipped deletion — no video call found for slot ${slot._id}`);
                     }
@@ -235,8 +236,8 @@ export async function updateSlotStatuses(): Promise<void> {
 // Run this every minute
 let isRunning = false;
 
-// let isCleanupRunning = false;
-// let cleanupCronStarted = false;
+let isCleanupRunning = false;
+let cleanupCronStarted = false;
 
 async function startSlotUpdateCorn() {
     if (globalThis.slotStatusCronStarted) {
@@ -261,41 +262,41 @@ async function startSlotUpdateCorn() {
 }
 
 
-// async function startVideoCallCleanupCron() {
-//     if (cleanupCronStarted) {
-//         console.log("\nVideo call cleanup cron already started. Skipping.");
-//         return;
-//     }
+async function startVideoCallCleanupCron() {
+    if (cleanupCronStarted) {
+        console.log("\nVideo call cleanup cron already started. Skipping.");
+        return;
+    }
 
-//     cron.schedule("*/2 * * * *", async () => {
-//         if (isCleanupRunning) {
-//             console.log("\n[Cron Skipped] Previous cleanup still running.");
-//             return;
-//         }
+    cron.schedule("*/2 * * * *", async () => {
+        if (isCleanupRunning) {
+            console.log("\n[Cron Skipped] Previous cleanup still running.");
+            return;
+        }
 
-//         isCleanupRunning = true;
-//         const startTime = new Date();
+        isCleanupRunning = true;
+        const startTime = new Date();
 
-//         console.log(
-//             `[${startTime.toISOString()}] Starting expired video call cleanup...`
-//         );
+        console.log(
+            `[${startTime.toISOString()}] Starting expired video call cleanup...`
+        );
 
-//         try {
-//             await cleanupExpiredVideoCalls();
-//             console.log(`[${new Date().toISOString()}] Cleanup finished.`);
-//         } catch (e) {
-//             console.error(
-//                 `[Error - cleanupExpiredVideoCalls]:`,
-//                 (e as Error).message
-//             );
-//         } finally {
-//             isCleanupRunning = false;
-//         }
-//     });
+        try {
+            await cleanupExpiredVideoCalls();
+            console.log(`[${new Date().toISOString()}] Cleanup finished.`);
+        } catch (e) {
+            console.error(
+                `[Error - cleanupExpiredVideoCalls]:`,
+                (e as Error).message
+            );
+        } finally {
+            isCleanupRunning = false;
+        }
+    });
 
-//     cleanupCronStarted = true;
-//     console.log("Video call cleanup cron scheduled every 2 minutes.\n");
-// }
+    cleanupCronStarted = true;
+    console.log("Video call cleanup cron scheduled every 2 minutes.\n");
+}
 
 startSlotUpdateCorn();
-// startVideoCallCleanupCron();
+startVideoCallCleanupCron();

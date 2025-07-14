@@ -27,3 +27,7 @@ export const apiLeaveVideoCall = async (meetingId: string) => {
     const resData = await apiService.delete(`/api/video-meeting-call/join?meetingId=${meetingId}`);
     return resData;
 };
+
+export const toggleUserVideoActivity = async (meetingId: string, isActive: boolean) => {
+    await apiService.put(`/api/video-meeting-call/join`, { meetingId, isActive });
+};

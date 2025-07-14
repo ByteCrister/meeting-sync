@@ -22,7 +22,6 @@ export interface VideoCallParticipant {
   isVideoOn: boolean;
   isScreenSharing?: boolean;
   sessions: VideoCallSession[];
-  stream?: MediaStream,
   isActive: boolean; 
 }
 
@@ -80,8 +79,6 @@ const videoMeetingSlice = createSlice({
       const alreadyExists = state.participants.some(
         (p) => p.userId === action.payload.userId
       );
-
-      console.log('Adding participant:', action.payload.userId, 'Already exists:', alreadyExists);
 
       if (!alreadyExists) {
         state.participants.push(action.payload);

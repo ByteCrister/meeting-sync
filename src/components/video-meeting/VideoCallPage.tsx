@@ -62,6 +62,7 @@ export default function VideoCallPage() {
             if (hasRejoined.current || meeting.status !== VideoCallStatus.ACTIVE) return;
 
             const joinStatusData = await apiJoinVideoCall(roomId);
+            console.log(joinStatusData);
             if (joinStatusData.success && joinStatusData.meeting) {
                 dispatch(setMeetingDetails(joinStatusData.meeting));
                 hasRejoined.current = true;

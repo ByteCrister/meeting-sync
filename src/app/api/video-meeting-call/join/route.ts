@@ -120,6 +120,23 @@ export async function GET(req: NextRequest) {
                 // * Clear waiting participants after host joins
                 videoCall.waitingParticipants = [];
             }
+            const participantIndex = videoCall.participants.findIndex(
+                (p: IVideoCallParticipant) => String(p.userId) === String(userId)
+            );
+            triggerRoomSocketEvent({
+                roomId: meetingId,
+                type: SocketTriggerTypes.NEW_PARTICIPANT_JOINED,
+                data: {
+                    userId,
+                    image: user.image,
+                    username: user.username,
+                    socketId: getUserSocketId(userId),
+                    isMuted: false,
+                    isVideoOn: false,
+                    isScreenSharing: false,
+                    sessions: participantIndex !== -1 ? videoCall.participants[participantIndex].sessions : [{ joinedAt: new Date() }]
+                }
+            });
             await videoCall.save();
 
             // *** If user is NOT host ***
@@ -187,11 +204,18 @@ export async function GET(req: NextRequest) {
         const userMap = new Map(users.map(u => [u._id.toString(), { username: u.username, image: u.image }]));
 
         // Enrich participants
-        const enrichedParticipants = videoCall.participants.map((p: IVideoCallParticipant) => ({
-            ...p,
-            username: userMap.get(p.userId.toString())?.username || 'Unknown',
-            image: userMap.get(p.userId.toString())?.image || '',
-        }));
+        const enrichedParticipants = (videoCall.participants ?? [])
+            .filter(p => p.isActive)
+            .map((p: IVideoCallParticipant) => ({
+                userId: p.userId,
+                socketId: p.socketId,
+                isMuted: p.isMuted,
+                isVideoOn: p.isVideoOn,
+                isScreenSharing: p.isScreenSharing,
+                sessions: p.sessions,
+                username: userMap.get(p.userId.toString())?.username || 'Unknown',
+                image: userMap.get(p.userId.toString())?.image || '',
+            }));
 
         // Then return full response
         return NextResponse.json({
@@ -212,6 +236,49 @@ export async function GET(req: NextRequest) {
     } catch (error) {
         console.error('Error in joining meeting:', error);
         return NextResponse.json({ message: 'Server error' }, { status: 500 });
+    }
+}
+
+export async function PUT(req: NextRequest) {
+    try {
+        await ConnectDB();
+
+        const userId = await getUserIdFromRequest(req);
+        if (!userId) {
+            return NextResponse.json({ success: false, message: "Unauthorized user" }, { status: 401 });
+        }
+
+        const { meetingId, isActive } = await req.json() as { meetingId: string, isActive: boolean };
+
+        if (!meetingId || typeof isActive !== 'boolean') {
+            return NextResponse.json({ success: false, message: "Invalid request data" }, { status: 400 });
+        }
+
+        const updatedCall = await VideoCallModel.findOneAndUpdate(
+            {
+                meetingId,
+                "participants.userId": userId,
+            },
+            {
+                $set: {
+                    "participants.$.isActive": isActive,
+                }
+            },
+            { new: true }
+        );
+
+        if (!updatedCall) {
+            return NextResponse.json({ success: false, message: "Participant or meeting not found" }, { status: 404 });
+        }
+
+        return NextResponse.json({
+            success: true,
+            message: "Participant activity updated",
+            data: updatedCall.participants.find((p: IVideoCallParticipant) => p.userId.toString() === userId.toString())
+        });
+    } catch (err) {
+        console.error("Error updating user video activity:", err);
+        return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
     }
 }
 

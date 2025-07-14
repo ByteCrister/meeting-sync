@@ -25,6 +25,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
     const localStream = useRef<MediaStream | null>(null);
     const peerConnections = useRef<PeerMap>({});
     const pendingCandidates = useRef<CandQueue>({});
+    const pendingAnswers = useRef<Record<string, RTCSessionDescriptionInit>>({});
     const [remoteStreams, setRemoteStreams] = useState<RemoteStreamMap>({});
     const [isAudio, setIsAudio] = useState(true);
     const [isVideo, setIsVideo] = useState(true);
@@ -34,11 +35,9 @@ export const useVideoCall = (roomId: string, userId: string) => {
     const negotiationInProgress = useRef<Record<string, boolean>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [videoStatus, setVideoStatus] = useState<VideoCallErrorTypes | null>(null); // For video call status (error or success)
-
     // Polling cleanup refs for negotiation rollback
     const negotiationTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
     const negotiationIntervals = useRef<Record<string, NodeJS.Timeout>>({});
-
     // Helper to clear rollback poll timers
     const clearRollbackTimers = (id: string) => {
         if (negotiationTimeouts.current[id]) {
@@ -50,7 +49,6 @@ export const useVideoCall = (roomId: string, userId: string) => {
             delete negotiationIntervals.current[id];
         }
     };
-
     // callback ref that always sets srcObject for us:
     const localVideoRef = useCallback(
         (el: HTMLVideoElement | null) => {
@@ -102,7 +100,6 @@ export const useVideoCall = (roomId: string, userId: string) => {
         };
         checkCameraPermission();
     }, []);
-
     const setupPeerConnection = (otherId: string) => {
         // Always clean old connection first (even if missed before)
         if (peerConnections.current[otherId]) {
@@ -113,17 +110,18 @@ export const useVideoCall = (roomId: string, userId: string) => {
 
         const pc = new RTCPeerConnection(servers);
         if (localStream.current) {
-            // Add audio track first if exists
             const audioTrack = localStream.current.getAudioTracks()[0];
             if (audioTrack) {
                 pc.addTrack(audioTrack, localStream.current);
             }
-            // Then add video track if exists
             const videoTrack = localStream.current.getVideoTracks()[0];
             if (videoTrack) {
                 pc.addTrack(videoTrack, localStream.current);
             }
+        } else {
+            console.warn("Local stream missing, skipping track addition");
         }
+
 
         pc.onicecandidate = (e) => {
             if (e.candidate) {
@@ -159,6 +157,10 @@ export const useVideoCall = (roomId: string, userId: string) => {
                 console.log(`[NEGOTIATION] Negotiation already in progress for ${otherId}, skipping`);
                 return;
             }
+            if (userId < otherId) {
+                console.log(`[NEGOTIATION] Skipping offer creation to avoid double-offer conflict. userId: ${userId}, otherId: ${otherId}`);
+                return;
+            }
             negotiationInProgress.current[otherId] = true;
 
             try {
@@ -169,7 +171,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
                     console.log(`[NEGOTIATION] signalingState is ${pc.signalingState}, performing rollback`);
                     await pc.setLocalDescription({ type: 'rollback' });
 
-                    // Poll signalingState until stable or timeout
+                    // Wait for signalingState to return to stable
                     await new Promise<void>((resolve, reject) => {
                         negotiationTimeouts.current[otherId] = setTimeout(() => {
                             clearRollbackTimers(otherId);
@@ -186,10 +188,11 @@ export const useVideoCall = (roomId: string, userId: string) => {
                         };
                         checkState();
                     });
+
                     console.log(`[NEGOTIATION] Rollback complete, signalingState now: ${pc.signalingState}`);
                 }
 
-                // Only create offer if stable after rollback
+                // Only create and send offer if stable
                 if (pc.signalingState === 'stable') {
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
@@ -200,7 +203,30 @@ export const useVideoCall = (roomId: string, userId: string) => {
                         targetUserId: otherId,
                         offer,
                     });
+
                     console.log(`[OFFER] Sent offer to ${otherId}`);
+
+                    // 💡 Try applying any previously queued answer
+                    const queuedAnswer = pendingAnswers.current?.[otherId];
+                    if (queuedAnswer && !pc.remoteDescription) {
+                        try {
+                            await pc.setRemoteDescription(new RTCSessionDescription(queuedAnswer));
+                            console.log(`[NEGOTIATION] ✅ Applied previously queued answer from ${otherId}`);
+                            delete pendingAnswers.current[otherId];
+
+                            const candidates = pendingCandidates.current?.[otherId] || [];
+                            for (const candidate of candidates) {
+                                try {
+                                    await pc.addIceCandidate(candidate);
+                                } catch (err) {
+                                    console.warn(`[ICE] ❌ Failed to apply candidate after answer for ${otherId}`, err);
+                                }
+                            }
+                            delete pendingCandidates.current[otherId];
+                        } catch (err) {
+                            console.error(`[NEGOTIATION] ❌ Failed to apply queued answer from ${otherId}`, err);
+                        }
+                    }
                 } else {
                     console.log(`[NEGOTIATION] signalingState not stable after rollback, skipping offer`);
                 }
@@ -215,8 +241,6 @@ export const useVideoCall = (roomId: string, userId: string) => {
         peerConnections.current[otherId] = pc;
         return pc;
     };
-
-
     useEffect(() => {
 
         const joinRoom = async () => {
@@ -289,6 +313,8 @@ export const useVideoCall = (roomId: string, userId: string) => {
 
                 console.log('[SOCKET] Connecting to video namespace...');
 
+                socket.removeAllListeners();
+
                 socket.on(VMSocketTriggerTypes.EXISTING_USERS, async ({ existingUsers }) => {
                     console.log(`[EXISTING_USERS] Received:`, existingUsers);
                     for (const other of existingUsers) {
@@ -312,12 +338,12 @@ export const useVideoCall = (roomId: string, userId: string) => {
                         peerConnections.current[newUserId].close();
                         delete peerConnections.current[newUserId];
                     }
-                    if (negotiationInProgress.current[newUserId]) {
-                        delete negotiationInProgress.current[newUserId];
-                    }
-                    if (pendingCandidates.current[newUserId]) {
-                        delete pendingCandidates.current[newUserId];
-                    }
+                    delete pendingAnswers.current[newUserId];
+                    delete pendingCandidates.current[newUserId];
+                    delete negotiationInProgress.current[newUserId];
+                    // ✅ Prevent stale timers from triggering
+                    clearRollbackTimers(newUserId);
+                    
                     setRemoteStreams(prev => {
                         const updated = { ...prev };
                         delete updated[newUserId];
@@ -332,26 +358,42 @@ export const useVideoCall = (roomId: string, userId: string) => {
                 socket.on(VMSocketTriggerTypes.RECEIVE_ANSWER, async ({ fromUserId, answer }) => {
                     console.log(`[RECEIVE_ANSWER] from ${fromUserId}`);
                     const pc = peerConnections.current[fromUserId];
-                    if (!pc) return;
+                    if (!pc) {
+                        console.warn(`[RECEIVE_ANSWER] PeerConnection not found for ${fromUserId}`);
+                        return;
+                    }
 
                     try {
-                        if (!pc.remoteDescription || pc.signalingState === 'have-local-offer') {
+                        const canApplyAnswer =
+                            pc.signalingState === 'have-local-offer' &&
+                            pc.localDescription?.type === 'offer' &&
+                            !pc.remoteDescription;
+
+
+                        if (canApplyAnswer) {
                             await pc.setRemoteDescription(new RTCSessionDescription(answer));
-                            console.log(`[ANSWER] Applied from ${fromUserId}`, answer);
+                            console.log(`[RECEIVE_ANSWER] ✅ Applied remote answer from ${fromUserId}`);
 
-                            (pendingCandidates.current[fromUserId] || []).forEach((cand) =>
-                                pc.addIceCandidate(cand).catch(console.log)
-                            );
+                            const queued = pendingCandidates.current[fromUserId] || [];
+                            for (const candidate of queued) {
+                                try {
+                                    await pc.addIceCandidate(candidate);
+                                } catch (err) {
+                                    console.warn(`[ICE] Failed to apply candidate for ${fromUserId}`, err);
+                                }
+                            }
                             delete pendingCandidates.current[fromUserId];
-
+                            delete pendingAnswers.current[fromUserId];
                         } else {
-                            console.log(`Remote description already set or signalingState not valid for ${fromUserId}`);
+                            console.warn(
+                                `[RECEIVE_ANSWER] ❌ Queuing answer. Invalid signalingState='${pc.signalingState}' for ${fromUserId}`
+                            );
+                            pendingAnswers.current[fromUserId] = answer;
                         }
                     } catch (err) {
-                        console.error("Error setting remote answer:", err);
+                        console.error(`[RECEIVE_ANSWER] ❌ Failed to apply answer from ${fromUserId}:`, err);
                     }
-                }
-                );
+                });
 
                 socket.on(VMSocketTriggerTypes.RECEIVE_OFFER, async ({ fromUserId, offer }) => {
                     let pc = peerConnections.current[fromUserId];
@@ -439,22 +481,22 @@ export const useVideoCall = (roomId: string, userId: string) => {
                     }
                 });
 
-                socket.on(VMSocketTriggerTypes.USER_LEAVED,
-                    ({ userId: leaver }) => {
-                        const pc = peerConnections.current[leaver];
-                        if (pc) {
-                            pc.close();
-                            delete peerConnections.current[leaver];
-                            delete negotiationInProgress.current[leaver];
-                        }
-
-                        setRemoteStreams((prev) => {
-                            const next = { ...prev };
-                            delete next[leaver];
-                            return next;
-                        });
+                socket.on(VMSocketTriggerTypes.USER_LEAVED, ({ userId: leaver }) => {
+                    const pc = peerConnections.current[leaver];
+                    if (pc) {
+                        pc.close();
+                        delete peerConnections.current[leaver];
                     }
-                );
+                    delete pendingAnswers.current[leaver];
+                    delete pendingCandidates.current[leaver];
+                    delete negotiationInProgress.current[leaver];
+
+                    setRemoteStreams((prev) => {
+                        const next = { ...prev };
+                        delete next[leaver];
+                        return next;
+                    });
+                });
 
                 // ! ----------- Mange States in Redux ---------------
 
@@ -539,6 +581,8 @@ export const useVideoCall = (roomId: string, userId: string) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [roomId, userId]);
 
+
+
     useEffect(() => {
         const handleLeave = () => {
             const socket = socketRef.current;
@@ -592,33 +636,21 @@ export const useVideoCall = (roomId: string, userId: string) => {
         }
     };
 
-    const toggleVideo = async () => {
-        if (!localStream.current) return;
+    const toggleVideo = () => {
+        const stream = localStream.current;
+        if (!stream) return;
 
-        try {
-            if (!isVideo) {
-                const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const videoTrack = videoStream.getVideoTracks()[0];
-                if (videoTrack) {
-                    localStream.current.addTrack(videoTrack);
-                    Object.values(peerConnections.current).forEach((pc) => pc.addTrack(videoTrack, localStream.current!));
-                    setIsVideo(true);
-                }
-            } else {
-                const videoTrack = localStream.current.getVideoTracks()[0];
-                if (videoTrack) {
-                    videoTrack.stop();
-                    localStream.current.removeTrack(videoTrack);
-                    Object.values(peerConnections.current).forEach((pc) => {
-                        const sender = pc.getSenders().find((s) => s.track === videoTrack);
-                        if (sender) pc.removeTrack(sender);
-                    });
-                    setIsVideo(false);
-                }
-            }
-        } catch (err) {
-            ShadcnToast('Video permission denied or error toggling video.');
-            console.log('Video toggle error:', err);
+        const [videoTrack] = stream.getVideoTracks();
+        if (!videoTrack) return;
+
+        // Mute/unmute without renegotiation
+        const nowEnabled = !videoTrack.enabled;
+        videoTrack.enabled = nowEnabled;
+        setIsVideo(nowEnabled);
+
+        // Refresh local view
+        if (localRef.current) {
+            localRef.current.srcObject = stream;
         }
     };
 
