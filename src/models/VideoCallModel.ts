@@ -146,6 +146,7 @@ const VideoCallSchema = new Schema<IVideoCall>(
     {
         timestamps: true,
         versionKey: false,
+        strict: true
     }
 );
 

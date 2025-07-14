@@ -10,11 +10,12 @@ import UserModel from "@/models/UserModel";
 import { emailAuthentication } from "@/config/NodeEmailer";
 import { DateTime } from "luxon";
 import { handleCreateVideoCallDirectly } from "../server/handleCreateVideoCallDirectly";
-import { handleDeleteVideoCallDirectly } from "../server/handleDeleteVideoCallDirectly";
+// import { handleDeleteVideoCallDirectly } from "../server/handleDeleteVideoCallDirectly";
 import getNotificationExpiryDate from "../server/getNotificationExpiryDate";
 import { updateTrendScoreForSlot } from "../server/updateTrendScoreForSlot";
-import { cleanupExpiredVideoCalls } from "./cleanUpExpiredVideoCalls";
+// import { cleanupExpiredVideoCalls } from "./cleanUpExpiredVideoCalls";
 import { getReminderHTML } from "./getReminderHTML";
+import VideoCallModel from "@/models/VideoCallModel";
 
 declare global {
     // Extend the globalThis interface to include slotStatusCronStarted
@@ -80,7 +81,7 @@ export async function updateSlotStatuses(): Promise<void> {
             // 1️⃣  Sanity checks
             // ---------------------------------------------------------------------
             if (!slot.meetingDate || !slot.durationFrom || !slot.durationTo) {
-                console.warn(`Slot ID ${slot._id} missing time data.`);
+                console.log(`Slot ID ${slot._id} missing time data.`);
                 continue;
             }
 
@@ -90,7 +91,7 @@ export async function updateSlotStatuses(): Promise<void> {
             const fromTime = parseTimeTo24Hour(slot.durationFrom);
             const toTime = parseTimeTo24Hour(slot.durationTo);
             if (!fromTime || !toTime) {
-                console.warn(`Slot ${slot._id}: Failed to parse from/to time.`);
+                console.log(`Slot ${slot._id}: Failed to parse from/to time.`);
                 continue;
             }
 
@@ -115,7 +116,8 @@ export async function updateSlotStatuses(): Promise<void> {
             }).toUTC();
 
             if (end <= start) {
-                end = end.plus({ days: 1 }); // overnight meetings ➜ add 24h
+                console.log(`⚠️ Slot ${slot._id} has end <= start. Adding default 1.`);
+                end = end.plus({ day: 1 }); // overnight meetings ➜ add 24h
             }
 
             // ---------------------------------------------------------------------
@@ -166,27 +168,20 @@ export async function updateSlotStatuses(): Promise<void> {
             // ---------------------------------------------------------------------
             if (slot.status !== newStatus) {
                 console.log(`Duration from: ${slot.durationFrom}  -  Duration to: ${slot.durationTo}\n`);
-                console.log(`Slot ID: ${slot._id}   time now: ${nowUTC}  -   time start: ${start} olt status: ${slot.status}   new status: ${newStatus}\n`);
+                console.log(`Slot ID: ${slot._id}   time now: ${nowUTC}  -   time start: ${start} previous status: ${slot.status}   new status: ${newStatus}\n`);
+
                 if (newStatus === IRegisterStatus.Ongoing) {
-                    try {
-                        const call = await handleCreateVideoCallDirectly(slot._id, slot.ownerId.toString());
-                        console.log("\n[    Video call created: " + call._id + "   ]");
-                    } catch (err) {
-                        console.error("Failed to create video call:", (err as Error).message);
+                    const existingCall = await VideoCallModel.findOne({ meetingId: slot._id });
+
+                    if (!existingCall) {
+                        try {
+                            const call = await handleCreateVideoCallDirectly(slot._id, slot.ownerId.toString());
+                            console.log(`[updateSlotStatuses] Created video call: ${call._id}`);
+                        } catch (err) {
+                            console.error("Failed to create video call:", (err as Error).message);
+                        }
                     }
-                }
 
-                if ([IRegisterStatus.Expired, IRegisterStatus.Completed].includes(newStatus)) {
-                    console.log('\n[    Video call Deleted.     ]\n');
-                    await handleDeleteVideoCallDirectly(slot._id);
-                }
-
-                slot.status = newStatus;
-                await slot.save();
-                console.log(`Slot ${slot._id} updated to ${newStatus}`);
-
-                // Socket + notification when meeting starts
-                if (newStatus === IRegisterStatus.Ongoing) {
                     const notification = {
                         type: INotificationType.MEETING_TIME_STARTED,
                         sender: slot.ownerId,
@@ -206,15 +201,30 @@ export async function updateSlotStatuses(): Promise<void> {
                         notificationData: { ...notification, _id: saved._id, image: user?.image },
                     });
                 }
-            } else {
-                // Still persist reminder timestamp or other minor edits
+
+                if ([IRegisterStatus.Expired, IRegisterStatus.Completed].includes(newStatus)) {
+                    const existingCall = await VideoCallModel.findOne({ meetingId: slot._id });
+
+                    console.log(existingCall);
+                    if (existingCall) {
+                        // console.log(`[updateSlotStatuses] Deleting video call for slot ${slot._id}`);
+                        // await handleDeleteVideoCallDirectly(slot._id);
+                    } else {
+                        console.log(`[updateSlotStatuses] Skipped deletion — no video call found for slot ${slot._id}`);
+                    }
+                }
+
+                // ⬅️ move it here (applies to ALL status changes)
+                slot.status = newStatus;
                 await slot.save();
+                console.log(`Slot ${slot._id} updated to ${newStatus}`);
+
+                // Trend update
+                await updateTrendScoreForSlot(slot._id.toString());
             }
 
-            // Update trend score regardless of status change
-            await updateTrendScoreForSlot(slot._id.toString());
-        }
 
+        }
         console.log(`END updateSlotStatuses: ${new Date().toISOString()}\n`);
     } catch (error) {
         console.error("[updateSlotStatuses Error]:", (error as Error).message);
@@ -224,10 +234,11 @@ export async function updateSlotStatuses(): Promise<void> {
 
 // Run this every minute
 let isRunning = false;
-let isCleanupRunning = false;
-let cleanupCronStarted = false;
 
-async function startCronJob() {
+// let isCleanupRunning = false;
+// let cleanupCronStarted = false;
+
+async function startSlotUpdateCorn() {
     if (globalThis.slotStatusCronStarted) {
         console.log("Cron job already started. Skipping initialization.");
         return;
@@ -250,41 +261,41 @@ async function startCronJob() {
 }
 
 
-async function startVideoCallCleanupCron() {
-    if (cleanupCronStarted) {
-        console.log("Video call cleanup cron already started. Skipping.");
-        return;
-    }
+// async function startVideoCallCleanupCron() {
+//     if (cleanupCronStarted) {
+//         console.log("\nVideo call cleanup cron already started. Skipping.");
+//         return;
+//     }
 
-    cron.schedule("*/2 * * * *", async () => {
-        if (isCleanupRunning) {
-            console.warn("[Cron Skipped] Previous cleanup still running.");
-            return;
-        }
+//     cron.schedule("*/2 * * * *", async () => {
+//         if (isCleanupRunning) {
+//             console.log("\n[Cron Skipped] Previous cleanup still running.");
+//             return;
+//         }
 
-        isCleanupRunning = true;
-        const startTime = new Date();
+//         isCleanupRunning = true;
+//         const startTime = new Date();
 
-        console.log(
-            `\n[${startTime.toISOString()}] Starting expired video call cleanup...`
-        );
+//         console.log(
+//             `[${startTime.toISOString()}] Starting expired video call cleanup...`
+//         );
 
-        try {
-            await cleanupExpiredVideoCalls();
-            console.log(`[${new Date().toISOString()}] Cleanup finished.`);
-        } catch (e) {
-            console.error(
-                `[Error - cleanupExpiredVideoCalls]:`,
-                (e as Error).message
-            );
-        } finally {
-            isCleanupRunning = false;
-        }
-    });
+//         try {
+//             await cleanupExpiredVideoCalls();
+//             console.log(`[${new Date().toISOString()}] Cleanup finished.`);
+//         } catch (e) {
+//             console.error(
+//                 `[Error - cleanupExpiredVideoCalls]:`,
+//                 (e as Error).message
+//             );
+//         } finally {
+//             isCleanupRunning = false;
+//         }
+//     });
 
-    cleanupCronStarted = true;
-    console.log("Video call cleanup cron scheduled every 2 minutes.");
-}
+//     cleanupCronStarted = true;
+//     console.log("Video call cleanup cron scheduled every 2 minutes.\n");
+// }
 
-startCronJob();
-startVideoCallCleanupCron();
+startSlotUpdateCorn();
+// startVideoCallCleanupCron();

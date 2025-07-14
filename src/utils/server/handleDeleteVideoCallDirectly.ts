@@ -6,6 +6,9 @@ import { triggerRoomSocketEvent } from "../socket/triggerRoomSocketEvent";
 import { SocketTriggerTypes } from "../constants";
 
 export async function handleDeleteVideoCallDirectly(meetingId: string) {
+  
+  console.log(`[handleDeleteVideoCallDirectly] Attempting to delete video call for meetingId: ${meetingId}`);
+
   if (!mongoose.Types.ObjectId.isValid(meetingId)) {
     throw new Error("Invalid meetingId");
   }

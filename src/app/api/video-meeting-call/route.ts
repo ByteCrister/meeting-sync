@@ -41,7 +41,6 @@ export async function GET(req: NextRequest) {
         }
 
         const meeting = await VideoCallModel.findOne({ meetingId }).lean() as IVideoCall | null;
-        console.log(`MeetingID: ${meetingId}, meeting: ${meeting}\n`);
         if (!meeting) {
             return NextResponse.json({
                 success: true,

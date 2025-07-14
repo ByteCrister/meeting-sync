@@ -29,7 +29,7 @@ export const parseTime = (timeString: string, referenceDate: Date): Date => {
 
 export async function handleCreateVideoCallDirectly(meetingId: string, userId: string) {
   await ConnectDB();
-  // console.log(`Creating Video Call for meeting ${meetingId} by user ${userId}`);
+  console.log(`Creating Video Call for meeting ${meetingId} by user ${userId}`);
 
   const user = await UserModel.findById(userId).select("image");
   if (!user) throw new Error("User not found");

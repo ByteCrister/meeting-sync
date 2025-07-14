@@ -166,7 +166,6 @@ const useNotificationSocket = () => {
         return () => {
             if (socketRef.current) {
                 socketRef.current.off(); // remove all listeners
-                socketRef.current.disconnect();
                 console.log("Socket cleanup: disconnected");
             }
             listenersAttachedRef.current = false;

@@ -78,7 +78,6 @@ const useBookedSearch = () => {
                 // Sort results by relevance (lowest score = best match)
                 const sortedByBestMatch = result.sort((a, b) => a.score! - b.score!);
                 const matchedSlots = sortedByBestMatch.map((r) => r.item);
-                console.log(matchedSlots);
                 dispatch(setSortedBookedMeetings(matchedSlots));
                 dispatch(setBookedMeetingCurrentPage(1));
             }, 300),
