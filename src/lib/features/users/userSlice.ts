@@ -39,7 +39,7 @@ export const userSlice = createSlice({
         },
         addSingleNotification: (state, action: PayloadAction<Notification>) => {
             console.log(!state.notifications?.some((item) => item._id === action.payload._id));
-            if(!state.notifications?.some((item) => item._id === action.payload._id)){
+            if (!state.notifications?.some((item) => item._id === action.payload._id)) {
                 state.notifications?.unshift(action.payload);
             };
         },
@@ -50,11 +50,11 @@ export const userSlice = createSlice({
                 });
             }
         },
-        deleteNotification: (state, action: PayloadAction<string>) => {
-            if (state.notifications) {
-                state.notifications = state.notifications?.filter((item) => item._id !== action.payload);
-            }
+        deleteNotification: (state, action: PayloadAction<string | string[]>) => {
+            const ids = Array.isArray(action.payload) ? action.payload : [action.payload];
+            state.notifications = state?.notifications?.filter(n => !ids.includes(n._id))||[];
         },
+
         incrementNotificationCount: (state) => {
             if (state.user) {
                 state.user.countOfNotifications += 1;

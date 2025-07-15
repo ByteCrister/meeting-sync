@@ -142,28 +142,26 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
     try {
         await ConnectDB();
-
         const userId = await getUserIdFromRequest(req);
         if (!userId) {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
         }
 
-        const { notificationId } = await req.json() as { notificationId: string };
+        const { notificationIds } = await req.json() as { notificationIds: string[] };
 
-        if (!notificationId || !mongoose.Types.ObjectId.isValid(notificationId)) {
-            return NextResponse.json({ success: false, message: 'Invalid notification ID' }, { status: 400 });
+        if (!Array.isArray(notificationIds) || notificationIds.some(id => !mongoose.Types.ObjectId.isValid(id))) {
+            return NextResponse.json({ success: false, message: 'Invalid notification IDs' }, { status: 400 });
         }
 
-        // Ensure the notification belongs to the user
-        const notification = await NotificationsModel.findOne({ _id: notificationId, receiver: userId });
+        const result = await NotificationsModel.deleteMany({
+            _id: { $in: notificationIds },
+            receiver: userId,
+        });
 
-        if (!notification) {
-            return NextResponse.json({ success: false, message: 'Notification not found or unauthorized' }, { status: 404 });
-        }
-
-        await NotificationsModel.findByIdAndDelete(notificationId);
-
-        return NextResponse.json({ success: true, message: 'Notification deleted successfully' });
+        return NextResponse.json({
+            success: true,
+            message: `${result.deletedCount} notification(s) deleted successfully`,
+        });
     } catch (error) {
         console.log('DELETE /notification error:', error);
         return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 });

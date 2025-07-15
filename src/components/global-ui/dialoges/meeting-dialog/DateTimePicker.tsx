@@ -110,7 +110,7 @@ const DateTimePicker = () => {
                         </div>
                     </TooltipTrigger>
                     {hasData && !isDisabled && (
-                        <TooltipContent className="bg-white text-black shadow-lg rounded-md p-2 text-xs max-w-[180px] w-full z-50">
+                        <TooltipContent className="bg-gray-800 text-white shadow-lg rounded-md p-2 text-xs max-w-[180px] w-full z-50">
                             <ul className="space-y-1">
                                 {hasData.times.map((t, idx) => (
                                     <li key={idx}>

@@ -52,56 +52,32 @@ const convertTo12Hour = (time: string): string => {
 
 
 const isTimeRangeAvailable = (from: string, to: string, busyTimes: BusyTime[]): boolean => {
-    if (busyTimes.length === 0) return true;
-
     const from24 = convertTo24Hour(from);
     const to24 = convertTo24Hour(to);
 
-    if (!from24 || !to24) {
-        console.warn("Invalid from/to time provided:", from, to);
-        return false;
-    }
+    if (!from24 || !to24) return false;
 
     const start = new Date(`1970-01-01T${from24}`).getTime();
     let end = new Date(`1970-01-01T${to24}`).getTime();
 
-    // Handle cross-midnight time
-    if (end <= start) {
-        end += 24 * 60 * 60 * 1000; // Add 24 hours to end time
-    }
-
-    const selectedDuration = end - start;
-    let overlapDuration = 0;
+    if (end <= start) end += 24 * 60 * 60 * 1000;
 
     for (const { from: busyFrom, to: busyTo } of busyTimes) {
         const busyFrom24 = convertTo24Hour(busyFrom);
         const busyTo24 = convertTo24Hour(busyTo);
 
-        if (!busyFrom24 || !busyTo24) {
-            console.warn("Invalid busy time slot:", busyFrom, busyTo);
-            continue;
-        }
+        if (!busyFrom24 || !busyTo24) continue;
 
         const busyStart = new Date(`1970-01-01T${busyFrom24}`).getTime();
         let busyEnd = new Date(`1970-01-01T${busyTo24}`).getTime();
+        if (busyEnd <= busyStart) busyEnd += 24 * 60 * 60 * 1000;
 
-        // Handle cross-midnight busy time
-        if (busyEnd <= busyStart) {
-            busyEnd += 24 * 60 * 60 * 1000;
-        }
-
-        // console.log(`Checking overlap: Selected [${from} - ${to}] vs Busy [${busyFrom} - ${busyTo}]`);
-
-        const overlapStart = Math.max(start, busyStart);
-        const overlapEnd = Math.min(end, busyEnd);
-
-        if (overlapStart < overlapEnd) {
-            overlapDuration += overlapEnd - overlapStart;
-        }
+        // Check if the ranges overlap
+        const isOverlap = start < busyEnd && busyStart < end;
+        if (isOverlap) return false;
     }
 
-    // console.log(`Selected Duration: ${selectedDuration} ms, Overlap Duration: ${overlapDuration} ms`);
-    return overlapDuration < selectedDuration;
+    return true;
 };
 
 

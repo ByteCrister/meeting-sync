@@ -38,7 +38,7 @@ const NotifyChangeDialog = () => {
     // ? API delete notification
     const handleDelete = async () => {
         seIsLoading(true);
-        const responseData = await APIdeleteNotification (notificationId!);
+        const responseData = await APIdeleteNotification ([notificationId!]);
         if (responseData.success) {
             dispatch(deleteNotification(notificationId!));
             ShadcnToast(responseData.message);

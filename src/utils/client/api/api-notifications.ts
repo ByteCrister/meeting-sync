@@ -27,8 +27,8 @@ export const APIupdateNotificationField = async (
 };
 
 
-export const APIdeleteNotification = async (notificationId: string): Promise<ApiResponse> => {
-    const responseData = await apiService.delete('/api/notifications', { notificationId });
+export const APIdeleteNotification = async (notificationIds: string[]): Promise<ApiResponse> => {
+    const responseData = await apiService.delete('/api/notifications', { notificationIds });
     return responseData;
 }
 
