@@ -35,6 +35,8 @@ export const useVideoCall = (roomId: string, userId: string) => {
     const negotiationInProgress = useRef<Record<string, boolean>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [videoStatus, setVideoStatus] = useState<VideoCallErrorTypes | null>(null); // For video call status (error or success)
+    const [isChatModalOpen, setIsChatModalOpen] = useState<boolean>(false);
+    const [unseenMessages, setUnseenMessages] = useState<number>(0);
     // Polling cleanup refs for negotiation rollback
     const negotiationTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
     const negotiationIntervals = useRef<Record<string, NodeJS.Timeout>>({});
@@ -343,7 +345,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
                     delete negotiationInProgress.current[newUserId];
                     // ✅ Prevent stale timers from triggering
                     clearRollbackTimers(newUserId);
-                    
+
                     setRemoteStreams(prev => {
                         const updated = { ...prev };
                         delete updated[newUserId];
@@ -507,6 +509,9 @@ export const useVideoCall = (roomId: string, userId: string) => {
 
                 // Event: New chat message
                 socket.on(SocketTriggerTypes.NEW_METING_CHAT_MESSAGE, (data) => {
+                    if (!isChatModalOpen) {
+                        setUnseenMessages(prev => prev + 1);
+                    }
                     dispatch(addChatMessage(data));
                 });
 
@@ -753,6 +758,10 @@ export const useVideoCall = (roomId: string, userId: string) => {
         }
     }
 
+    const clearUnSeenMessages = () => {
+        setUnseenMessages(0);
+    };
+
     return {
         isLoading,
         videoStatus,
@@ -762,11 +771,14 @@ export const useVideoCall = (roomId: string, userId: string) => {
         isVideo,
         selectedCardVideo,
         isScreenSharing,
+        unseenMessages,
         // mediaPermissionError,
         toggleAudio,
         toggleVideo,
         setSelectedCardVideo,
         toggleScreenShare,
         handleCallEnd,
+        setIsChatModalOpen,
+        clearUnSeenMessages
     };
 };

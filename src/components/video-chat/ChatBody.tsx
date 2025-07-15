@@ -5,16 +5,17 @@ import { ChatMessageItem } from './ChatMessageItem';
 import { ParticipantsList } from './ParticipantsList';
 import { ChatMessage, VideoCallParticipant } from '@/lib/features/videoMeeting/videoMeetingSlice';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import { useAppSelector } from '@/lib/hooks';
 
 interface Props {
     view: 'chat' | 'participants';
     messages: ChatMessage[];
     participants: VideoCallParticipant[];
-    currentUserId: string;
     deleteMessage: (messageId: string) => void;
 }
 
-export function ChatBody({ view, messages, participants, currentUserId, deleteMessage }: Props) {
+export function ChatBody({ view, messages, participants, deleteMessage }: Props) {
+    const currentUserId = useAppSelector(state => state.userStore.user?._id);
     const [confirmId, setConfirmId] = useState<string | null>(null);
     if (view === 'participants') {
         return (

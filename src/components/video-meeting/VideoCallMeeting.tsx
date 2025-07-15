@@ -70,7 +70,6 @@ function GuestTile({
 
 export default function VideoCallMeeting({ roomId }: { roomId: string }) {
     const userId = useAppSelector((s) => s.userStore.user?._id || '');
-    const meetingState = useAppSelector((state) => state.videoMeeting);
 
     const {
         localVideoRef,
@@ -79,11 +78,14 @@ export default function VideoCallMeeting({ roomId }: { roomId: string }) {
         isAudio,
         isVideo,
         isScreenSharing,
+        unseenMessages,
         toggleAudio,
         toggleVideo,
         setSelectedCardVideo,
         toggleScreenShare,
-        handleCallEnd
+        handleCallEnd,
+        setIsChatModalOpen,
+        clearUnSeenMessages,
     } = useVideoCall(roomId, userId);
 
     const guestIds = Object.keys(remoteStreams);
@@ -93,6 +95,7 @@ export default function VideoCallMeeting({ roomId }: { roomId: string }) {
     const onTileClick = (stream: MediaStream) => {
         setSelectedCardVideo((prev) => (prev === stream ? null : stream));
     };
+
 
     return (
         <div className="relative flex flex-col h-screen bg-gray-900 text-white">
@@ -185,8 +188,8 @@ export default function VideoCallMeeting({ roomId }: { roomId: string }) {
                 />
             </div>
 
-            <ChatModal roomId={roomId} />
-            <MeetingEndCountdown endTime={meetingState.endTime || ''} />
+            <ChatModal roomId={roomId} setIsChatModalOpen={setIsChatModalOpen} unSeenMessages={unseenMessages} clearUnSeenMessages={clearUnSeenMessages} />
+            <MeetingEndCountdown />
         </div>
     );
 }

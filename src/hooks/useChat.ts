@@ -7,7 +7,6 @@ import { VCallUpdateApiType } from '@/utils/constants';
 import { useCallback } from 'react';
 
 export function useChat(roomId: string) {
-  const currentUser = useAppSelector(s => s.userStore.user)!;
   const messages = useAppSelector(s => s.videoMeeting.chatMessages);
   const participants = useAppSelector(
     state => state.videoMeeting.participants
@@ -36,5 +35,5 @@ export function useChat(roomId: string) {
   }
     , [roomId]);
 
-  return { messages, participants, currentUser, sendMessage, deleteMessage };
+  return { messages, participants, sendMessage, deleteMessage };
 };
