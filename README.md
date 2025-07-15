@@ -24,8 +24,10 @@
 ## Files and Media
 
 - **High-level System Overview**
-  - [System Full Architecture](https://deepwiki.com/ByteCrister/meeting-sync)
-  - [Project Documentation](files/interaction-flowchart.svg)
+  - [System Architecture, Diagrams, Data flow, component dependency, explanation of connections with high contrast of visualizations](https://deepwiki.com/ByteCrister/meeting-sync)
+  - [Project Overview](https://drive.google.com/file/d/1ptclzF0EsDC2lfkkYVcPyLDHImo2IWsd/view?usp=drive_link)
+  - [Project Component Overview](https://drive.google.com/file/d/15YLKpCyWWtZx-sk9Gfzwk_1kx3gTXXGM/view?usp=drive_link)
+  - [Database File](https://drive.google.com/drive/folders/1vDBPUQTP2FUIvBMaWAhsgAoAJlwFF83-?usp=drive_link)
 
 ## 🚀 Key Features
 
