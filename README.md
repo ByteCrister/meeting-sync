@@ -21,6 +21,12 @@
 
 ---
 
+## Files and Media
+
+- **High-level System Overview**
+  - [System Full Architecture](https://deepwiki.com/ByteCrister/meeting-sync)
+  - [Project Documentation](files/interaction-flowchart.svg)
+
 ## 🚀 Key Features
 
 ### 🌐 Landing Page
