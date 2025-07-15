@@ -60,10 +60,7 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
 
             // ? Register a user to socket using userId
             socket.on(SocketTriggerTypes.REGISTER_USER, (data) => {
-                console.log(
-                    "-------------------------- User registered: ",
-                    data.userId + " -----------------------------"
-                );
+                console.log(`-------------------------- User registered: ${data.userId} -----------------------------`);
                 registerUserSocket(data.userId, socket.id);
                 socket.data.userId = data.userId;
             });
