@@ -1,3 +1,4 @@
+// G:\Projects\meeting-sync\src\hooks\useNotificationSocket.ts (Next.js)
 "use client";
 
 import ShadcnToast from "@/components/global-ui/toastify-toaster/ShadcnToast";
@@ -11,7 +12,6 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { RegisterSlotStatus } from "@/types/client-types";
 import { NotificationType, SocketTriggerTypes } from "@/utils/constants";
 import { getSocket, initiateSocket } from "@/utils/socket/initiateSocket";
-import { initializeServerSocket } from "@/utils/socket/socketInitialized";
 import { useEffect, useRef } from "react";
 
 const useNotificationSocket = () => {
@@ -25,6 +25,7 @@ const useNotificationSocket = () => {
     const listenersAttachedRef = useRef(false);
 
     const activeChatRef = useRef(activeChatParticipant);
+    const userIdRef = useRef<string | null>(null);
 
     useEffect(() => {
         activeChatRef.current = activeChatParticipant;
@@ -35,7 +36,6 @@ const useNotificationSocket = () => {
         if (!user?._id) return;
 
         const setupSocket = async () => {
-            await initializeServerSocket();
 
             if (!socketRef.current) {
                 socketRef.current = getSocket("chat"); // * uses single socket for both notification and chat messaging
@@ -49,16 +49,7 @@ const useNotificationSocket = () => {
             }
 
             // Always remove previous listeners before setting new ones
-            socket.off(SocketTriggerTypes.RECEIVED_NOTIFICATION);
-            socket.off(SocketTriggerTypes.MEETING_STARTED);
-            socket.off(SocketTriggerTypes.USER_SLOT_BOOKED);
-            socket.off(SocketTriggerTypes.INCREASE_BOOKED_USER);
-            socket.off(SocketTriggerTypes.DECREASE_BOOKED_USER);
-            socket.off(SocketTriggerTypes.USER_SLOT_UNBOOKED);
-            socket.off(SocketTriggerTypes.MEETING_TIME_STARTED);
-            socket.off(SocketTriggerTypes.SEND_NEW_CHAT_MESSAGE);
-            socket.off(SocketTriggerTypes.DELETE_CHAT_MESSAGE);
-            socket.off(SocketTriggerTypes.INCREASE_UNSEEN_MESSAGE_COUNT);
+            socket.removeAllListeners();
 
             // Only attach listeners once per mount (even if user/participant changes)
             if (!listenersAttachedRef.current) {
@@ -152,8 +143,10 @@ const useNotificationSocket = () => {
 
             // Register events
             socket.on("connect", () => {
-                console.log("Socket connected");
-                socket.emit(SocketTriggerTypes.REGISTER_USER, { userId: user._id });
+                if (!userIdRef.current) {
+                    socket.emit(SocketTriggerTypes.REGISTER_USER, { userId: user._id });
+                    userIdRef.current = user._id;
+                }
             });
 
             socket.on("disconnect", (reason) => {
@@ -165,14 +158,12 @@ const useNotificationSocket = () => {
 
         return () => {
             if (socketRef.current) {
-                socketRef.current.off(); // remove all listeners
-                console.log("Socket cleanup: disconnected");
+                socketRef.current.off();
             }
             listenersAttachedRef.current = false;
-            socketRef.current = null; // optional, ensures fresh init on next mount
         };
 
-    }, [dispatch, user?._id, countOfUnseenMessages, user?.disabledNotificationUsers]);
+    }, [countOfUnseenMessages, dispatch, user?._id, user?.disabledNotificationUsers]);
 
 };
 

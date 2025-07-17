@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
             if (!alreadyJoined) {
                 videoCall.participants.push({
                     userId,
-                    socketId: getUserSocketId(userId) || "",
+                    socketId: await getUserSocketId(userId) || "",
                     isMuted: false,
                     isVideoOn: false,
                     isScreenSharing: false,
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
                 });
             } else {
                 const participantIndex = videoCall.participants.findIndex((p: IVideoCallParticipant) => String(p.userId) === String(userId));
-                videoCall.participants[participantIndex].socketId = getUserSocketId(userId) || "";
+                videoCall.participants[participantIndex].socketId = await getUserSocketId(userId) || "";
                 videoCall.participants[participantIndex].sessions.push({ joinedAt: new Date() });
                 videoCall.participants[participantIndex].isActive = true;
             }
@@ -165,7 +165,7 @@ export async function GET(req: NextRequest) {
             if (participantIndex === -1) {
                 videoCall.participants.push({
                     userId,
-                    socketId: getUserSocketId(userId) || "",
+                    socketId: await getUserSocketId(userId) || "",
                     isMuted: false,
                     isVideoOn: false,
                     isScreenSharing: false,
@@ -174,7 +174,7 @@ export async function GET(req: NextRequest) {
                 });
             } else {
                 // Already a participant — update join time and clear leftAt
-                videoCall.participants[participantIndex].socketId = getUserSocketId(userId) || "";
+                videoCall.participants[participantIndex].socketId = await getUserSocketId(userId) || "";
                 videoCall.participants[participantIndex].sessions.push({ joinedAt: new Date() });
                 videoCall.participants[participantIndex].isActive = true; // Ensure participant is marked as active
 

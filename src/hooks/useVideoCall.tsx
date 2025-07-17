@@ -278,6 +278,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
 
                 // 3. Now connect socket
                 if (!socketRef.current) {
+                    console.log('Video socket connection...');
                     socketRef.current = getSocket('video');
                 }
                 const socket = socketRef.current;

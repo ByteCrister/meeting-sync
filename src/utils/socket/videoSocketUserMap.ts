@@ -1,3 +1,5 @@
+import axios from "axios";
+
 export { };
 
 declare global {
@@ -7,45 +9,54 @@ declare global {
 
 type VideoSocketMap = Map<string, string>;
 
-const getVideoSocketMap = (): VideoSocketMap => {
+const getVideoSocketMap = async (): Promise<VideoSocketMap> => {
   if (!global._videoUserSocketMap) {
-    global._videoUserSocketMap = new Map<string, string>();
+    const response = await axios.get(
+      `${process.env.NEXT_PUBLIC_SOCKET_IO_SERVER || process.env.SOCKET_SERVER_URL}/api/video-socket-map`,
+      {
+        headers: {
+          "x-api-key": process.env.NEXT_PUBLIC_SOCKET_API_SECRET_KEY || process.env.SOCKET_API_SECRET_KEY,
+        },
+      }
+    );
+
+    const entries: [string, string][] = response.data.data;
+    global._videoUserSocketMap = new Map(entries);
   }
+
   return global._videoUserSocketMap;
 };
 
-// Register a user's socket for video
-export const registerVideoUserSocket = (userId: string, socketId: string): void => {
-  const map = getVideoSocketMap();
+export const registerVideoUserSocket = async (userId: string, socketId: string) => {
+  const map = await getVideoSocketMap();
   map.set(userId, socketId);
-  // console.log(`[VIDEO] Registered user ${userId} with socket ${socketId}`);
 };
 
-// Remove a user socket entry by socketId
-export const removeVideoUserSocket = (socketId: string): void => {
-  const map = getVideoSocketMap();
+export const removeVideoUserSocket = async (socketId: string): Promise<void> => {
+  const map = await getVideoSocketMap();
   for (const [userId, sId] of map.entries()) {
     if (sId === socketId) {
       map.delete(userId);
-      // console.log(`[VIDEO] Removed user ${userId} for socket ${socketId}`);
       break;
     }
   }
 };
 
-// Get socketId from userId
-export const getVideoUserSocketId = (userId: string): string | undefined => {
-  const map = getVideoSocketMap();
+export const getVideoUserSocketId = async (userId: string): Promise<string | undefined> => {
+  const map = await getVideoSocketMap();
   return map.get(userId);
 };
 
-// Get userId from socketId
-export const getVideoUserIdBySocketId = (socketId: string): string | null => {
-  const map = getVideoSocketMap();
+export const getVideoUserIdBySocketId = async (socketId: string): Promise<string | null> => {
+  const map = await getVideoSocketMap();
   for (const [userId, sId] of map.entries()) {
-    if (sId === socketId) {
-      return userId;
-    }
+    if (sId === socketId) return userId;
   }
   return null;
+};
+
+// Optional force-refresh
+export const refreshVideoSocketMap = async (): Promise<VideoSocketMap> => {
+  global._videoUserSocketMap = undefined;
+  return await getVideoSocketMap();
 };
