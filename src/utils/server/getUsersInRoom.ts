@@ -9,7 +9,12 @@ const getUsersInRoom = async (roomId: string): Promise<string[]> => {
 
     if (!call || !call.participants) return [];
 
-    return call.participants.map((participant) => participant.userId.toString());
+    const activeUsers = call.participants
+        .filter(p => p.isActive)
+        .map(p => p.userId.toString());
+
+    return activeUsers;
 };
+
 
 export default getUsersInRoom;

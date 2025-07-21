@@ -1,3 +1,6 @@
+// utils/socketUserMap.ts (Next.js client-side or server-side)
+import axios from "axios";
+
 export { };
 
 declare global {
@@ -7,48 +10,53 @@ declare global {
 
 type SocketMap = Map<string, string>;
 
-const getSocketMap = (): SocketMap => {
+const getSocketMap = async (): Promise<SocketMap> => {
   if (!global._userSocketMap) {
-    global._userSocketMap = new Map<string, string>();
+    const response = await axios.get(
+      `${process.env.NEXT_PUBLIC_SOCKET_IO_SERVER || process.env.SOCKET_SERVER_URL}/api/socket-map`,
+      {
+        headers: {
+          "x-api-key": process.env.NEXT_PUBLIC_SOCKET_API_SECRET_KEY || process.env.SOCKET_API_SECRET_KEY,
+        },
+      }
+    );
+
+    // Assuming `response.data.data` is [ [userId, socketId], ... ]
+    const raw = response.data.data;
+    const entries: [string, string][] = Array.isArray(raw)
+      ? raw                                  // already the right shape
+      : Object.entries(raw as Record<string, string>); // convert object → array
+
+    global._userSocketMap = new Map(entries);
+
   }
   return global._userSocketMap;
 };
 
-// In your socket user map logic (socketUserMap.ts)
-export const registerUserSocket = (userId: string, socketId: string) => {
-  const map = getSocketMap(); // Get the socket map from the global object
-  map.set(userId, socketId);  // Add userId and socketId to the map
-  // console.log(`User ${userId} registered with Socket ID: ${socketId}`);
-  // console.log("Updated user socket map:", JSON.stringify(Array.from(map.entries()), null, 2));
+export const registerUserSocket = async (userId: string, socketId: string) => {
+  const map = await getSocketMap();
+  map.set(userId, socketId);
 };
 
-export const removeUserSocket = (socketId: string): void => {
-  const map = getSocketMap(); // Get the socket map
+export const removeUserSocket = async (socketId: string): Promise<void> => {
+  const map = await getSocketMap();
   for (const [userId, sId] of map.entries()) {
     if (sId === socketId) {
-      map.delete(userId); // Remove user from map based on socketId
+      map.delete(userId);
       break;
     }
   }
 };
 
-export const getUserSocketId = (userId: string): string | undefined => {
-  const map = getSocketMap(); // Get the socket map
-  // console.log("Checking map before returning socketId:", JSON.stringify(Array.from(map.entries()), null, 2));
-  // console.log(`Looking for userId: ${userId}`);
-  const socketId = map.get(userId);
-  // console.log(`get user socket id for ${userId}: ${socketId}`);
-  return socketId; // Return socketId associated with the userId
+export const getUserSocketId = async (userId: string): Promise<string | undefined> => {
+  const map = await getSocketMap();
+  return map.get(userId);
 };
 
-
-
-export const getUserIdBySocketId = (socketId: string): string | null => {
-  const map = getSocketMap(); // Get the socket map
+export const getUserIdBySocketId = async (socketId: string): Promise<string | null> => {
+  const map = await getSocketMap();
   for (const [userId, sId] of map.entries()) {
-    if (sId === socketId) {
-      return userId; // Return the userId associated with the socketId
-    }
+    if (sId === socketId) return userId;
   }
-  return null; // Return null if not found
+  return null;
 };

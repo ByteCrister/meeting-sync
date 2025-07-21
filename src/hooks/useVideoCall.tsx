@@ -8,15 +8,34 @@ import { useAppDispatch } from '@/lib/hooks';
 import { apiLeaveVideoCall } from '@/utils/client/api/api-video-meeting-call';
 import { addChatMessage, addParticipant, endMeeting, removeChatMessage, removeParticipant, setVideoCallStatus, updateSettings, VideoCallStatus } from '@/lib/features/videoMeeting/videoMeetingSlice';
 import ShadcnToast from '@/components/global-ui/toastify-toaster/ShadcnToast';
+type IceResponse = {
+    v: {
+        iceServers: RTCIceServer | RTCIceServer[];
+    };
+};
 
 const createPeerConnection = async () => {
     try {
+<<<<<<< HEAD
         const response = await fetch("/api/ice"); // calls your server route
         const { v } = await response.json() as { v: { iceServers: RTCIceServer[] } };
 
         const pc = new RTCPeerConnection({
             iceServers: v.iceServers, // now using Xirsys STUN/TURN
         });
+=======
+        const response = await fetch("/api/ice");
+        const data = await response.json() as IceResponse;
+        const { iceServers } = data.v;       // this is an object
+
+        // Ensure it's in array form:
+        const iceArr: RTCIceServer[] = Array.isArray(iceServers)
+            ? iceServers
+            : [iceServers];
+
+        const pc = new RTCPeerConnection({ iceServers: iceArr });
+
+>>>>>>> express-test
 
         // continue with your peer connection setup...
         return pc;

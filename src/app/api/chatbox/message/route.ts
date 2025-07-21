@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: "Invalid data" }, { status: 400 });
         }
 
-        const isParticipantOnline = getUserSocketId(participantsId) ? true : false;
+        const isParticipantOnline = await getUserSocketId(participantsId) ? true : false;
         const lastChattedUserOfParticipants = await ChatBoxModel.findOne({ ownerId: participantsId, lastParticipants: currentUserId });
         const isSenderIsLastParticipant = lastChattedUserOfParticipants?.lastParticipants?.toString() === currentUserId.toString();
         const isParticipantsChatBoxOpened = lastChattedUserOfParticipants?.isChatBoxOpened;
