@@ -4,7 +4,7 @@ import { verifyToken } from './utils/server/verifyToken';
 const PUBLIC_ROUTES = [
     '/',
     '/user-authentication/error',
-    '/meeting-sync'
+    // '/meeting-sync'
 ];
 
 const PUBLIC_API_ROUTES = [
@@ -100,7 +100,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // 6. Redirect authenticated users away from our PUBLIC_ROUTES
-    if (isAuthenticated && !isApi && isPublicPage) {
+    if (isAuthenticated && !isApi && isPublicPage && pathname !== '/') {
         // If we were sent here with a ?redirect=… param, go back there.
         // Otherwise, send to home (/).
         const target = request.nextUrl.searchParams.get('redirect') || '/';
