@@ -13,6 +13,19 @@ export interface IBookedSlots {
     status: IRegisterStatus;
 }
 
+interface IUserBehaviorProfile extends Document {
+    chatKeywords: string[];          // Keywords extracted from user chats
+    bookingPatterns: {
+        favoriteCategories: string[]; // Top meeting categories booked
+        avgMeetingDuration: number;
+        bookingFrequency: number;      // e.g. meetings booked per week
+    };
+    searchKeywords: string[];        // Frequent search terms
+    behaviorClusters?: number;       // Cluster or segment ID assigned by ML model
+    interestTags: string[];          // Predicted interest tags or categories
+    lastUpdated: Date;
+}
+
 // * Interface for User document
 export interface IUsers extends Document {
     username: string;
@@ -31,9 +44,27 @@ export interface IUsers extends Document {
     disabledNotificationUsers: string[];
     countOfNotifications: number; // * this is for refreshing notifications
     isNewsFeedRefreshed: boolean;
+    behaviorProfile?: IUserBehaviorProfile;
     createdAt: Date;
     updatedAt: Date;
 }
+
+const BehaviorProfileSchema = new Schema(
+    {
+        chatKeywords: { type: [String], default: [] },
+        bookingPatterns: {
+            favoriteCategories: { type: [String], default: [] },
+            avgMeetingDuration: { type: Number, default: 0 },
+            bookingFrequency: { type: Number, default: 0 },
+        },
+        searchKeywords: { type: [String], default: [] },
+        behaviorClusters: { type: Number },
+        interestTags: { type: [String], default: [] },
+        lastUpdated: { type: Date, default: Date.now },
+    },
+    { _id: false } // prevent a separate _id for this subdocument
+);
+
 
 // * Users Schema
 const UserSchema = new Schema<IUsers>(
@@ -139,7 +170,11 @@ const UserSchema = new Schema<IUsers>(
             default: true
         },
         registeredSlots: [{ type: mongoose.Schema.Types.ObjectId, ref: "slots" }],
-        disabledNotificationUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }]
+        disabledNotificationUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
+        behaviorProfile: {
+            type: BehaviorProfileSchema,
+            default: () => ({}), // default empty behavior profile
+        }
     },
     {
         timestamps: true,
