@@ -16,14 +16,6 @@ type IceResponse = {
 
 const createPeerConnection = async () => {
     try {
-<<<<<<< HEAD
-        const response = await fetch("/api/ice"); // calls your server route
-        const { v } = await response.json() as { v: { iceServers: RTCIceServer[] } };
-
-        const pc = new RTCPeerConnection({
-            iceServers: v.iceServers, // now using Xirsys STUN/TURN
-        });
-=======
         const response = await fetch("/api/ice");
         const data = await response.json() as IceResponse;
         const { iceServers } = data.v;       // this is an object
@@ -34,8 +26,6 @@ const createPeerConnection = async () => {
             : [iceServers];
 
         const pc = new RTCPeerConnection({ iceServers: iceArr });
-
->>>>>>> express-test
 
         // continue with your peer connection setup...
         return pc;
