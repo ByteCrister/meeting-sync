@@ -6,7 +6,7 @@ compatibility_date = "2025-07-13"
 upload = { format = "modules" }
 
 [triggers]
-crons = ["* * * * *"]
+# crons = ["* * * * *"]
 
 [vars]
 CRON_SECRET = "dev-secret-value"

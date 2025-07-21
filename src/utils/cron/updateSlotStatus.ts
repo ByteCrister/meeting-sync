@@ -239,6 +239,7 @@ let isRunning = false;
 let isCleanupRunning = false;
 let cleanupCronStarted = false;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function startSlotUpdateCorn() {
     if (globalThis.slotStatusCronStarted) {
         console.log("Cron job already started. Skipping initialization.");
@@ -262,6 +263,7 @@ async function startSlotUpdateCorn() {
 }
 
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function startVideoCallCleanupCron() {
     if (cleanupCronStarted) {
         console.log("\nVideo call cleanup cron already started. Skipping.");
@@ -298,5 +300,5 @@ async function startVideoCallCleanupCron() {
     console.log("Video call cleanup cron scheduled every 2 minutes.\n");
 }
 
-startSlotUpdateCorn();
-startVideoCallCleanupCron();
+// startSlotUpdateCorn();
+// startVideoCallCleanupCron();
