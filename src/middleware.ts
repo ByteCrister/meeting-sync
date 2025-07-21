@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from './utils/server/verifyToken';
 
 const PUBLIC_ROUTES = [
+    '/',
     '/user-authentication/error',
-    '/user-authentication',
     '/meeting-sync'
 ];
 
@@ -95,7 +95,7 @@ export async function middleware(request: NextRequest) {
     // 5. Block unauthenticated users from protected *pages*
     if (!isAuthenticated && !isApi && !isPublicPage) {
         return NextResponse.redirect(
-            new URL('/user-authentication', request.url)
+            new URL('/', request.url)
         );
     }
 

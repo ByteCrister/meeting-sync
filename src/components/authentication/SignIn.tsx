@@ -49,7 +49,7 @@ const SignIn = () => {
                 if (resData.success) {
                     ShowToaster("Successfully signed in.", "success");
                     setTimeout(() => {
-                        window.location.href = "/";
+                        window.location.href = "/profile";
                     }, 2000);
                 }
             }

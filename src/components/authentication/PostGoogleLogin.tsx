@@ -19,13 +19,13 @@ export default function PostGoogleLogin() {
 
             if (!data.success) {
                 ShowToaster("Failed to set session cookie", "error");
-                router.push("/user-authentication");
+                router.push("/");
                 return;
             }
 
             ShowToaster("Signed in successfully!", "success");
             setTimeout(() => {
-                router.push("/");
+                router.push("/profile");
             }, 1500);
         };
 
@@ -33,7 +33,7 @@ export default function PostGoogleLogin() {
             finalizeLogin();
         } else if (status === "unauthenticated") {
             ShowToaster("Google Sign-In failed.", "error");
-            router.push("/user-authentication");
+            router.push("/");
         }
     }, [status, router, session]);
 

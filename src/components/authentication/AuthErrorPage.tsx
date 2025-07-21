@@ -57,16 +57,10 @@ export default function AuthErrorPage() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                     <Link
-                        href="/user-authentication"
-                        className="flex-1 px-5 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-500 focus:outline-none focus:ring-4 focus:ring-red-300 transition"
-                    >
-                        Try Again
-                    </Link>
-                    <Link
                         href="/"
                         className="flex-1 px-5 py-3 bg-transparent border-2 border-gray-300 text-gray-700 dark:border-gray-500 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-indigo-200 dark:focus:ring-indigo-700 transition"
                     >
-                        Home
+                        Back
                     </Link>
                 </div>
             </motion.section>
