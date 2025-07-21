@@ -54,7 +54,7 @@ export function ChatMessageItem({ msg, isOwn, onDelete }: Props) {
       >
         <div className="flex items-center justify-between mb-1">
           <span className="text-sm font-medium text-gray-200">
-            {isOwn ? currentUser?.username : participant?.username || 'Unknown'}
+            {isOwn ? currentUser?.username : participant?.username || 'Unknown (leaved)'}
           </span>
           <span className="text-xs text-gray-100 italic">
             {new Date(msg.timestamp).toLocaleTimeString()}

@@ -8,9 +8,35 @@ import { useAppDispatch } from '@/lib/hooks';
 import { apiLeaveVideoCall } from '@/utils/client/api/api-video-meeting-call';
 import { addChatMessage, addParticipant, endMeeting, removeChatMessage, removeParticipant, setVideoCallStatus, updateSettings, VideoCallStatus } from '@/lib/features/videoMeeting/videoMeetingSlice';
 import ShadcnToast from '@/components/global-ui/toastify-toaster/ShadcnToast';
+type IceResponse = {
+    v: {
+        iceServers: RTCIceServer | RTCIceServer[];
+    };
+};
 
-const servers: RTCConfiguration = {
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+const createPeerConnection = async () => {
+    try {
+        const response = await fetch("/api/ice");
+        const data = await response.json() as IceResponse;
+        const { iceServers } = data.v;       // this is an object
+
+        // Ensure it's in array form:
+        const iceArr: RTCIceServer[] = Array.isArray(iceServers)
+            ? iceServers
+            : [iceServers];
+
+        const pc = new RTCPeerConnection({ iceServers: iceArr });
+
+
+        // continue with your peer connection setup...
+        return pc;
+    } catch (error) {
+        console.error("Failed to get ICE servers:", error);
+        // fallback to public STUN (not recommended for prod)
+        return new RTCPeerConnection({
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+        });
+    }
 };
 
 type PeerMap = Record<string, RTCPeerConnection>;
@@ -102,7 +128,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
         };
         checkCameraPermission();
     }, []);
-    const setupPeerConnection = (otherId: string) => {
+    const setupPeerConnection = async (otherId: string) => {
         // Always clean old connection first (even if missed before)
         if (peerConnections.current[otherId]) {
             console.log(`[PC CLEANUP] Closing stale peer for ${otherId}`);
@@ -110,7 +136,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
             delete peerConnections.current[otherId];
         }
 
-        const pc = new RTCPeerConnection(servers);
+        const pc = await createPeerConnection();
         if (localStream.current) {
             const audioTrack = localStream.current.getAudioTracks()[0];
             if (audioTrack) {
@@ -278,7 +304,6 @@ export const useVideoCall = (roomId: string, userId: string) => {
 
                 // 3. Now connect socket
                 if (!socketRef.current) {
-                    console.log('Video socket connection...');
                     socketRef.current = getSocket('video');
                 }
                 const socket = socketRef.current;
@@ -401,7 +426,7 @@ export const useVideoCall = (roomId: string, userId: string) => {
                 socket.on(VMSocketTriggerTypes.RECEIVE_OFFER, async ({ fromUserId, offer }) => {
                     let pc = peerConnections.current[fromUserId];
                     if (!pc) {
-                        pc = setupPeerConnection(fromUserId);
+                        pc = await setupPeerConnection(fromUserId);
                     }
 
                     if (negotiationInProgress.current[fromUserId]) {
