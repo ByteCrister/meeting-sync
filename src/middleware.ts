@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from './utils/server/verifyToken';
 
+const HOME_ROUTE = '/';
+
 const PUBLIC_ROUTES = [
-    '/',
     '/user-authentication/error',
-    '/meeting-sync'
 ];
 
 const PUBLIC_API_ROUTES = [
@@ -48,11 +48,16 @@ function isApiRoute(pathname: string) {
     return pathname.startsWith(API_PREFIX);
 }
 
+function isHomeRoute(pathname: string){
+    return pathname === HOME_ROUTE;
+}
+
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const isApi = isApiRoute(pathname);
     const isPublicApiRoute = isPublicApi(pathname);
     const isPublicPage = isAuthPage(pathname);
+    const isHomePage = isHomeRoute(pathname);
 
     // 1. Verify token
     let isAuthenticated = false;
@@ -93,14 +98,14 @@ export async function middleware(request: NextRequest) {
     }
 
     // 5. Block unauthenticated users from protected *pages*
-    if (!isAuthenticated && !isApi && !isPublicPage) {
+    if (!isAuthenticated && !isApi && !isPublicPage && !isHomePage) {
         return NextResponse.redirect(
             new URL('/', request.url)
         );
     }
 
     // 6. Redirect authenticated users away from our PUBLIC_ROUTES
-    if (isAuthenticated && !isApi && isPublicPage && pathname !== '/') {
+    if (isAuthenticated && !isApi && isPublicPage && !isHomePage && pathname !== '/meeting-sync') {
         // If we were sent here with a ?redirect=… param, go back there.
         // Otherwise, send to home (/).
         const target = request.nextUrl.searchParams.get('redirect') || '/';

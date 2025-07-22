@@ -13,7 +13,8 @@ import {
 import apiService from "@/utils/client/api/api-services";
 import ShowToaster from "../global-ui/toastify-toaster/show-toaster";
 import LoadingSpinner from "../global-ui/ui-component/LoadingSpinner";
-import { Session } from "@/utils/constants";
+import { clearSession } from "@/utils/client/storage/clearSession";
+import { useRouter } from "next/navigation";
 
 const openSans = Open_Sans({
     weight: "400",
@@ -34,6 +35,7 @@ const ForgotPassword = ({
     userInfo,
     isEmailChecked,
 }: ForgotPasswordPropTypes) => {
+    const router = useRouter();
     const [isPasswordShow, setIsPasswordShow] = useState<boolean>(false);
     const [isButtonLoading, setIsButtonLoading] = useState<boolean>(false);
 
@@ -89,16 +91,11 @@ const ForgotPassword = ({
         if (resData.success) {
             ShowToaster("Password Updated successfully.", "success");
             setTimeout(() => {
-                window.location.href = "/";
+                clearSession();
+                router.replace('/profile');
             }, 2000);
         }
         setIsButtonLoading(true);
-        sessionStorage.removeItem(Session.AUTH_PAGE_STATE);
-        sessionStorage.removeItem(Session.USER_INFO);
-        sessionStorage.removeItem(Session.ENTERED_OTP);
-        sessionStorage.removeItem(Session.IS_OTP_EXPIRED);
-        sessionStorage.removeItem(Session.IS_OTP_SEND);
-        sessionStorage.removeItem(Session.OTP_EXPIRY_TIME);
     };
 
     const getValidationString = (

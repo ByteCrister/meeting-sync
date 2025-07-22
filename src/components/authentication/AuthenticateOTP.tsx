@@ -9,8 +9,9 @@ import { getFormattedTimeZone } from "@/utils/client/date-formatting/getFormatte
 import GetOtpBoxes from "./auth-component/GetOtpBoxes";
 import getDeviceInfo from "@/utils/client/others/getDeviceInfo";
 import { useSessionSecureStorage } from "@/hooks/useSessionSecureStorage";
-import secureSessionStorage from "@/utils/client/storage/secureSessionStorage";
 import { Session } from "@/utils/constants";
+import { clearSession } from "@/utils/client/storage/clearSession";
+import { useRouter } from "next/navigation";
 
 type AuthenticateOTPPropTypes = {
     userInfo: (userSignUpType & { isRemember: boolean }) | userSignInType | undefined;
@@ -21,12 +22,13 @@ type AuthenticateOTPPropTypes = {
 
 const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setPageState }: AuthenticateOTPPropTypes) => {
     // const [otp, setOtp] = useState<string>("");
-    const [otp, setOtp, removeOtp] = useSessionSecureStorage<string>(Session.OTP, "", true);
-    const [enteredOtp, setEnteredOtp, removeEnteredOtp] = useSessionSecureStorage<string[]>(Session.ENTERED_OTP, Array(6).fill(""), true);
+    const router = useRouter();
+    const [otp, setOtp,] = useSessionSecureStorage<string>(Session.OTP, "", true);
+    const [enteredOtp, setEnteredOtp] = useSessionSecureStorage<string[]>(Session.ENTERED_OTP, Array(6).fill(""), true);
     const [currOtpBox, setCurrOtpBox] = useState<number>(0);
-    const [isOtpExpired, setIsOtpExpired, removeIsOtpExpired] = useSessionSecureStorage<boolean>(Session.IS_OTP_EXPIRED, false, true);
-    const [isOTPSending, setIsOtpSending, removeIsOTPSend] = useSessionSecureStorage<boolean>(Session.IS_OTP_SEND, false, true);
-    const [otpExpiryTime, setOtpExpiryTime, removeSetOtpExpiryTime] = useSessionSecureStorage<number | null>(Session.OTP_EXPIRY_TIME, null, true);
+    const [isOtpExpired, setIsOtpExpired] = useSessionSecureStorage<boolean>(Session.IS_OTP_EXPIRED, false, true);
+    const [isOTPSending, setIsOtpSending] = useSessionSecureStorage<boolean>(Session.IS_OTP_SEND, false, true);
+    const [otpExpiryTime, setOtpExpiryTime] = useSessionSecureStorage<number | null>(Session.OTP_EXPIRY_TIME, null, true);
 
     const { seconds, minutes, restart } = useTimer({
         autoStart: false,
@@ -42,7 +44,7 @@ const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setP
 
         setIsOtpSending(true);
         const devicesInfo = getDeviceInfo();
-        
+
         const URI = `/api/auth/user/user-otp`;
         const responseData = await apiService.get(URI, {
             email: encodeURIComponent(JSON.stringify(userInfo?.email)),
@@ -83,22 +85,11 @@ const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setP
         if (resData.success) {
             ShowToaster('Successfully registered.', 'success');
             setTimeout(() => {
-                window.location.href = '/';
+                // !remove OTP sessions
+                clearSession();
+                router.replace('/profile');
             }, 2000);
-            // !remove OTP sessions
-            handleRemoveOtpSessions();
         }
-    };
-
-    // * Function to remove OTP sessions
-    const handleRemoveOtpSessions = () => {
-        removeOtp();
-        removeEnteredOtp();
-        removeIsOtpExpired();
-        removeIsOTPSend();
-        removeSetOtpExpiryTime();
-        secureSessionStorage.removeItem(Session.AUTH_PAGE_STATE);
-        secureSessionStorage.removeItem(Session.USER_INFO);
     };
 
 
@@ -171,7 +162,7 @@ const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setP
                 )}
             </div>
             {
-               !isOTPSending && !isOtpExpired ? <button
+                !isOTPSending && !isOtpExpired ? <button
                     onClick={() => { setIsOtpSending(false); verifyOtp(); }}
                     disabled={isOtpExpired}
                     className="px-2 py-1 bg-slate-600 font-semibold font-poppins text-white rounded hover:bg-slate-400 transition duration-300 ease-in-out cursor-pointer"

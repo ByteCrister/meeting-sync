@@ -110,9 +110,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     dispatch(toggleSidebar());
   };
 
+  const isGlobalPath = pathname?.includes('/meeting-sync')
+    || pathname?.includes('video-meeting')
+    || pathname === '/';
+
   return (
 
-    pathname?.includes('video-meeting') || pathname === '/' ? <>{children}</>
+    isGlobalPath ? <>{children}</>
       : <div className="flex h-screen bg-gray-50 font-sans">
         {/* Mobile Sidebar Toggle */}
         {
@@ -140,7 +144,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex flex-col h-full">
             {/* Logo and Close Button */}
             <div className="p-6 border-b border-gray-700 flex justify-between items-center">
-              <Logo />
+              <Link href={'/'}><Logo /></Link>
               <button
                 onClick={handleToggleSidebar}
                 className="p-2 rounded-md hover:bg-gray-700 transition-colors md:hidden"

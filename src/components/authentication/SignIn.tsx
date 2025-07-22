@@ -12,6 +12,8 @@ import { IoEyeOffSharp, IoEyeSharp } from "react-icons/io5";
 import { Checkbox } from "../ui/checkbox";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Id, toast } from "react-toastify";
+import { clearSession } from "@/utils/client/storage/clearSession";
 
 const openSans = Open_Sans({
     weight: "400",
@@ -58,62 +60,88 @@ const SignIn = () => {
     });
 
     const handleGoogleLogin = async () => {
-        try {
-            setIsGoogleBtnLoading(true);
+        setIsGoogleBtnLoading(true);
 
+        // 1️⃣ Fire a “processing” toast and capture its ID
+        const toastId: Id = ShowToaster("Signing in with Google…", "processing")!;
+
+        try {
+            // 2️⃣ Use redirect: false so we stay in this code path
             const result = await signIn("google", {
+                redirect: false,
                 callbackUrl: `${process.env.NEXT_PUBLIC_DOMAIN}/api/auth/custom-google-callback`,
-                redirect: true,
             });
 
+            // 3️⃣ If signIn didn't even return an object
             if (!result) {
-                ShowToaster("No response from Google. Try again.", "error");
+                toast.update(toastId, {
+                    render: "No response from server. Try again.",
+                    type: "error",
+                    isLoading: false,
+                    autoClose: 4000,
+                    hideProgressBar: true,
+                });
                 return;
             }
 
+            // 4️⃣ Error from NextAuth
             if (result.error) {
-                switch (result.error) {
-                    case "OAuthCallback":
-                        ShowToaster("Network timeout. Check your internet and try again.", "error");
-                        break;
-                    case "EmailNotRegistered":
-                        ShowToaster("Your Google email is not registered.", "error");
-                        break;
-                    case "MissingEmail":
-                        ShowToaster("Google did not provide an email. Try another account.", "error");
-                        break;
-                    case "Configuration":
-                        ShowToaster("OAuth is misconfigured. Devs are fixing it.", "error");
-                        break;
-                    case "AccessDenied":
-                        ShowToaster("Access was denied. Please accept the permissions.", "error");
-                        break;
-                    default:
-                        ShowToaster("Something went wrong during sign-in. Try again.", "error");
-                        break;
-                }
+                toast.update(toastId, {
+                    render:
+                        result.error === "OAuthCallback"
+                            ? "Network timeout. Check your connection."
+                            : result.error === "EmailNotRegistered"
+                                ? "Your Google email is not registered."
+                                : result.error === "MissingEmail"
+                                    ? "Google did not provide an email. Try another account."
+                                    : "Something went wrong during sign-in. Try again.",
+                    type: "error",
+                    isLoading: false,
+                    autoClose: 6000,
+                    hideProgressBar: true,
+                });
                 return;
             }
 
+            // 5️⃣ Success → update toast & navigate
             if (result.ok && result.url) {
-                ShowToaster("Signed in successfully!", "success");
-                window.location.href = result.url;
+                toast.update(toastId, {
+                    render: "Signed in successfully!",
+                    type: "success",
+                    isLoading: false,
+                    autoClose: 3000,
+                    hideProgressBar: true,
+                });
+                // clear OTP/session here...
+                clearSession();
+
+                router.replace(result.url);
             } else {
-                console.error("Google login unknown issue:", result);
-                ShowToaster("Unexpected issue. Try again or use a different network.", "error");
+                // fallback unknown state
+                toast.update(toastId, {
+                    render: "Unexpected issue. Try again later.",
+                    type: "error",
+                    isLoading: false,
+                    autoClose: 5000,
+                    hideProgressBar: true,
+                });
             }
         } catch (err) {
             const error = err as Error;
-            // now you can safely access error.message
-            console.error("Login error:", error.message);
-
-            if (error.message?.includes("ENOTFOUND")) {
-                ShowToaster("Internet seems down. Try reconnecting.", "error");
-            } else if (error.message?.includes("popup_closed_by_user")) {
-                ShowToaster("Login popup closed too early. Try again.", "error");
-            } else {
-                ShowToaster("Something broke. Refresh and try again.", "error");
-            }
+            // 6️⃣ Network / user-closed-popup errors
+            const msg = error.message || "";
+            toast.update(toastId, {
+                render:
+                    msg.includes("ENOTFOUND")
+                        ? "Internet seems down. Check your network."
+                        : msg.includes("popup_closed_by_user")
+                            ? "Login popup closed prematurely."
+                            : "Something broke. Refresh and try again.",
+                type: "error",
+                isLoading: false,
+                autoClose: 6000,
+                hideProgressBar: true,
+            });
         } finally {
             setIsGoogleBtnLoading(false);
         }

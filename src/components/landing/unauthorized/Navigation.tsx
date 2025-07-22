@@ -9,7 +9,7 @@ import Logo from '@/components/layout/Logo';
 import { useAppSelector } from '@/lib/hooks';
 
 const NAV_LINKS = [
-  { label: 'Home', href: '/user-authentication' },
+  { label: 'Home', href: '/' },
   { label: 'Features', href: '/meeting-sync?option=features' },
   { label: 'Roadmap', href: '/meeting-sync?option=roadmap' },
   { label: 'How It Works', href: '/meeting-sync?option=how-it-works' },
