@@ -36,6 +36,7 @@ const ALWAYS_ALLOWED_AUTH_ROUTES = [
 
 const API_PREFIX = '/api';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function isAuthPage(pathname: string) {
     return PUBLIC_ROUTES.includes(pathname);
 }
@@ -48,7 +49,8 @@ function isApiRoute(pathname: string) {
     return pathname.startsWith(API_PREFIX);
 }
 
-function isHomeRoute(pathname: string){
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function isHomeRoute(pathname: string) {
     return pathname === HOME_ROUTE;
 }
 
@@ -56,8 +58,8 @@ export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const isApi = isApiRoute(pathname);
     const isPublicApiRoute = isPublicApi(pathname);
-    const isPublicPage = isAuthPage(pathname);
-    const isHomePage = isHomeRoute(pathname);
+    // const isPublicPage = isAuthPage(pathname);
+    // const isHomePage = isHomeRoute(pathname);
 
     // 1. Verify token
     let isAuthenticated = false;
@@ -98,14 +100,24 @@ export async function middleware(request: NextRequest) {
     }
 
     // 5. Block unauthenticated users from protected *pages*
-    if (!isAuthenticated && !isApi && !isPublicPage && !isHomePage && pathname !== '/meeting-sync') {
+    if (
+        !isAuthenticated &&
+        !isApi &&
+        pathname !== '/' &&
+        pathname !== '/meeting-sync' &&
+        pathname !== '/user-authentication/error'
+    ) {
         return NextResponse.redirect(
             new URL('/', request.url)
         );
     }
 
     // 6. Redirect authenticated users away from our PUBLIC_ROUTES
-    if (isAuthenticated && !isApi && !isHomePage && pathname !== '/meeting-sync') {
+    if (
+        isAuthenticated &&
+        !isApi &&
+        pathname === '/user-authentication/error'
+    ) {
         // If we were sent here with a ?redirect=… param, go back there.
         // Otherwise, send to home (/).
         const target = request.nextUrl.searchParams.get('redirect') || '/';
