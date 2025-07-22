@@ -98,7 +98,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // 5. Block unauthenticated users from protected *pages*
-    if (!isAuthenticated && !isApi && !isPublicPage && !isHomePage) {
+    if (!isAuthenticated && !isApi && !isPublicPage && !isHomePage && pathname !== '/meeting-sync') {
         return NextResponse.redirect(
             new URL('/', request.url)
         );
