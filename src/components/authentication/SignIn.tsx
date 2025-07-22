@@ -62,20 +62,20 @@ const SignIn = () => {
     const handleGoogleLogin = async () => {
         setIsGoogleBtnLoading(true);
 
-        // 1️⃣ Fire a “processing” toast and capture its ID
+        // 1 Fire a “processing” toast and capture its ID
         const toastId: Id = ShowToaster("Signing in with Google…", "processing")!;
 
         try {
-            // 2️⃣ Use redirect: false so we stay in this code path
+            // 2 Use redirect: false so we stay in this code path
             const result = await signIn("google", {
                 redirect: false,
                 callbackUrl: `${process.env.NEXT_PUBLIC_DOMAIN}/api/auth/custom-google-callback`,
             });
 
-            // 3️⃣ If signIn didn't even return an object
+            // 3 If signIn didn't even return an object
             if (!result) {
                 toast.update(toastId, {
-                    render: "No response from server. Try again.",
+                    render: "Please wait for the sign in.",
                     type: "error",
                     isLoading: false,
                     autoClose: 4000,
@@ -84,7 +84,7 @@ const SignIn = () => {
                 return;
             }
 
-            // 4️⃣ Error from NextAuth
+            // 4 Error from NextAuth
             if (result.error) {
                 toast.update(toastId, {
                     render:
@@ -103,7 +103,7 @@ const SignIn = () => {
                 return;
             }
 
-            // 5️⃣ Success → update toast & navigate
+            // 5 Success → update toast & navigate
             if (result.ok && result.url) {
                 toast.update(toastId, {
                     render: "Signed in successfully!",
@@ -115,7 +115,7 @@ const SignIn = () => {
                 // clear OTP/session here...
                 clearSession();
 
-                router.replace(result.url);
+                router.replace('/profile');
             } else {
                 // fallback unknown state
                 toast.update(toastId, {
@@ -128,7 +128,7 @@ const SignIn = () => {
             }
         } catch (err) {
             const error = err as Error;
-            // 6️⃣ Network / user-closed-popup errors
+            // 6 Network / user-closed-popup errors
             const msg = error.message || "";
             toast.update(toastId, {
                 render:
