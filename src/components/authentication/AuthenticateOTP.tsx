@@ -84,8 +84,10 @@ const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setP
             setTimeout(() => {
                 // !remove OTP sessions
                 clearSession();
-                window.location.href = '/profile';
-            }, 2000);
+                setTimeout(() => {
+                    window.location.href = '/profile';
+                }, 1000);
+            }, 500);
         }
     };
 

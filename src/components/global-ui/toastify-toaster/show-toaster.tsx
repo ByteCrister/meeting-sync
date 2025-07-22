@@ -2,7 +2,13 @@
 
 import { toast, Id, Slide } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { CheckCircle, AlertCircle, Loader, XCircle, RefreshCcw } from "lucide-react";
+import {
+  CheckCircle,
+  AlertCircle,
+  Loader,
+  XCircle,
+  RefreshCcw,
+} from "lucide-react";
 
 type ToastStatus = "processing" | "success" | "error" | "warning" | "retry-warning";
 
@@ -11,120 +17,123 @@ const ShowToaster = (
   status: ToastStatus,
   onRetry?: () => void
 ): Id | void => {
-  const iconSize = 20;
+  const iconSize = 18;
 
-  const commonOptions = {
+  const baseStyles = {
     position: "top-center" as const,
     closeOnClick: true,
     pauseOnHover: true,
-    draggable: true,
+    draggable: false,
     transition: Slide,
     style: {
-      borderRadius: "12px",
-      fontSize: "15px",
-      padding: "14px 18px",
-      boxShadow: "0 8px 30px rgba(0,0,0,0.08)",
-      maxWidth: "90vw",
+      borderRadius: "8px",
+      padding: "12px 16px",
+      backgroundColor: "#F9FAFB", // subtle light background
+      border: "1px solid #E5E7EB",
+      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
+      fontFamily: `"Inter", "system-ui", sans-serif`,
+      maxWidth: "400px",
       width: "100%",
-      margin: "0 auto",
     },
     bodyStyle: {
       display: "flex",
       alignItems: "center",
-      gap: "10px",
-      fontWeight: 500,
+      gap: "12px",
+      fontSize: "14px",
+      fontWeight: 400,
+      lineHeight: "1.5",
+      color: "#374151", // soft gray
     },
   };
+
+  const contentWithIcon = (icon: JSX.Element, color?: string) => (
+    <div className="flex items-center gap-3 w-full">
+      <div className="flex-shrink-0">{icon}</div>
+      <span className="text-sm leading-snug tracking-tight" style={{ color }}>
+        {text}
+      </span>
+    </div>
+  );
 
   const retryButton = (
     <button
       onClick={onRetry}
-      className="ml-auto text-sm font-semibold text-blue-600 hover:text-blue-800 px-2 py-1 transition-colors bg-white/80 rounded border border-blue-100 shadow-sm"
+      className="ml-auto text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors px-2 py-1 border border-blue-100 bg-blue-50 rounded"
     >
       Retry
     </button>
   );
 
-  const contentWithIcon = (icon: JSX.Element) => (
-    <div className="flex items-center w-full gap-3">
-      {icon}
-      <span>{text}</span>
-    </div>
-  );
-
   switch (status) {
     case "processing":
-      return toast(contentWithIcon(<Loader size={iconSize} className="animate-spin text-blue-600" />), {
-        ...commonOptions,
-        autoClose: false,
-        style: {
-          ...commonOptions.style,
-          border: "2px solid #3B82F6",
-          background: "linear-gradient(90deg, #DBEAFE, #EFF6FF)",
-          color: "#1E3A8A",
-        },
-      });
+      return toast(
+        contentWithIcon(
+          <Loader size={iconSize} className="animate-spin text-blue-600" />,
+          "#1D4ED8"
+        ),
+        {
+          ...baseStyles,
+          autoClose: false,
+        }
+      );
 
     case "success":
-      toast.success(contentWithIcon(<CheckCircle size={iconSize} className="text-green-600" />), {
-        ...commonOptions,
-        autoClose: 4500,
-        style: {
-          ...commonOptions.style,
-          border: "2px solid #22C55E",
-          background: "linear-gradient(135deg, #D1FAE5, #F0FDF4)",
-          color: "#065F46",
-        },
-      });
+      toast(
+        contentWithIcon(
+          <CheckCircle size={iconSize} className="text-green-600" />,
+          "#15803D"
+        ),
+        {
+          ...baseStyles,
+          autoClose: 4000,
+        }
+      );
       break;
 
     case "error":
-      toast.error(contentWithIcon(<XCircle size={iconSize} className="text-red-600" />), {
-        ...commonOptions,
-        autoClose: 7000,
-        style: {
-          ...commonOptions.style,
-          border: "2px solid #EF4444",
-          background: "linear-gradient(135deg, #FEE2E2, #FEF2F2)",
-          color: "#7F1D1D",
-        },
-      });
+      toast(
+        contentWithIcon(
+          <XCircle size={iconSize} className="text-red-600" />,
+          "#B91C1C"
+        ),
+        {
+          ...baseStyles,
+          autoClose: 7000,
+        }
+      );
       break;
 
     case "warning":
-      toast.warn(contentWithIcon(<AlertCircle size={iconSize} className="text-yellow-500" />), {
-        ...commonOptions,
-        autoClose: 6000,
-        style: {
-          ...commonOptions.style,
-          border: "2px solid #F59E0B",
-          background: "linear-gradient(135deg, #FEF3C7, #FFFBEB)",
-          color: "#78350F",
-        },
-      });
+      toast(
+        contentWithIcon(
+          <AlertCircle size={iconSize} className="text-yellow-500" />,
+          "#92400E"
+        ),
+        {
+          ...baseStyles,
+          autoClose: 6000,
+        }
+      );
       break;
 
     case "retry-warning":
-      toast.warn(
-        <div className="flex items-center justify-between w-full gap-3">
-          {contentWithIcon(<RefreshCcw size={iconSize} className="text-yellow-600" />)}
+      toast(
+        <div className="flex items-center gap-3 justify-between w-full">
+          {contentWithIcon(
+            <RefreshCcw size={iconSize} className="text-yellow-600" />,
+            "#92400E"
+          )}
           {retryButton}
         </div>,
         {
-          ...commonOptions,
+          ...baseStyles,
           autoClose: 10000,
-          style: {
-            ...commonOptions.style,
-            border: "2px solid #FBBF24",
-            background: "linear-gradient(135deg, #FFEDD5, #FFF7ED)",
-            color: "#92400E",
-          },
         }
       );
       break;
 
     default:
-      console.error("Invalid toast status provided:", status);
+      console.warn("Invalid toast status:", status);
   }
 };
 

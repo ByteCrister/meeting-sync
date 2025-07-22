@@ -52,8 +52,10 @@ const SignIn = () => {
                     ShowToaster("Successfully signed in.", "success");
                     setTimeout(() => {
                         clearSession();
-                        window.location.href = '/profile';
-                    }, 2000);
+                        setTimeout(() => {
+                            window.location.href = '/profile';
+                        }, 1000);
+                    }, 500);
                 }
             }
             setIsButtonLoading(false);
@@ -115,10 +117,11 @@ const SignIn = () => {
                 });
 
                 setTimeout(() => {
-                    console.log('Redirecting to /profile');
-                    clearSession();
-                    window.location.href = result.url || '/profile';
-                }, 2000);
+                    clearSession(); // clears sessionStorage
+                    setTimeout(() => {
+                        window.location.href = result.url || "/profile";
+                    }, 500); // debounce redirect slightly to allow clearing
+                }, 500);
             } else {
                 // fallback unknown state
                 toast.update(toastId, {
