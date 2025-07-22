@@ -51,7 +51,8 @@ const SignIn = () => {
                 if (resData.success) {
                     ShowToaster("Successfully signed in.", "success");
                     setTimeout(() => {
-                        window.location.href = "/profile";
+                        clearSession();
+                        window.location.href = '/profile';
                     }, 2000);
                 }
             }
@@ -112,10 +113,12 @@ const SignIn = () => {
                     autoClose: 3000,
                     hideProgressBar: true,
                 });
-                // clear OTP/session here...
-                clearSession();
 
-                router.replace('/profile');
+                setTimeout(() => {
+                    console.log('Redirecting to /profile');
+                    clearSession();
+                    window.location.href = result.url || '/profile';
+                }, 2000);
             } else {
                 // fallback unknown state
                 toast.update(toastId, {

@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
         expiresIn: "30d",
     });
 
-    const res = NextResponse.redirect(new URL("/", req.url));
+    const res = NextResponse.redirect(new URL("/profile", req.url));
     res.cookies.set(process.env.NEXT_TOKEN!, token, {
         httpOnly: false,
         secure: false,

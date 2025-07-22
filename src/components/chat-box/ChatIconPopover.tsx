@@ -83,14 +83,14 @@ export default function ChatIconPopover() {
                                 <>
                                     {/* Pulse ring */}
                                     <motion.span
-                                        key="pulse"
+                                        key={`pulse-${unseenMessagesCount}`}
                                         className="absolute -top-1.5 -right-1.5 inline-flex h-5 w-5 rounded-full bg-red-500/60"
                                         initial={{ scale: 0.8, opacity: 0.6 }}
                                         animate={{
                                             scale: [1, 1.5, 1],
                                             opacity: [0.7, 0, 0.7],
                                         }}
-                                        exit={{ scale: 0, opacity: 0 }}
+                                        exit={{ opacity: 0, scale: 0, transition: { duration: 0.2 } }}
                                         transition={{
                                             duration: 1.5,
                                             repeat: Infinity,
@@ -113,6 +113,7 @@ export default function ChatIconPopover() {
                                 </>
                             )}
                         </AnimatePresence>
+
                     </motion.button>
                 </PopoverTrigger>
 
