@@ -112,7 +112,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
 
-    pathname?.includes('video-meeting') ? <>{children}</>
+    pathname?.includes('video-meeting') || pathname === '/' ? <>{children}</>
       : <div className="flex h-screen bg-gray-50 font-sans">
         {/* Mobile Sidebar Toggle */}
         {

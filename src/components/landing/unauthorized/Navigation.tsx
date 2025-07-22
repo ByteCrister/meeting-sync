@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Menu, X } from 'lucide-react';
@@ -25,6 +25,7 @@ export default function Navigation({
 }: {
   setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
+  const router = useRouter();
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -46,8 +47,10 @@ export default function Navigation({
     'relative text-gray-700 hover:text-blue-800 hover:after:absolute hover:after:inset-x-0 hover:after:-bottom-1 hover:after:h-[2px] hover:after:bg-gradient-to-r hover:after:from-blue-300 hover:to-blue-600 hover:rounded-full hover:transition-all hover:duration-300';
 
   const handleCTAClick = () => {
-    if (isLoggedIn) {
+    if (!isLoggedIn) {
       setIsModalOpen(true);
+    }else{
+      router.push('/profile');
     }
   };
 
@@ -126,10 +129,7 @@ export default function Navigation({
               <motion.li variants={linkItem}>
                 {isLoggedIn ? (
                   <button
-                    onClick={() => {
-                      setIsModalOpen(true);
-                      setIsMobileOpen(false);
-                    }}
+                    onClick={handleCTAClick}
                     className="w-full py-2 rounded-full font-semibold text-white bg-gradient-to-r from-indigo-500 to-pink-500 shadow-md"
                   >
                     Dashboard

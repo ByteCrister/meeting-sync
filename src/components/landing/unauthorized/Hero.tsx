@@ -5,6 +5,7 @@ import { FaCalendarCheck, FaUsers, FaSyncAlt, FaShieldAlt } from "react-icons/fa
 import { motion, useReducedMotion } from 'framer-motion';
 import * as RiIcons from 'react-icons/ri';
 import { useRouter } from "next/navigation";
+import { useAppSelector } from '@/lib/hooks';
 const sectionVariant = {
     hidden: { opacity: 0, y: 50 },
     visible: {
@@ -131,6 +132,9 @@ const Hero = ({ displayText, setIsModalOpen }: { displayText: string, setIsModal
     const router = useRouter();
     const prefersReduced = useReducedMotion();
     const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+    const userId = useAppSelector(state => state.userStore.user?._id);
+    const isLogged = userId ? true : false;
+
     return (
         <main className="container mx-auto px-4 py-16 pt-24">
             <div className="max-w-4xl mx-auto text-center">
@@ -142,7 +146,13 @@ const Hero = ({ displayText, setIsModalOpen }: { displayText: string, setIsModal
                     Connect, collaborate, and coordinate with your team effortlessly. MeetSync makes scheduling meetings simple and efficient.
                 </p>
                 <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => {
+                        if (!isLogged) {
+                            setIsModalOpen(true);
+                        } else {
+                            router.push('/profile');
+                        }
+                    }}
                     className="inline-block px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-lg font-semibold hover:shadow-xl hover:scale-105 transform transition-all duration-300"
                 >
                     Start Scheduling Now

@@ -4,7 +4,7 @@ import { verifyToken } from './utils/server/verifyToken';
 const PUBLIC_ROUTES = [
     '/',
     '/user-authentication/error',
-    // '/meeting-sync'
+    '/meeting-sync'
 ];
 
 const PUBLIC_API_ROUTES = [
