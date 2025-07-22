@@ -14,7 +14,6 @@ import apiService from "@/utils/client/api/api-services";
 import ShowToaster from "../global-ui/toastify-toaster/show-toaster";
 import LoadingSpinner from "../global-ui/ui-component/LoadingSpinner";
 import { clearSession } from "@/utils/client/storage/clearSession";
-import { useRouter } from "next/navigation";
 
 const openSans = Open_Sans({
     weight: "400",
@@ -35,7 +34,6 @@ const ForgotPassword = ({
     userInfo,
     isEmailChecked,
 }: ForgotPasswordPropTypes) => {
-    const router = useRouter();
     const [isPasswordShow, setIsPasswordShow] = useState<boolean>(false);
     const [isButtonLoading, setIsButtonLoading] = useState<boolean>(false);
 
@@ -92,7 +90,7 @@ const ForgotPassword = ({
             ShowToaster("Password Updated successfully.", "success");
             setTimeout(() => {
                 clearSession();
-                router.replace('/profile');
+                window.location.href = '/profile';
             }, 2000);
         }
         setIsButtonLoading(true);

@@ -11,7 +11,6 @@ import getDeviceInfo from "@/utils/client/others/getDeviceInfo";
 import { useSessionSecureStorage } from "@/hooks/useSessionSecureStorage";
 import { Session } from "@/utils/constants";
 import { clearSession } from "@/utils/client/storage/clearSession";
-import { useRouter } from "next/navigation";
 
 type AuthenticateOTPPropTypes = {
     userInfo: (userSignUpType & { isRemember: boolean }) | userSignInType | undefined;
@@ -21,8 +20,6 @@ type AuthenticateOTPPropTypes = {
 };
 
 const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setPageState }: AuthenticateOTPPropTypes) => {
-    // const [otp, setOtp] = useState<string>("");
-    const router = useRouter();
     const [otp, setOtp,] = useSessionSecureStorage<string>(Session.OTP, "", true);
     const [enteredOtp, setEnteredOtp] = useSessionSecureStorage<string[]>(Session.ENTERED_OTP, Array(6).fill(""), true);
     const [currOtpBox, setCurrOtpBox] = useState<number>(0);
@@ -87,7 +84,7 @@ const AuthenticateOTP = ({ userInfo, setIsEmailChecked, setCurrentAuthPage, setP
             setTimeout(() => {
                 // !remove OTP sessions
                 clearSession();
-                router.replace('/profile');
+                window.location.href = '/profile';
             }, 2000);
         }
     };
