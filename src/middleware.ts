@@ -105,7 +105,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // 6. Redirect authenticated users away from our PUBLIC_ROUTES
-    if (isAuthenticated && !isApi && isPublicPage && !isHomePage && pathname !== '/meeting-sync') {
+    if (isAuthenticated && !isApi && !isHomePage && pathname !== '/meeting-sync') {
         // If we were sent here with a ?redirect=… param, go back there.
         // Otherwise, send to home (/).
         const target = request.nextUrl.searchParams.get('redirect') || '/';
