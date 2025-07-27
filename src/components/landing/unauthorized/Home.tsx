@@ -9,6 +9,7 @@ import 'aos/dist/aos.css';
 import Footer from "./Footer";
 import Hero from "./Hero";
 import Navigation from "./Navigation";
+import { useAppSelector } from "@/lib/hooks";
 
 
 const advantages = [
@@ -25,6 +26,7 @@ export default function Register() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [typingSpeed, setTypingSpeed] = useState(150);
   const [isModalOpen, setIsModalOpen] = useSessionSecureStorage<boolean>('isModalOpen', false, true);
+  const isUserExist = useAppSelector(state => state.userStore.user?._id);
 
   // Scroll to hash on load
   useEffect(() => {
@@ -80,7 +82,7 @@ export default function Register() {
         <Footer scrollToTop={scrollToTop} />
       </div>
 
-      <FormModal open={isModalOpen} onOpenChange={setIsModalOpen} />
+      {!isUserExist && (<FormModal open={isModalOpen} onOpenChange={setIsModalOpen} />)}
     </>
   );
 }

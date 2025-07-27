@@ -1,4 +1,4 @@
-import Register from "@/components/landing/unauthorized/Register"
+import Register from "@/components/landing/unauthorized/Home"
 
 const Page = () => {
   return (

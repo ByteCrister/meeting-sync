@@ -13,6 +13,8 @@ const Footer = ({ setOpen }: { setOpen: () => void; }) => {
     const { slotField, mode } = useAppSelector(state => state.componentStore.slotDialog);
     const dispatch = useAppDispatch();
 
+    console.log(mode);
+
     const [isLoading, setIsLoading] = useState<boolean>();
 
     const handleFiledValidation = () => {
@@ -68,13 +70,16 @@ const Footer = ({ setOpen }: { setOpen: () => void; }) => {
                         >
                             Close
                         </Button>
-                        <Button
-                            name='create-update'
-                            onClick={handleFiledValidation}
-                            className="text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 rounded-lg px-6 py-2 transition-all duration-300 shadow-md cursor-pointer"
-                        >
-                            {mode === "create" ? "Create Meeting" : "Update Meeting"}
-                        </Button>
+                        {
+                            (mode === 'create' || mode === 'update')
+                            && (<Button
+                                name='create-update'
+                                onClick={handleFiledValidation}
+                                className="text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 rounded-lg px-6 py-2 transition-all duration-300 shadow-md cursor-pointer"
+                            >
+                                {mode === "create" ? "Create Meeting" : 'Update Meeting'}
+                            </Button>)
+                        }
                     </div>
             }
         </>
