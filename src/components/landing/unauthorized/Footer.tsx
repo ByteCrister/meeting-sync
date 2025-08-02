@@ -73,7 +73,7 @@ const Footer: React.FC<FooterProps> = ({ scrollToTop }) => {
           ))}
         </motion.div>
 
-        <p className="text-gray-500">© 2025 MeetSync. All rights reserved.</p>
+        <p className="text-gray-500">© 2025 MeetSync. All rights reserved by Sadiqul Islam Shakib.</p>
       </div>
 
       {/* back-to-top button */}
