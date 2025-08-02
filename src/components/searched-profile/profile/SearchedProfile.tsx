@@ -63,7 +63,7 @@ export const SearchedProfile: React.FC = () => {
       const responseData = await getSearchedUser(userId || '', ApiSPType.GET_USER);
       const { data, success } = responseData as { data: SearchedUserProfile, success: boolean };
       if (success) {
-        if (currentUserId === data._id) router.push('/');
+        if (currentUserId === data._id) router.push('/profile');
         setProfile(data);
         setCount({ followers: data.followers, following: data.following, meetings: data.meetingSlots });
       }
