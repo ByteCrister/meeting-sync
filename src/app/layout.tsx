@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 
   applicationName: "MetingSync",
   keywords: ["meetings", "scheduling", "calendar", "team management", "productivity", "Next.js", 'Sadiqul Islam Shakib', 'Custom TF-IDF & Clustering', 'NextAuth.js', 'WebRTC + Socket.IO', '	Fuse.js', 'Redis', 'Redux Toolkit', 'Tailwind CSS', 'TypeScript'],
-  authors: [{ name: "Sadiqul Islam Shakib", url: "https://meeting-sync-beta.vercel.app/" }],
+  authors: [{ name: "Sadiqul Islam Shakib", url: "/images/shakib.jpg" }],
   creator: "Sadiqul Islam Shakib",
   publisher: "MetingSync",
 
