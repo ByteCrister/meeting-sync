@@ -7,8 +7,8 @@
 ---
 
 ## Sign Up Cedentials
-- email: sadiqul.islam.shakib21@gmail.com
-- password: zZ1!123
+- **email:** `sadiqul.islam.shakib21@gmail.com`
+- **password:** `zZ1!123`
 
 ---
 
