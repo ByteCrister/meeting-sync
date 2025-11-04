@@ -6,7 +6,7 @@
 
 ---
 
-## 🔐 Sign Up Cedentials
+## 🔐 Sign In Cedentials
 - **email:** `sadiqul.islam.shakib21@gmail.com`
 - **password:** `zZ1!123`
 
