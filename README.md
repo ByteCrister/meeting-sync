@@ -6,6 +6,12 @@
 
 ---
 
+## 🔐 Sign In Credentials
+- **email:** `sadiqul.islam.shakib21@gmail.com`
+- **password:** `zZ1!123`
+
+---
+
 ## 🔧 Tech Stack
 
 - **Frontend Framework:** [Next.js](https://nextjs.org/)
