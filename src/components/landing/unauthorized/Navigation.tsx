@@ -42,14 +42,14 @@ export default function Navigation({
 
   const baseLink = `relative text-sm font-semibold transition-all duration-300`;
   const activeLink =
-    'relative text-blue-800 font-medium after:absolute after:inset-x-0 after:-bottom-1 after:h-[2px] after:bg-gradient-to-r after:from-blue-300 after:to-blue-600 after:rounded-full after:transition-all after:duration-300';
+    'relative text-[#1A365D] font-semibold after:absolute after:inset-x-0 after:-bottom-1 after:h-[2px] after:bg-gradient-to-r after:from-[#3B82F6] after:to-[#8B5CF6] after:rounded-full after:transition-all after:duration-300';
   const inactiveLink =
-    'relative text-gray-700 hover:text-blue-800 hover:after:absolute hover:after:inset-x-0 hover:after:-bottom-1 hover:after:h-[2px] hover:after:bg-gradient-to-r hover:after:from-blue-300 hover:to-blue-600 hover:rounded-full hover:transition-all hover:duration-300';
+    'relative text-[#64748B] hover:text-[#1A365D] hover:after:absolute hover:after:inset-x-0 hover:after:-bottom-1 hover:after:h-[2px] hover:after:bg-gradient-to-r hover:after:from-[#3B82F6] hover:after:to-[#8B5CF6] hover:after:rounded-full hover:after:transition-all hover:after:duration-300';
 
   const handleCTAClick = () => {
     if (!isLoggedIn) {
       setIsModalOpen(true);
-    }else{
+    } else {
       router.push('/profile');
     }
   };
@@ -59,8 +59,9 @@ export default function Navigation({
       initial={{ y: -60, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className={`fixed top-0 w-full z-50 transition-all ${scrolled ? 'backdrop-blur bg-white/80 shadow-md' : 'bg-transparent'
-        }`}
+      className={`fixed top-0 w-full z-50 transition-all ${
+        scrolled ? 'backdrop-blur bg-white/95 shadow-md border-b border-[#E2E8F0]' : 'bg-transparent'
+      }`}
     >
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
         <Logo />
@@ -80,14 +81,14 @@ export default function Navigation({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleCTAClick}
-              className="px-5 py-2 rounded-full font-semibold text-white bg-gradient-to-r from-indigo-500 to-pink-500 shadow-md hover:shadow-xl transition"
+              className="px-6 py-2.5 rounded-xl font-semibold text-white bg-[#1A365D] hover:bg-[#2D4A7C] shadow-md hover:shadow-lg transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[rgba(59,130,246,0.15)]"
             >
               Dashboard
             </motion.button>
           ) : (
             <Link
               href="/meeting-sync?option=how-it-works"
-              className="px-5 py-2 rounded-full font-semibold text-white bg-gradient-to-r from-indigo-500 to-pink-500 shadow-md hover:shadow-xl transition"
+              className="px-6 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] hover:from-[#2563EB] hover:to-[#7C3AED] shadow-md hover:shadow-lg transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[rgba(59,130,246,0.15)]"
             >
               Get Started
             </Link>
@@ -97,9 +98,9 @@ export default function Navigation({
         {/* Mobile Toggle */}
         <button
           onClick={() => setIsMobileOpen((prev) => !prev)}
-          className="md:hidden focus:outline-none p-2 rounded-md"
+          className="md:hidden focus:outline-none p-2 rounded-md hover:bg-[#F1F5F9] transition-colors"
         >
-          {isMobileOpen ? <X className="w-6 h-6 text-gray-800" /> : <Menu className="w-6 h-6 text-gray-800" />}
+          {isMobileOpen ? <X className="w-6 h-6 text-[#0F172A]" /> : <Menu className="w-6 h-6 text-[#0F172A]" />}
         </button>
       </div>
 
@@ -111,7 +112,7 @@ export default function Navigation({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ type: 'spring', damping: 22, stiffness: 180 }}
-            className="md:hidden bg-white backdrop-blur shadow-lg px-6 py-6"
+            className="md:hidden bg-white backdrop-blur shadow-lg px-6 py-6 border-t border-[#E2E8F0]"
           >
             <ul className="flex flex-col gap-5">
               {NAV_LINKS.map(({ label, href }) => (
@@ -126,11 +127,11 @@ export default function Navigation({
                 </motion.li>
               ))}
 
-              <motion.li variants={linkItem}>
+              <motion.li variants={linkItem} className="mt-2">
                 {isLoggedIn ? (
                   <button
                     onClick={handleCTAClick}
-                    className="w-full py-2 rounded-full font-semibold text-white bg-gradient-to-r from-indigo-500 to-pink-500 shadow-md"
+                    className="w-full py-3 rounded-xl font-semibold text-white bg-[#1A365D] hover:bg-[#2D4A7C] shadow-md transition-all duration-300"
                   >
                     Dashboard
                   </button>
@@ -138,7 +139,7 @@ export default function Navigation({
                   <Link
                     href="/meeting-sync?option=how-it-works"
                     onClick={() => setIsMobileOpen(false)}
-                    className="w-full block text-center py-2 rounded-full font-semibold text-white bg-gradient-to-r from-indigo-500 to-pink-500 shadow-md"
+                    className="w-full block text-center py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] shadow-md transition-all duration-300"
                   >
                     Get Started
                   </Link>
