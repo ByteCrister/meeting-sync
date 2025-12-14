@@ -6,9 +6,7 @@ import { useSessionSecureStorage } from '@/hooks/useSessionSecureStorage';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
-import Footer from "./Footer";
 import Hero from "./Hero";
-import Navigation from "./Navigation";
 import { useAppSelector } from "@/lib/hooks";
 
 
@@ -66,23 +64,12 @@ export default function Register() {
     AOS.init({ duration: 800, once: true });
   }, []);
 
-  const scrollToTop = () =>
-    window.scrollTo({ top: 0, behavior: "smooth" });
-
   return (
-    <>
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 font-sans">
-        {/* Navigation */}
-        <Navigation setIsModalOpen={setIsModalOpen} />
-
-        {/* Hero Section */}
-        <Hero displayText={displayText} setIsModalOpen={setIsModalOpen} />
-
-        {/* Footer */}
-        <Footer scrollToTop={scrollToTop} />
-      </div>
-
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 font-sans">
+      {/* Hero Section */}
+      <Hero displayText={displayText} setIsModalOpen={setIsModalOpen} />
       {!isUserExist && (<FormModal open={isModalOpen} onOpenChange={setIsModalOpen} />)}
-    </>
+    </div>
+
   );
 }

@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import * as RiIcons from 'react-icons/ri';
 import { useRouter } from "next/navigation";
 import { useAppSelector } from '@/lib/hooks';
+
 const sectionVariant = {
     hidden: { opacity: 0, y: 50 },
     visible: {
@@ -14,34 +15,35 @@ const sectionVariant = {
         transition: { duration: 0.8, ease: "easeOut" },
     },
 };
+
 const extendedFeatures = [
     {
         title: 'Organize Smarter',
         desc: 'Create, edit, and cancel meetings in seconds.',
         Icon: RiIcons.RiCalendarCheckFill,
-        from: 'from-indigo-500',
-        to: 'to-purple-500'
+        from: 'from-[#3B82F6]',
+        to: 'to-[#2563EB]'
     },
     {
         title: 'Time Zone Friendly',
         desc: 'Perfectly sync meetings regardless of where your team is.',
         Icon: RiIcons.RiMapPinTimeLine,
-        from: 'from-teal-400',
-        to: 'to-blue-500'
+        from: 'from-[#0EA5E9]',
+        to: 'to-[#3B82F6]'
     },
     {
         title: 'Sort & Filter',
         desc: 'Filter by date, status, or members to find what matters.',
         Icon: RiIcons.RiFilter2Fill,
-        from: 'from-yellow-400',
-        to: 'to-red-400'
+        from: 'from-[#8B5CF6]',
+        to: 'to-[#7C3AED]'
     },
     {
         title: 'Friend Sync',
         desc: 'Auto-sync with your contacts and avoid double-booking.',
         Icon: RiIcons.RiUserSharedFill,
-        from: 'from-green-400',
-        to: 'to-emerald-500'
+        from: 'from-[#059669]',
+        to: 'to-[#0EA5E9]'
     },
 ];
 
@@ -51,7 +53,7 @@ const roadmap = [
         title: "Smart Scheduling",
         desc: "Find the best time for everyone with smart conflict detection and time-zone awareness.",
         icon: FaCalendarCheck,
-        bg: "bg-secondary/20",
+        bg: "bg-[#F1F5F9]",
         screenshot: "/screenshots/scheduling.png",
         bullets: [
             "Instant conflict detection across teams",
@@ -71,7 +73,7 @@ const roadmap = [
         title: "Team Collaboration",
         desc: "Collaborate in real time with shared agendas, live notes, and integrated chat.",
         icon: FaUsers,
-        bg: "bg-secondary/20",
+        bg: "bg-[#F1F5F9]",
         screenshot: "/screenshots/collab.png",
         bullets: [
             "Shared agendas & roles assignment",
@@ -91,7 +93,7 @@ const roadmap = [
         title: "Auto Sync",
         desc: "Keep all your calendars up to date automatically with instant sync and notifications.",
         icon: FaSyncAlt,
-        bg: "bg-secondary/20",
+        bg: "bg-[#F1F5F9]",
         screenshot: "/screenshots/sync.png",
         bullets: [
             "One-click calendar updates",
@@ -111,7 +113,7 @@ const roadmap = [
         title: "Secure Access",
         desc: "Enterprise-grade security with SSO, encryption, and detailed audit logs.",
         icon: FaShieldAlt,
-        bg: "bg-secondary/20",
+        bg: "bg-[#F1F5F9]",
         screenshot: "/screenshots/security.png",
         bullets: [
             "SSO with SAML & OAuth2",
@@ -138,11 +140,11 @@ const Hero = ({ displayText, setIsModalOpen }: { displayText: string, setIsModal
     return (
         <main className="container mx-auto px-4 py-16 pt-24">
             <div className="max-w-4xl mx-auto text-center">
-                <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent font-display min-h-[120px] md:min-h-[160px]">
+                <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-[#1A365D] via-[#3B82F6] to-[#8B5CF6] bg-clip-text text-transparent font-display min-h-[120px] md:min-h-[160px]">
                     {displayText}
                     <span className="animate-pulse">|</span>
                 </h1>
-                <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+                <p className="text-xl text-[#64748B] mb-8 leading-relaxed max-w-3xl mx-auto">
                     Connect, collaborate, and coordinate with your team effortlessly. MeetSync makes scheduling meetings simple and efficient.
                 </p>
                 <button
@@ -153,44 +155,61 @@ const Hero = ({ displayText, setIsModalOpen }: { displayText: string, setIsModal
                             router.push('/profile');
                         }
                     }}
-                    className="inline-block px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-lg font-semibold hover:shadow-xl hover:scale-105 transform transition-all duration-300"
+                    className="inline-block px-10 py-4 bg-[#1A365D] hover:bg-[#2D4A7C] text-white rounded-xl text-lg font-semibold shadow-lg hover:shadow-2xl hover:scale-105 transform transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[rgba(59,130,246,0.15)]"
                 >
                     Start Scheduling Now
                 </button>
             </div>
 
             {/* Features Grid */}
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20">
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-24">
                 {[
                     {
                         title: 'Smart Scheduling',
                         desc: 'Find the perfect time for everyone with intelligent scheduling algorithms.',
-                        iconColor: 'blue'
+                        iconColor: '#3B82F6',
+                        iconBg: '#EFF6FF',
+                        hoverBg: '#DBEAFE'
                     },
                     {
                         title: 'Team Collaboration',
                         desc: 'Connect with your team members and manage meetings efficiently.',
-                        iconColor: 'purple'
+                        iconColor: '#8B5CF6',
+                        iconBg: '#F5F3FF',
+                        hoverBg: '#EDE9FE'
                     },
                     {
                         title: 'Reliable Platform',
                         desc: 'Trust in a secure and reliable platform for all your meeting needs.',
-                        iconColor: 'green'
+                        iconColor: '#059669',
+                        iconBg: '#ECFDF5',
+                        hoverBg: '#D1FAE5'
                     },
-                ].map(({ title, desc, iconColor }, i) => (
+                ].map(({ title, desc, iconColor, iconBg}, i) => (
                     <div
                         key={i}
-                        className="group bg-white p-8 rounded-xl shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300"
+                        className="group bg-[#F8FAFC] hover:bg-white p-8 rounded-2xl shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 border border-[#E2E8F0]"
                     >
-                        <div className={`w-14 h-14 bg-${iconColor}-100 rounded-xl flex items-center justify-center mb-6 group-hover:bg-${iconColor}-200 transition-colors duration-300`}>
-                            <svg className={`w-7 h-7 text-${iconColor}-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div 
+                            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-all duration-300"
+                            style={{ 
+                                backgroundColor: iconBg,
+                            }}
+                        >
+                            <svg 
+                                className="w-8 h-8" 
+                                style={{ color: iconColor }}
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                            >
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-blue-600 transition-colors duration-300">
+                        <h3 className="text-2xl font-bold text-[#0F172A] mb-4 group-hover:text-[#3B82F6] transition-colors duration-300">
                             {title}
                         </h3>
-                        <p className="text-gray-600 leading-relaxed">{desc}</p>
+                        <p className="text-[#64748B] leading-relaxed">{desc}</p>
                     </div>
                 ))}
             </section>
@@ -198,16 +217,16 @@ const Hero = ({ displayText, setIsModalOpen }: { displayText: string, setIsModal
             {/* Extended Features */}
             <section className="mt-32 text-center px-4">
                 <h2
-                    className="text-4xl font-bold text-gray-800 mb-4"
+                    className="text-4xl md:text-5xl font-bold text-[#0F172A] mb-4"
                     data-aos="fade-down"
                 >
                     Why MeetSync?
                 </h2>
                 <p
-                    className="text-lg text-gray-600 max-w-2xl mx-auto mb-12"
+                    className="text-lg text-[#64748B] max-w-2xl mx-auto mb-16"
                     data-aos="fade-up"
                 >
-                    MeetSync is more than just a scheduler — it’s your team’s time wizard.
+                    MeetSync is more than just a scheduler — it&apos;s your team&apos;s time wizard.
                     Streamline how you meet, manage calendars, and sync with your squad
                     across time zones.
                 </p>
@@ -219,7 +238,7 @@ const Hero = ({ displayText, setIsModalOpen }: { displayText: string, setIsModal
                             className={`
                 relative overflow-hidden rounded-3xl p-8
                 bg-gradient-to-br ${from} ${to}
-                shadow-2xl transform transition-all duration-500
+                shadow-xl hover:shadow-2xl transform transition-all duration-500
                 group
               `}
                             data-aos="zoom-in"
@@ -230,29 +249,31 @@ const Hero = ({ displayText, setIsModalOpen }: { displayText: string, setIsModal
                             <span className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full animate-pulse delay-500"></span>
 
                             <Icon
-                                className="w-10 h-10 text-white mb-4 animate-spin-slow group-hover:animate-spin-fast"
+                                className="w-12 h-12 text-white mb-5 group-hover:scale-110 transition-transform duration-300"
                             />
 
                             <h3 className="text-white text-xl font-bold mb-2">{title}</h3>
-                            <p className="text-white text-sm leading-relaxed">{desc}</p>
+                            <p className="text-white/90 text-sm leading-relaxed">{desc}</p>
                         </motion.div>
                     ))}
                 </div>
             </section>
 
-            {/* ****** */}
-
-            <div className="font-sans text-gray-900 bg-gradient-to-b from-gray-50 to-gray-100">
+            {/* Roadmap Section */}
+            <div className="font-sans text-[#0F172A] bg-gradient-to-b from-[#FFFFFF] via-[#F8FAFC] to-[#F1F5F9] mt-24 rounded-3xl py-16">
                 {/* Roadmap Bar */}
-                <section className="mt-24 px-4 sm:px-6">
-                    <h2 className="text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent" data-aos="fade-down">
+                <section className="px-4 sm:px-6">
+                    <h2 className="text-4xl md:text-5xl font-bold text-center mb-6 bg-gradient-to-r from-[#1A365D] via-[#3B82F6] to-[#8B5CF6] bg-clip-text text-transparent" data-aos="fade-down">
                         Your Meeting Journey
                     </h2>
+                    <p className="text-center text-[#64748B] text-lg mb-16 max-w-2xl mx-auto">
+                        Discover how MeetSync transforms your scheduling workflow with powerful features designed for modern teams
+                    </p>
 
                     <div className="relative">
                         {!prefersReduced && (
                             <motion.div
-                                className="absolute inset-x-0 top-1/2 h-1 bg-gradient-to-r from-indigo-400 to-purple-400"
+                                className="absolute inset-x-0 top-1/2 h-1 bg-gradient-to-r from-[#3B82F6] via-[#8B5CF6] to-[#0EA5E9]"
                                 initial={{ scaleX: 0 }}
                                 whileInView={{ scaleX: 1 }}
                                 transition={{ duration: 1, ease: "easeInOut" }}
@@ -268,16 +289,16 @@ const Hero = ({ displayText, setIsModalOpen }: { displayText: string, setIsModal
                                         router.replace(`#${id}`);
                                         document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
                                     }}
-                                    className="flex flex-col items-center w-36 md:w-44 focus:outline-none rounded-lg transition-all duration-300 hover:scale-105"
+                                    className="flex flex-col items-center w-36 md:w-44 focus:outline-none focus:ring-4 focus:ring-[rgba(59,130,246,0.15)] rounded-2xl p-3 transition-all duration-300 hover:scale-105 hover:bg-white/50"
                                     initial={{ opacity: 0, y: 20 }}
                                     whileInView={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.3 + i * 0.2 }}
                                     whileHover={!prefersReduced ? { scale: 1.1 } : {}}
                                 >
-                                    <div className="w-20 h-20 bg-white rounded-full shadow-xl flex items-center justify-center mb-3 border-2 border-indigo-300">
-                                        <Icon className="w-10 h-10 text-indigo-600" />
+                                    <div className="w-20 h-20 bg-white rounded-full shadow-xl flex items-center justify-center mb-3 border-2 border-[#3B82F6] group-hover:border-[#8B5CF6] transition-colors">
+                                        <Icon className="w-10 h-10 text-[#3B82F6]" />
                                     </div>
-                                    <span className="text-sm sm:text-base font-medium text-gray-800 text-center">{title}</span>
+                                    <span className="text-sm sm:text-base font-semibold text-[#0F172A] text-center">{title}</span>
                                 </motion.button>
                             ))}
                         </div>
@@ -302,41 +323,61 @@ const Hero = ({ displayText, setIsModalOpen }: { displayText: string, setIsModal
                         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
                             {/* Icon Preview */}
                             <div className={`space-y-8 text-center lg:text-left ${isEven ? '' : 'lg:order-last'}`}>
-                                <div className="w-48 h-48 mx-auto lg:mx-0 flex items-center justify-center bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl shadow-inner border-2 border-indigo-200">
-                                    <feat.icon className="text-indigo-500 w-20 h-20" />
+                                <div className="w-56 h-56 mx-auto lg:mx-0 flex items-center justify-center bg-gradient-to-br from-[#EFF6FF] to-[#F5F3FF] rounded-3xl shadow-2xl border-2 border-[#CBD5E1]">
+                                    <feat.icon className="text-[#3B82F6] w-24 h-24" />
                                 </div>
-                                <p className="text-xl text-gray-700">{feat.desc || 'Enhance productivity with this powerful feature.'}</p>
+                                <p className="text-xl text-[#64748B] leading-relaxed">{feat.desc || 'Enhance productivity with this powerful feature.'}</p>
                             </div>
 
-                            {/* Right: Content */}
+                            {/* Content */}
                             <div>
-                                <h3 className="text-3xl sm:text-4xl font-bold mb-6 text-gray-800">{feat.title}</h3>
+                                <h3 className="text-3xl sm:text-4xl font-bold mb-6 text-[#1A365D]">{feat.title}</h3>
 
-                                <ul className="list-disc list-inside space-y-2 text-lg text-gray-700 mb-8">
+                                <ul className="space-y-3 text-lg text-[#64748B] mb-8">
                                     {feat.bullets.map((b, idx) => (
-                                        <li key={idx}>{b}</li>
+                                        <li key={idx} className="flex items-start">
+                                            <svg className="w-6 h-6 text-[#059669] mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <span>{b}</span>
+                                        </li>
                                     ))}
                                 </ul>
 
-                                <div className="mb-8 text-left">
-                                    <h4 className="text-xl font-semibold mb-2 text-gray-800">How it works:</h4>
-                                    <ol className="list-decimal list-inside text-gray-700 space-y-1">
+                                <div className="mb-8 text-left bg-[#F8FAFC] rounded-2xl p-6 border border-[#E2E8F0]">
+                                    <h4 className="text-xl font-bold mb-4 text-[#1A365D] flex items-center">
+                                        <span className="w-8 h-8 bg-[#3B82F6] text-white rounded-lg flex items-center justify-center mr-3 text-sm">
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                            </svg>
+                                        </span>
+                                        How it works:
+                                    </h4>
+                                    <ol className="space-y-3">
                                         {feat.walkthrough?.map((step, i) => (
-                                            <li key={i}>{step}</li>
+                                            <li key={i} className="flex items-start text-[#64748B]">
+                                                <span className="w-7 h-7 bg-[#3B82F6] text-white rounded-full flex items-center justify-center mr-3 text-sm font-bold flex-shrink-0 mt-0.5">
+                                                    {i + 1}
+                                                </span>
+                                                <span className="leading-relaxed">{step}</span>
+                                            </li>
                                         ))}
                                     </ol>
                                 </div>
 
                                 <motion.button
                                     onClick={() => setIsModalOpen(true)}
-                                    className="inline-block px-8 py-4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                                    className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[#3B82F6] hover:bg-[#2563EB] text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-[rgba(59,130,246,0.15)]"
                                     initial={{ opacity: 0, y: 40 }}
                                     whileInView={{ opacity: 1, y: 0 }}
-                                    whileHover={{ scale: 1.07 }}
+                                    whileHover={{ scale: 1.05 }}
                                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                                     viewport={{ once: true, amount: 0.3 }}
                                 >
                                     Explore Feature
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                    </svg>
                                 </motion.button>
                             </div>
                         </div>
