@@ -37,6 +37,8 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
 
     // Scroll to hash on load
     useEffect(() => {
+        if (typeof window === "undefined") return;
+
         if (typeof window !== "undefined" && window.location.hash) {
             const id = window.location.hash.substring(1);
             document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
@@ -71,7 +73,7 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
                 <BookedSlotDialog />
                 <AlertDialogComponent />
                 <AlertDeleteBookedSlot />
-            </DashboardLayout> 
+            </DashboardLayout>
             :
             <>
                 {showNavFooter && <Navigation setIsModalOpen={setIsModalOpen} />}
