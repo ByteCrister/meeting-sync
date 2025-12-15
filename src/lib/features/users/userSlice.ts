@@ -6,6 +6,7 @@ import { isEqual } from "lodash";
 
 const initialState: userSliceInitialState = {
     user: null,
+    fetching: false,
     notifications: [],
     activities: null,
 };
@@ -14,6 +15,9 @@ export const userSlice = createSlice({
     name: "user",
     initialState,
     reducers: {
+        toggleFetching: (state, action: PayloadAction<{ isFetching: boolean }>) => {
+            state.fetching = action.payload.isFetching;
+        },
         setUser: (state, action: PayloadAction<{ user: Users, activity: ActivityType[] }>) => {
             const isSameUser = isEqual(state.user, action.payload.user);
             const isSameActivities = isEqual(state.user, action.payload.user);
@@ -98,6 +102,7 @@ export const userSlice = createSlice({
 // Export actions and reducer
 export const {
     setUser,
+    toggleFetching,
     updateUserInfo,
     addNotifications,
     addSingleNotification,

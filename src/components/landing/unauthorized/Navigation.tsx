@@ -31,6 +31,7 @@ export default function Navigation({
   const [scrolled, setScrolled] = useState(false);
 
   const userId = useAppSelector((state) => state.userStore.user?._id);
+  const isFetching = useAppSelector((state) => state.userStore.fetching);
 
   const isLoggedIn = useMemo(() => Boolean(userId), [userId]);
 
@@ -59,9 +60,8 @@ export default function Navigation({
       initial={{ y: -60, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className={`fixed top-0 w-full z-50 transition-all ${
-        scrolled ? 'backdrop-blur bg-white/95 shadow-md border-b border-[#E2E8F0]' : 'bg-transparent'
-      }`}
+      className={`fixed top-0 w-full z-50 transition-all ${scrolled ? 'backdrop-blur bg-white/95 shadow-md border-b border-[#E2E8F0]' : 'bg-transparent'
+        }`}
     >
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
         <Logo />
@@ -78,12 +78,24 @@ export default function Navigation({
 
           {isLoggedIn ? (
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleCTAClick}
-              className="px-6 py-2.5 rounded-xl font-semibold text-white bg-[#1A365D] hover:bg-[#2D4A7C] shadow-md hover:shadow-lg transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[rgba(59,130,246,0.15)]"
+              whileHover={!isFetching ? { scale: 1.05 } : {}}
+              whileTap={!isFetching ? { scale: 0.95 } : {}}
+              onClick={() => {
+                if (isFetching) return;
+                handleCTAClick();
+              }}
+              disabled={isFetching}
+              className={`
+            px-6 py-2.5 rounded-xl font-semibold text-white
+            bg-[#1A365D]
+            shadow-md transition-all duration-300
+            focus:outline-none focus:ring-4 focus:ring-[rgba(59,130,246,0.15)]
+            ${isFetching
+                  ? "cursor-not-allowed opacity-80"
+                  : "hover:bg-[#2D4A7C] hover:shadow-lg"}
+          `}
             >
-              Dashboard
+              {isFetching ? <ButtonLoader /> : "Dashboard"}
             </motion.button>
           ) : (
             <Link
@@ -129,12 +141,24 @@ export default function Navigation({
 
               <motion.li variants={linkItem} className="mt-2">
                 {isLoggedIn ? (
-                  <button
-                    onClick={handleCTAClick}
-                    className="w-full py-3 rounded-xl font-semibold text-white bg-[#1A365D] hover:bg-[#2D4A7C] shadow-md transition-all duration-300"
+                  <motion.button
+                    onClick={() => {
+                      if (isFetching) return;
+                      handleCTAClick();
+                    }}
+                    disabled={isFetching}
+                    whileTap={!isFetching ? { scale: 0.97 } : {}}
+                    className={`
+                    w-full py-3 rounded-xl font-semibold text-white
+                    bg-[#1A365D]
+                    shadow-md transition-all duration-300
+                    ${isFetching
+                        ? "cursor-not-allowed opacity-80"
+                        : "hover:bg-[#2D4A7C]"}
+                  `}
                   >
-                    Dashboard
-                  </button>
+                    {isFetching ? <ButtonLoader /> : "Dashboard"}
+                  </motion.button>
                 ) : (
                   <Link
                     href="/meeting-sync?option=how-it-works"
@@ -152,3 +176,39 @@ export default function Navigation({
     </motion.header>
   );
 }
+
+
+const ButtonLoader = () => (
+  <motion.span
+    className="flex items-center gap-2"
+    initial="idle"
+    animate="loading"
+    variants={{
+      loading: {
+        transition: {
+          staggerChildren: 0.15,
+          repeat: Infinity,
+        },
+      },
+    }}
+  >
+    {[0, 1, 2].map((i) => (
+      <motion.span
+        key={i}
+        className="w-1.5 h-1.5 bg-white rounded-full"
+        variants={{
+          idle: { opacity: 0.3, y: 0 },
+          loading: {
+            opacity: [0.3, 1, 0.3],
+            y: [0, -4, 0],
+          },
+        }}
+        transition={{
+          duration: 0.8,
+          ease: "easeInOut",
+          repeat: Infinity,
+        }}
+      />
+    ))}
+  </motion.span>
+);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { FaCalendarCheck, FaUsers, FaSyncAlt, FaShieldAlt } from "react-icons/fa";
 import { motion, useReducedMotion } from 'framer-motion';
 import * as RiIcons from 'react-icons/ri';
@@ -132,11 +132,19 @@ const roadmap = [
 
 const Hero = ({ displayText, setIsModalOpen }: { displayText: string, setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>> }) => {
     const router = useRouter();
+    const [mounted, setMounted] = useState(false);
     const prefersReduced = useReducedMotion();
     const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const userId = useAppSelector(state => state.userStore.user?._id);
     const isLogged = userId ? true : false;
-
+    const isFetching = useAppSelector(state => state.userStore.fetching);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+    if (!mounted) {
+        // Server + first client render match
+        return null;
+    }
     return (
         <main className="container mx-auto px-4 py-16 pt-24">
             <div className="max-w-4xl mx-auto text-center">
@@ -147,18 +155,67 @@ const Hero = ({ displayText, setIsModalOpen }: { displayText: string, setIsModal
                 <p className="text-xl text-[#64748B] mb-8 leading-relaxed max-w-3xl mx-auto">
                     Connect, collaborate, and coordinate with your team effortlessly. MeetSync makes scheduling meetings simple and efficient.
                 </p>
-                <button
+                <motion.button
                     onClick={() => {
+                        if (isFetching) return;
+
                         if (!isLogged) {
                             setIsModalOpen(true);
                         } else {
-                            router.push('/profile');
+                            router.push("/profile");
                         }
                     }}
-                    className="inline-block px-10 py-4 bg-[#1A365D] hover:bg-[#2D4A7C] text-white rounded-xl text-lg font-semibold shadow-lg hover:shadow-2xl hover:scale-105 transform transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[rgba(59,130,246,0.15)]"
+                    disabled={isFetching}
+                    className={`
+        relative inline-flex items-center justify-center gap-2
+        px-10 py-4 rounded-xl text-lg font-semibold text-white
+        bg-[#1A365D]
+        shadow-lg
+        focus:outline-none focus:ring-4 focus:ring-[rgba(59,130,246,0.15)]
+        transition-all duration-300
+        ${isFetching
+                            ? "cursor-not-allowed opacity-80"
+                            : "hover:bg-[#2D4A7C] hover:shadow-2xl hover:scale-105"}
+    `}
+                    whileTap={!isFetching ? { scale: 0.97 } : {}}
                 >
-                    Start Scheduling Now
-                </button>
+                    {isFetching ? (
+                        <motion.div
+                            className="flex items-center gap-2"
+                            initial="idle"
+                            animate="loading"
+                            variants={{
+                                loading: {
+                                    transition: {
+                                        staggerChildren: 0.15,
+                                        repeat: Infinity,
+                                    },
+                                },
+                            }}
+                        >
+                            {[0, 1, 2].map((i) => (
+                                <motion.span
+                                    key={i}
+                                    className="w-1.5 h-1.5 bg-white rounded-full"
+                                    variants={{
+                                        idle: { opacity: 0.3, y: 0 },
+                                        loading: {
+                                            opacity: [0.3, 1, 0.3],
+                                            y: [0, -4, 0],
+                                        },
+                                    }}
+                                    transition={{
+                                        duration: 0.8,
+                                        ease: "easeInOut",
+                                        repeat: Infinity,
+                                    }}
+                                />
+                            ))}
+                        </motion.div>
+                    ) : (
+                        "Start Scheduling Now"
+                    )}
+                </motion.button>
             </div>
 
             {/* Features Grid */}
@@ -185,22 +242,22 @@ const Hero = ({ displayText, setIsModalOpen }: { displayText: string, setIsModal
                         iconBg: '#ECFDF5',
                         hoverBg: '#D1FAE5'
                     },
-                ].map(({ title, desc, iconColor, iconBg}, i) => (
+                ].map(({ title, desc, iconColor, iconBg }, i) => (
                     <div
                         key={i}
                         className="group bg-[#F8FAFC] hover:bg-white p-8 rounded-2xl shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 border border-[#E2E8F0]"
                     >
-                        <div 
+                        <div
                             className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-all duration-300"
-                            style={{ 
+                            style={{
                                 backgroundColor: iconBg,
                             }}
                         >
-                            <svg 
-                                className="w-8 h-8" 
+                            <svg
+                                className="w-8 h-8"
                                 style={{ color: iconColor }}
-                                fill="none" 
-                                stroke="currentColor" 
+                                fill="none"
+                                stroke="currentColor"
                                 viewBox="0 0 24 24"
                             >
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
