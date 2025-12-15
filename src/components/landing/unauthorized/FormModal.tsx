@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Dispatch, SetStateAction } from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import DefaultAuthPage from '@/components/authentication/DefaultAuthPage';
@@ -13,10 +13,19 @@ interface CustomModalProps {
 
 export default function FormModal({ open, onOpenChange }: CustomModalProps) {
 
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const handleClose = () => {
         clearSession();
         onOpenChange(false);
     };
+
+    // 🚫 Prevent SSR / pre-hydration access to document
+    if (!mounted) return null;
 
     return createPortal(
         <AnimatePresence>

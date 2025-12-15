@@ -17,7 +17,7 @@ const ShowToaster = (
   status: ToastStatus,
   onRetry?: () => void
 ): Id | void => {
-  const iconSize = 18;
+  const iconSize = 20;
 
   const baseStyles = {
     position: "top-center" as const,
@@ -26,30 +26,82 @@ const ShowToaster = (
     draggable: false,
     transition: Slide,
     style: {
-      borderRadius: "8px",
-      padding: "12px 16px",
-      backgroundColor: "#F9FAFB", // subtle light background
-      border: "1px solid #E5E7EB",
-      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
-      fontFamily: `"Inter", "system-ui", sans-serif`,
-      maxWidth: "400px",
+      borderRadius: "12px",
+      padding: "16px 20px",
+      backgroundColor: "rgba(255, 255, 255, 0.95)",
+      backdropFilter: "blur(12px)",
+      border: "1px solid rgba(226, 232, 240, 0.8)",
+      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)",
+      fontFamily: `"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`,
+      maxWidth: "420px",
       width: "100%",
     },
     bodyStyle: {
       display: "flex",
       alignItems: "center",
-      gap: "12px",
+      gap: "14px",
       fontSize: "14px",
-      fontWeight: 400,
+      fontWeight: 500,
       lineHeight: "1.5",
-      color: "#374151", // soft gray
+      color: "#1e293b",
+      padding: 0,
+    },
+    progressStyle: {
+      background: "#64748b",
+      height: "2px",
     },
   };
 
-  const contentWithIcon = (icon: JSX.Element, color?: string) => (
+  const statusConfig = {
+    processing: {
+      icon: <Loader size={iconSize} className="animate-spin text-blue-500" />,
+      color: "#3b82f6",
+      bgGradient: "linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 197, 253, 0.05) 100%)",
+      borderColor: "rgba(59, 130, 246, 0.2)",
+    },
+    success: {
+      icon: <CheckCircle size={iconSize} className="text-emerald-500" />,
+      color: "#10b981",
+      bgGradient: "linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(110, 231, 183, 0.05) 100%)",
+      borderColor: "rgba(16, 185, 129, 0.2)",
+    },
+    error: {
+      icon: <XCircle size={iconSize} className="text-red-500" />,
+      color: "#ef4444",
+      bgGradient: "linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(252, 165, 165, 0.05) 100%)",
+      borderColor: "rgba(239, 68, 68, 0.2)",
+    },
+    warning: {
+      icon: <AlertCircle size={iconSize} className="text-amber-500" />,
+      color: "#f59e0b",
+      bgGradient: "linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(253, 230, 138, 0.05) 100%)",
+      borderColor: "rgba(245, 158, 11, 0.2)",
+    },
+    "retry-warning": {
+      icon: <RefreshCcw size={iconSize} className="text-amber-500" />,
+      color: "#f59e0b",
+      bgGradient: "linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(253, 230, 138, 0.05) 100%)",
+      borderColor: "rgba(245, 158, 11, 0.2)",
+    },
+  };
+
+  const config = statusConfig[status];
+
+  const contentWithIcon = (
     <div className="flex items-center gap-3 w-full">
-      <div className="flex-shrink-0">{icon}</div>
-      <span className="text-sm leading-snug tracking-tight" style={{ color }}>
+      <div
+        className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300"
+        style={{
+          background: config.bgGradient,
+          border: `1.5px solid ${config.borderColor}`,
+        }}
+      >
+        {config.icon}
+      </div>
+      <span
+        className="text-sm font-medium leading-snug tracking-tight flex-1"
+        style={{ color: "#1e293b" }}
+      >
         {text}
       </span>
     </div>
@@ -58,75 +110,61 @@ const ShowToaster = (
   const retryButton = (
     <button
       onClick={onRetry}
-      className="ml-auto text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors px-2 py-1 border border-blue-100 bg-blue-50 rounded"
+      className="ml-3 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95"
+      style={{
+        color: config.color,
+        backgroundColor: `${config.color}15`,
+        border: `1px solid ${config.color}30`,
+      }}
     >
       Retry
     </button>
   );
 
+  const enhancedStyles = {
+    ...baseStyles,
+    style: {
+      ...baseStyles.style,
+      background: `linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%)`,
+    },
+  };
+
   switch (status) {
     case "processing":
-      return toast(
-        contentWithIcon(
-          <Loader size={iconSize} className="animate-spin text-blue-600" />,
-          "#1D4ED8"
-        ),
-        {
-          ...baseStyles,
-          autoClose: false,
-        }
-      );
+      return toast(contentWithIcon, {
+        ...enhancedStyles,
+        autoClose: false,
+      });
 
     case "success":
-      toast(
-        contentWithIcon(
-          <CheckCircle size={iconSize} className="text-green-600" />,
-          "#15803D"
-        ),
-        {
-          ...baseStyles,
-          autoClose: 4000,
-        }
-      );
+      toast(contentWithIcon, {
+        ...enhancedStyles,
+        autoClose: 4000,
+      });
       break;
 
     case "error":
-      toast(
-        contentWithIcon(
-          <XCircle size={iconSize} className="text-red-600" />,
-          "#B91C1C"
-        ),
-        {
-          ...baseStyles,
-          autoClose: 7000,
-        }
-      );
+      toast(contentWithIcon, {
+        ...enhancedStyles,
+        autoClose: 7000,
+      });
       break;
 
     case "warning":
-      toast(
-        contentWithIcon(
-          <AlertCircle size={iconSize} className="text-yellow-500" />,
-          "#92400E"
-        ),
-        {
-          ...baseStyles,
-          autoClose: 6000,
-        }
-      );
+      toast(contentWithIcon, {
+        ...enhancedStyles,
+        autoClose: 6000,
+      });
       break;
 
     case "retry-warning":
       toast(
-        <div className="flex items-center gap-3 justify-between w-full">
-          {contentWithIcon(
-            <RefreshCcw size={iconSize} className="text-yellow-600" />,
-            "#92400E"
-          )}
+        <div className="flex items-center justify-between w-full gap-3">
+          {contentWithIcon}
           {retryButton}
         </div>,
         {
-          ...baseStyles,
+          ...enhancedStyles,
           autoClose: 10000,
         }
       );

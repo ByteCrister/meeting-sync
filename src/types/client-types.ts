@@ -261,6 +261,7 @@ export interface chatBoxSliceTypes {
 // ? User slice
 export interface userSliceInitialState {
     user: Users | null;
+    fetching: boolean;
     notifications: Notification[] | null;
     activities: ActivityType[] | null;
 }
