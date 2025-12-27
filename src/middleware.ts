@@ -26,7 +26,7 @@ const PUBLIC_API_ROUTES = [
     '/api/auth/error',
     '/api/auth/csrf',
     '/api/auth/user/validity',
-    '/api/run-cron'
+    // '/api/run-cron'
 ];
 
 const ALWAYS_ALLOWED_AUTH_ROUTES = [
