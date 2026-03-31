@@ -35,7 +35,7 @@ export const POST = async (req: NextRequest) => {
         const response = NextResponse.json({ success: true, message: 'Password Updated Successfully.' }, { status: 201 });
         response.cookies.set(process.env.NEXT_TOKEN as string, token, {
             httpOnly: false,
-            secure: false, // true for production with HTTPS
+            secure: true, // true for production with HTTPS
             sameSite: "lax",
             path: "/",
             maxAge: 30 * 24 * 60 * 60,
