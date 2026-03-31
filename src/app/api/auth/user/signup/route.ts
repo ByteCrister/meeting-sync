@@ -49,7 +49,7 @@ export const POST = async (req: NextRequest) => {
         const response = NextResponse.json({ message: 'Successful Signed Up.', success: true }, { status: 200 });
         response.cookies.set(process.env.NEXT_TOKEN as string, token, {
             httpOnly: true,
-            secure: false,// true for production with HTTPS
+            secure: true,// true for production with HTTPS
             sameSite: "lax",
             path: "/",
             maxAge: isRemember ? 30 * 24 * 60 * 60 : 60 * 60,
